@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartItemController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 
 
 Route::get('/', function () {
@@ -62,5 +63,8 @@ Route::middleware('auth')->group(function () {
         Route::apiResource('payments', PaymentController::class);
     });
 });
+
+Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
 require __DIR__.'/auth.php';
