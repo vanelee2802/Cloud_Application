@@ -14,6 +14,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartItemController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 
 
 Route::get('/', function () {
@@ -63,6 +64,11 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+
 Route::get('/DesignEditor', function () {
     return Inertia::render('DesignEditor');
 })->name('DesignEditor');
+
+require __DIR__.'/auth.php';
