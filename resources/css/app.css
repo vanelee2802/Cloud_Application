@@ -1,3 +1,130 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap');
+
+body {
+    font-family: 'Cormorant Garamond', serif;
+}
+:root {
+    /* =========================
+       BRAND COLORS
+       ========================= */
+
+    --primary-color: #6D3B47;       /* Velvet Wine */
+    --secondary-color: #B07D7D;     /* Dusty Rose */
+    --highlighting-color: #D9A58F;  /* Peach Bloom */
+
+
+    /* =========================
+       LIGHT MODE
+       ========================= */
+
+    --background-color: #F6EEE8;    /* Champagne Glow */
+    --surface-color: #E9D7D1;       /* Soft Petal */
+
+    --text-color: #6D3B47;
+    --text-muted: #6B5755;
+
+    --border-color: #D9A58F;
+
+    /* Hover */
+    --hover-color: #B07D7D;
+    --hover-background: #E9D7D1;
+
+    /* Buttons */
+    --button-background: #6D3B47;
+    --button-text: #F6EEE8;
+
+    /* Focus */
+    --focus-color: #6D3B47;
+
+    h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: var(--primary-color);
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 600;
+}
+
+/* Hauptüberschrift */
+h1 {
+    font-size: 2.8rem;
+    font-weight: 600;
+}
+
+/* Abschnittsüberschrift */
+h2 {
+    font-size: 2.2rem;
+    font-weight: 600;
+}
+
+/* Unterüberschrift */
+h3 {
+    font-size: 1.7rem;
+    font-weight: 600;
+}
+
+/* Kleinere Überschriften */
+h4 {
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+h5 {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+h6 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+}
+
+
+/* =========================
+   DARK MODE
+   ========================= */
+
+@media (prefers-color-scheme: dark) {
+
+    :root {
+        --background-color: #2B1C20;
+        --surface-color: #432C32;
+
+        --text-color: #F6EEE8;
+        --text-muted: #E9D7D1;
+
+        --primary-color: #F6EEE8;
+        --secondary-color: #D9A58F;
+        --highlighting-color: #E9B9A5;
+
+        --border-color: #B07D7D;
+
+        /* Hover */
+        --hover-color: #E9B9A5;
+        --hover-background: #54363D;
+
+        /* Buttons */
+        --button-background: #D9A58F;
+        --button-text: #2B1C20;
+
+        /* Focus */
+        --focus-color: #E9B9A5;
+    }
+}
+
+    * {
+    margin: 0;
+    padding: 0;
+   
+}
+
+ol {
+    list-style-type: decimal;
+    padding-left: 2rem;
+}
