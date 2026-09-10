@@ -34,18 +34,33 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Für ALLE eingeloggten Nutzer (lesen + eigene Designs/Termine/Warenkorb verwalten)
     Route::get('/studio', [NailStudioController::class, 'show'])->name('studio.show');
-    Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
+    Route::get('/services', [ServiceController::class, 'index']);
+    Route::get('/services/{service}', [ServiceController::class, 'show']);
+    Route::get('/nail-shapes', [NailShapeController::class, 'index']);
+    Route::get('/colors', [ColorController::class, 'index']);
+    Route::get('/design-elements', [DesignElementController::class, 'index']);
 
-    Route::apiResource('services', ServiceController::class);
-    Route::apiResource('nail-shapes', NailShapeController::class);
-    Route::apiResource('colors', ColorController::class);
-    Route::apiResource('design-elements', DesignElementController::class);
     Route::apiResource('designs', DesignController::class);
-    Route::apiResource('appointments', AppointmentController::class);
-    Route::apiResource('payments', PaymentController::class);
-Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
-Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
+    Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
+    Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
+    Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
+
+    // NUR für Mitarbeiter/Admin
+    Route::middleware('role:employee,admin')->group(function () {
+        Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
+
+        Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
+        Route::apiResource('nail-shapes', NailShapeController::class)->except(['index', 'show']);
+        Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
+        Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
+
+        Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
+        Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
+
+        Route::apiResource('payments', PaymentController::class);
+    });
 });
 
 require __DIR__.'/auth.php';
