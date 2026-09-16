@@ -11,13 +11,20 @@ class DesignController extends Controller
 {
     // Zeigt alle Designs des eingeloggten Nutzers
     public function index(Request $request)
-    {
-        $designs = Design::where('user_id', $request->user()->id)
-            ->with('nails.nailShape', 'nails.color', 'nails.designElements')
-            ->get();
+{
+    $query = Design::where('user_id', $request->user()->id)
+        ->with('nails.nailShape', 'nails.color', 'nails.designElements');
 
-        return response()->json($designs);
+    if ($request->filled('search')) {
+        $query->where('name', 'like', '%' . $request->input('search') . '%');
     }
+
+    if ($request->filled('status')) {
+        $query->where('status', $request->input('status'));
+    }
+
+    return response()->json($query->get());
+}
 
     // Legt ein neues Design inkl. aller Nägel und Elemente an
     public function store(Request $request)
