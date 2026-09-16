@@ -15,6 +15,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\AdminDashboardController;
 
 
 Route::get('/', function () {
@@ -45,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/nail-shapes', [NailShapeController::class, 'index']);
     Route::get('/colors', [ColorController::class, 'index']);
     Route::get('/design-elements', [DesignElementController::class, 'index']);
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 
     Route::apiResource('designs', DesignController::class);
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
