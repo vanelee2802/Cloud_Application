@@ -1,0 +1,50 @@
+nav {
+    margin: 0;
+    text-align: center;
+    padding: 1rem;
+    
+}
+
+nav h2 {
+    color: #8b5558;
+    font-family: Georgia, serif;
+    font-weight: normal;
+}
+
+nav ol {
+    list-style-type: decimal;
+    text-align: left;
+    background-color: var(--surface-color);
+
+    border-radius: 16px;
+
+    width: 100%;
+    margin: 1rem auto;
+    padding: 2rem;
+
+
+    box-shadow: 0 8px 24px rgba(109, 59, 71, 0.08);
+}
+
+nav ol li {
+    background-color: #f4e4e1;
+
+    border: 1px solid #ead4d1;
+    border-radius: 6px;
+
+    margin: 2px 0;
+    padding: 6px 12px;
+}
+
+nav ol li a {
+    color: #754b4d;
+    text-decoration: none;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    padding: 2px 4px;
+    gap: 4px;
+}
+
+nav ol li a:hover {
+    color: #8b5558;
+}
