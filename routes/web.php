@@ -46,7 +46,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/nail-shapes', [NailShapeController::class, 'index']);
     Route::get('/colors', [ColorController::class, 'index']);
     Route::get('/design-elements', [DesignElementController::class, 'index']);
-    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
 
     Route::apiResource('designs', DesignController::class);
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
@@ -54,7 +53,8 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
 
     Route::middleware('role:employee,admin')->group(function () {
-        Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+    Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
         Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
         Route::apiResource('nail-shapes', NailShapeController::class)->except(['index', 'show']);
