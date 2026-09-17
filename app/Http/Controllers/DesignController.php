@@ -84,18 +84,34 @@ class DesignController extends Controller
 
     // Ändert nur den Status (z. B. Mitarbeiter nimmt an/lehnt ab)
     public function update(Request $request, string $id)
-    {
-        $design = Design::findOrFail($id);
+{
+    $design = Design::findOrFail($id);
 
-        $validated = $request->validate([
-            'status' => 'sometimes|in:pending,accepted,rejected',
-            'name' => 'sometimes|string|max:255',
-        ]);
+    $validated = $request->validate([
+        'status' => 'sometimes|in:pending,accepted,rejected',
+        'name' => 'sometimes|string|max:255',
+    ]);
 
-        $design->update($validated);
+    $oldStatus = $design->status;
+    $design->update($validated);
 
-        return response()->json($design);
+    if (isset($validated['status']) && $validated['status'] !== $oldStatus) {
+        $messages = [
+            'accepted' => 'Dein Design wurde angenommen.',
+            'rejected' => 'Dein Design wurde leider abgelehnt.',
+        ];
+
+        if (isset($messages[$validated['status']])) {
+            $design->user->notifications()->create([
+                'type' => 'design_status_changed',
+                'message' => $messages[$validated['status']],
+                'read' => false,
+            ]);
+        }
     }
+
+    return response()->json($design);
+}
 
     public function destroy(string $id)
     {

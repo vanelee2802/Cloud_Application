@@ -60,15 +60,26 @@ class AppointmentController extends Controller
             'employee_id' => 'sometimes|exists:users,id',
         ]);
 
+        $oldStatus = $appointment->status;
         $appointment->update($validated);
 
+        // Wenn sich der Status geändert hat: Kunden benachrichtigen
+        if (isset($validated['status']) && $validated['status'] !== $oldStatus) {
+            $messages = [
+                'confirmed' => 'Dein Termin wurde bestätigt.',
+                'rejected' => 'Dein Termin wurde leider abgelehnt.',
+                'completed' => 'Dein Termin wurde als abgeschlossen markiert.',
+            ];
+
+            if (isset($messages[$validated['status']])) {
+                $appointment->user->notifications()->create([
+                    'type' => 'appointment_status_changed',
+                    'message' => $messages[$validated['status']],
+                    'read' => false,
+                ]);
+            }
+        }
+
         return response()->json($appointment->load('service', 'nailStudio', 'employee'));
-    }
-
-    public function destroy(string $id)
-    {
-        Appointment::findOrFail($id)->delete();
-
-        return response()->json(['message' => 'Termin storniert']);
     }
 }
