@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Events\AppointmentStatusChanged;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
@@ -77,6 +78,8 @@ class AppointmentController extends Controller
                     'message' => $messages[$validated['status']],
                     'read' => false,
                 ]);
+
+                broadcast(new AppointmentStatusChanged($appointment));
             }
         }
 
