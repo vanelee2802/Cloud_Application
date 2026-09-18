@@ -51,10 +51,11 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
+    Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
 
     Route::middleware('role:employee,admin')->group(function () {
-    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
-    Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+        Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
         Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
         Route::apiResource('nail-shapes', NailShapeController::class)->except(['index', 'show']);
