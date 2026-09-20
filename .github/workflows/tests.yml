@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: PHP einrichten
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3, curl, zip
+
+      - name: Node.js einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: .env vorbereiten
+        run: cp .env.example .env
+
+      - name: Composer-Abhängigkeiten installieren
+        run: composer install --no-interaction --prefer-dist
+
+      - name: NPM-Abhängigkeiten installieren
+        run: npm ci
+
+      - name: Frontend bauen
+        run: npm run build
+
+      - name: App-Key generieren
+        run: php artisan key:generate
+
+      - name: SQLite-Datenbank vorbereiten
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Datenbank migrieren
+        run: php artisan migrate --force
+
+      - name: Tests ausführen
+        run: php artisan test

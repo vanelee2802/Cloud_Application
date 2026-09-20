@@ -1,0 +1,122 @@
+.nail-designer {
+    display: grid;
+    grid-template-columns: 160px 1fr 230px;
+    grid-template-rows: 1fr;
+    gap: 10px;
+
+    width: 100%;
+    min-height: 700px;
+
+    padding: 10px;
+
+    background-color: #f5f5f5;
+}
+
+
+/* =========================
+   LINKER BEREICH
+   ========================= */
+
+.left-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+
+/* Kategorien */
+
+.categories {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+
+/* Nagel auswählen */
+
+.nail-selection {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+
+    flex: 1;
+}
+
+
+/* =========================
+   MITTLERER BEREICH
+   ========================= */
+
+.designer-area {
+    display: grid;
+
+    grid-template-columns: 130px 1fr;
+    grid-template-rows: 1fr 100px;
+
+    gap: 10px;
+}
+
+
+/* Form */
+
+.shape-selection {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+
+/* Hand / Nail Canvas */
+
+.nail-canvas {
+    background-color: #ffffff;
+    border-radius: 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+/* =========================
+   UNTERER BEREICH
+   ========================= */
+
+.bottom-options {
+    grid-column: 1 / 3;
+
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+
+    gap: 10px;
+}
+
+
+/* Farbe */
+
+.colors {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+
+/* Designs */
+
+.designs {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+
+/* =========================
+   RECHTS
+   ========================= */
+
+.design-summary {
+    background-color: #ffffff;
+    border-radius: 10px;
+    padding: 15px;
+}
