@@ -14,7 +14,12 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
-
+Route::get('/payment/cancel', function () {
+    return 'Zahlung abgebrochen.';
+});
+Route::get('/payment/success', function () {
+    return 'Zahlung erfolgreich!';
+});
 Route::get('/design-editor', [DesignEditorController::class, 'index']);
 
 Route::get('/dashboard', function () {
@@ -25,6 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
 });
 
 require __DIR__.'/auth.php';
