@@ -34,7 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Für ALLE eingeloggten Nutzer (lesen + eigene Designs/Termine/Warenkorb verwalten)
+    // F++r ALLE eingeloggten Nutzer (lesen + eigene Designs/Termine/Warenkorb verwalten)
     Route::get('/studio', [NailStudioController::class, 'show'])->name('studio.show');
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{service}', [ServiceController::class, 'show']);
@@ -47,8 +47,8 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
 
-    // NUR für Mitarbeiter/Admin
-    Route::middleware('role:employee,admin')->group(function () {
+    // NUR f++r Mitarbeiter/Admin
+    Route::middleware('role:employee|admin')->group(function () {
         Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
         Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
