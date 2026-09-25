@@ -29,6 +29,11 @@ Route::get('/', function () {
 Route::get('/Appointments', function () {
     return Inertia::render('Appointments');
 })->name('Appointments');
+
+Route::get('/dashboard', function () {
+    return Inertia::render('Welcome');
+})->middleware(['auth'])->name('dashboard');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -66,3 +71,5 @@ Route::middleware('auth')->group(function () {
 Route::get('/DesignEditor', function () {
     return Inertia::render('DesignEditor');
 })->name('DesignEditor');
+
+require __DIR__.'/auth.php';
