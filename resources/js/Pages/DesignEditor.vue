@@ -1,5 +1,6 @@
 <script setup>
 import pagesLayout from '@/Layouts/pagesLayout.vue' 
+import NailCanvas from '@/Components/NailEditor/NailCanvas.vue'
 import "../../css/NailEditor.css"
 
 </script> 
