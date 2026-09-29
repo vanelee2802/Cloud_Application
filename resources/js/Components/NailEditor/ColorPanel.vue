@@ -6,13 +6,13 @@
         <div class="color-list">
 
             <button
-                v-for="color in colors"
-                :key="color.name"
-                @click="selectColor(color)"
-                class="color-button"
-                :style="{ backgroundColor: color.value }"
-            >
-            </button>
+    v-for="color in colors"
+    :key="color.name"
+    @click="selectColor(color)"
+    class="color-button"
+    :style="{ backgroundColor: color.hex_code }"
+>
+</button>
 
         </div>
 
@@ -20,14 +20,27 @@
 </template>
 
 <script setup>
+/*Anknüfung zur Datenbank*/
+import { ref, onMounted } from 'vue'
 
 const emit = defineEmits(['color-selected'])
+/*color aus der Datenbank holen*/
+const colors = ref([])
 
 function selectColor(color) {
     emit('color-selected', color)
 }
 
-const colors = [
+
+
+onMounted(async () => {
+    const response = await fetch('/colors')
+    colors.value = await response.json()
+})
+
+/*statische color werte*/
+
+/*const colors = [
     {
         name: 'Nude',
         value: '#F5D0C5',
@@ -64,7 +77,7 @@ const colors = [
         price: 5,
         image: '/images/colors/schwarz.png',
     },
-]
+]*/
 
 </script>
 

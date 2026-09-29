@@ -17,6 +17,8 @@ use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AdminDashboardController;
 
+Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
+Route::get('/colors', [ColorController::class, 'index']);
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -57,7 +59,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{service}', [ServiceController::class, 'show']);
     Route::get('/nail-shapes', [NailShapeController::class, 'index']);
-    Route::get('/colors', [ColorController::class, 'index']);
     Route::get('/design-elements', [DesignElementController::class, 'index']);
 
     Route::apiResource('designs', DesignController::class);
@@ -72,7 +73,6 @@ Route::middleware('auth')->group(function () {
 
         Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
         Route::apiResource('nail-shapes', NailShapeController::class)->except(['index', 'show']);
-        Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
         Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
 
         Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
@@ -90,4 +90,7 @@ Route::get('/DesignEditor', function () {
 })->name('DesignEditor');
 
 
+
+
 require __DIR__.'/auth.php';
+

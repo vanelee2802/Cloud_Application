@@ -75,13 +75,6 @@ function selectColor(color) {
                     </div>
 
 
-                    <!-- FARBE -->
-                    <ColorPanel
-                        v-if="selectedCategories.includes('Farbe')"
-                        @color-selected="selectColor"
-                    />
-
-
                     <!-- NÄGEL AUSWÄHLEN -->
                     <NailSelectionPanel />
 
@@ -128,6 +121,22 @@ function selectColor(color) {
                     <CartPanel @checkout="showCheckout = true" />
 
                 </div>
+
+            </div>
+
+
+            <!-- ================================= -->
+            <!-- FARBE UNTER DEM EDITOR -->
+            <!-- ================================= -->
+
+            <div
+                v-if="selectedCategories.includes('Farbe')"
+                class="color-section"
+            >
+
+                <ColorPanel
+                    @color-selected="selectColor"
+                />
 
             </div>
 
@@ -247,6 +256,19 @@ function selectColor(color) {
 
 
 /* ========================================= */
+/* FARBE */
+/* ========================================= */
+
+.color-section {
+    width: 35vw;
+
+    margin-left: calc(
+        35vw + 20px
+    );
+}
+
+
+/* ========================================= */
 /* RESPONSIVE */
 /* ========================================= */
 
@@ -258,6 +280,12 @@ function selectColor(color) {
 
     .nail-canvas {
         width: 50vw;
+    }
+
+    .color-section {
+        width: 50vw;
+
+        margin-left: 0;
     }
 
 }
@@ -275,6 +303,12 @@ function selectColor(color) {
 
     .category-row {
         flex-direction: column;
+    }
+
+    .color-section {
+        width: 90vw;
+
+        margin-left: 0;
     }
 
 }
