@@ -2,19 +2,36 @@
 import NavLink from '@/Components/NavLink.vue'  
 </script>
 
-<template> 
+<template>
     <nav class="navbar">
+
         <ul class="nav-links">
             <li>
-                <NavLink href="/" :active="route().current('welcome')">Home</NavLink>
+                <NavLink href="/" :active="route().current('welcome')">
+                    Home
+                </NavLink>
             </li>
+
             <li>
-                <NavLink href="/DesignEditor" :active="route().current('DesignEditor')">Design Editor</NavLink>
+                <NavLink href="/DesignEditor" :active="route().current('DesignEditor')">
+                    Design Editor
+                </NavLink>
             </li>
+
             <li>
-                <NavLink href="/Appointments" :active="route().current('Appointments')">Appointments</NavLink>
+                <NavLink href="/Appointments" :active="route().current('Appointments')">
+                    Appointments
+                </NavLink>
             </li>
+           <li class="login-item">
+    <a href="/auth/google" class="login-button">
+        Login
+    </a>
+</li>
         </ul>
+
+      
+
     </nav>
 </template>
 
@@ -42,5 +59,20 @@ import NavLink from '@/Components/NavLink.vue'
    margin-left: 1rem ;
    padding: 1rem;
    color: var(--text-color);
+}
+.login-button {
+    margin-right: 2rem;
+    padding: 0.6rem 1.5rem;
+
+    border: none;
+    border-radius: 6px;
+
+    background-color: var(--text-color);
+    color: white;
+
+    cursor: pointer;
+}
+.login-item {
+    margin-left: auto;
 }
 </style>

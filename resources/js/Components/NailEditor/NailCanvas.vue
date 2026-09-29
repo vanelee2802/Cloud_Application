@@ -48,15 +48,12 @@
 <style scoped>
 .hand-container {
     position: relative;
-    width: 40%;
-    height: 40%;
-    margin: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    width: 40vw;
+    aspect-ratio: 1080 / 1056;
+    display: block;
 }
-
 .hand-image {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: contain;
@@ -107,3 +104,4 @@
     transform: rotate(4.14deg);
 };
 </style>
+

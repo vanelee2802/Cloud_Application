@@ -43,6 +43,10 @@ Route::get('/Appointments', function () {
     return Inertia::render('Appointments');
 })->name('Appointments');
 
+Route::get('/checkout', function () {
+    return Inertia::render('Checkout');
+})->name('checkout');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -84,5 +88,6 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 Route::get('/DesignEditor', function () {
     return Inertia::render('DesignEditor');
 })->name('DesignEditor');
+
 
 require __DIR__.'/auth.php';
