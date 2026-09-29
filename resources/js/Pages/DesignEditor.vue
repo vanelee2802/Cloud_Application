@@ -102,16 +102,23 @@ function selectColor(color) {
                 <!-- ================================= -->
 
                 <div class="design-area">
-    <DesignPanel
-        v-if="selectedCategories.includes('Designs')"
-    />
 
-    <EffektPanel
-        v-if="selectedCategories.includes('Effekte')"
-    />
+                    <!-- DESIGNS -->
+                    <DesignPanel
+                        v-if="selectedCategories.includes('Designs')"
+                    />
 
-    <CartPanel />
-</div>
+
+                    <!-- EFFEKTE -->
+                    <EffektPanel
+                        v-if="selectedCategories.includes('Effekte')"
+                    />
+
+                </div>
+
+                <div class="Warenkorb">
+                    <CartPanel />
+                </div>
             </div>
 
         </main>
