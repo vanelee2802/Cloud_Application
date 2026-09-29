@@ -8,6 +8,7 @@ use App\Http\Controllers\NailShapeController;
 use App\Http\Controllers\ColorController;
 use App\Http\Controllers\DesignElementController;
 use App\Http\Controllers\DesignController;
+use App\Http\Controllers\DesignEditorController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -68,8 +69,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::get('/DesignEditor', function () {
-    return Inertia::render('DesignEditor');
-})->name('DesignEditor');
-
+Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
+    ->name('DesignEditor');
+    
 require __DIR__.'/auth.php';

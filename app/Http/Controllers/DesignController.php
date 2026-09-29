@@ -67,9 +67,10 @@ class DesignController extends Controller
     }
 
     // Zeigt ein einzelnes Design mit allen Details
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
         $design = Design::with('nails.nailShape', 'nails.color', 'nails.designElements')
+            ->where('user_id', $request->user()->id)
             ->findOrFail($id);
 
         return response()->json($design);
@@ -78,7 +79,8 @@ class DesignController extends Controller
     // Ändert nur den Status (z. B. Mitarbeiter nimmt an/lehnt ab)
     public function update(Request $request, string $id)
     {
-        $design = Design::findOrFail($id);
+        $design = Design::where('user_id', $request->user()->id)
+            ->findOrFail($id);
 
         $validated = $request->validate([
             'status' => 'sometimes|in:pending,accepted,rejected',
@@ -90,10 +92,15 @@ class DesignController extends Controller
         return response()->json($design);
     }
 
-    public function destroy(string $id)
+    public function destroy(Request $request, string $id)
     {
-        Design::findOrFail($id)->delete();
+        $design = Design::where('user_id', $request->user()->id)
+            ->findOrFail($id);
+
+        $design->delete();
 
         return response()->json(['message' => 'Design gelöscht']);
     }
 }
+
+
