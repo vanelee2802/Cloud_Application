@@ -14,6 +14,7 @@
                 :key="index"
                 class="cart-item"
             >
+
                 <img
                     v-if="item.image"
                     :src="item.image"
@@ -32,31 +33,41 @@
                 >
                     ×
                 </button>
+
             </div>
 
         </div>
+
 
         <div class="cart-total">
             <span>Gesamt</span>
             <span>{{ total.toFixed(2) }} €</span>
         </div>
 
-        <button class="checkout-button">
-            Zum Warenkorb
-        </button>
+
+        <!-- CHECKOUT ÖFFNEN -->
+        <button @click="emit('checkout')">
+    Termin buchen
+</button>
 
     </div>
 </template>
 
+
 <script setup>
+
 import { useCart } from '@/Stores/cart.js'
+
+const emit = defineEmits(['checkout'])
 
 const {
     cartItems,
     total,
     removeFromCart
 } = useCart()
+
 </script>
+
 
 <style scoped>
 
@@ -80,46 +91,60 @@ const {
     display: flex;
     align-items: center;
     gap: 8px;
+
     padding: 8px 0;
+
     border-bottom: 1px solid #eee;
 }
 
 .cart-item-image {
     width: 40px;
     height: 40px;
+
     object-fit: cover;
+
     border-radius: 6px;
 }
 
 .cart-item-info {
     display: flex;
     flex-direction: column;
+
     flex: 1;
+
     font-size: 12px;
 }
 
 .remove-button {
     border: none;
     background: transparent;
+
     font-size: 18px;
+
     cursor: pointer;
 }
 
 .cart-total {
     display: flex;
     justify-content: space-between;
+
     padding-top: 15px;
     margin-top: 15px;
+
     border-top: 1px solid #ddd;
+
     font-size: 14px;
 }
 
 .checkout-button {
     width: 100%;
+
     margin-top: 20px;
     padding: 12px;
+
     border: none;
     border-radius: 6px;
+
     cursor: pointer;
 }
 

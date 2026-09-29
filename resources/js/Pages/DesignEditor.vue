@@ -11,9 +11,11 @@ import DesignPanel from '@/Components/NailEditor/DesignPanel.vue'
 import EffektPanel from '@/Components/NailEditor/EffektPanel.vue'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 import CartPanel from '@/Components/NailEditor/CartPanel.vue'
+import Checkout from '@/Pages/Checkout.vue'
 
 // Kategorien
 const selectedCategories = ref([])
+const showCheckout = ref(false)
 
 // Kategorie auswählen
 function selectCategory(category) {
@@ -116,12 +118,27 @@ function selectColor(color) {
 
                 </div>
 
+
+                <!-- ================================= -->
+                <!-- WARENKORB -->
+                <!-- ================================= -->
+
                 <div class="Warenkorb">
-                    <CartPanel />
+
+                    <CartPanel @checkout="showCheckout = true" />
+
                 </div>
+
             </div>
 
         </main>
+
+
+        <!-- CHECKOUT POPUP -->
+        <Checkout
+            v-if="showCheckout"
+            @close="showCheckout = false"
+        />
 
     </pagesLayout>
 

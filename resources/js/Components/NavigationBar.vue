@@ -24,10 +24,10 @@ import NavLink from '@/Components/NavLink.vue'
                 </NavLink>
             </li>
            <li class="login-item">
-    <a href="/auth/google" class="login-button">
-        Login
-    </a>
-</li>
+             <a href="/auth/google" class="login-button">
+                Login
+            </a>
+            </li>
         </ul>
 
       
