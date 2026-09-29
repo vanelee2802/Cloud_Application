@@ -96,7 +96,7 @@ onMounted(async () => {
 
 .color-list {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: 12px;
     flex-wrap: nowrap;
 }

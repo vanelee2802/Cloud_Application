@@ -12,7 +12,7 @@ import EffektPanel from '@/Components/NailEditor/EffektPanel.vue'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 import CartPanel from '@/Components/NailEditor/CartPanel.vue'
 import Checkout from '@/Pages/Checkout.vue'
-
+import CharmPanel from '@/Components/NailEditor/CharmPanel.vue'
 // Kategorien
 const selectedCategories = ref([])
 const showCheckout = ref(false)
@@ -73,6 +73,14 @@ function selectColor(color) {
                         />
 
                     </div>
+                    <div class="CharmPanel">
+                         <CharmPanel
+    v-if="selectedCategories.includes('Verzierung')"
+    @verziehrung-selected="selectVerziehrung"
+/>
+                    </div>
+
+                   
 
 
                     <!-- NÄGEL AUSWÄHLEN -->
@@ -110,6 +118,17 @@ function selectColor(color) {
                     />
 
                 </div>
+                  <div
+                v-if="selectedCategories.includes('Farbe')"
+                class="color-section"
+            >
+
+                <ColorPanel
+                    @color-selected="selectColor"
+                />
+
+            </div>
+
 
 
                 <!-- ================================= -->
@@ -125,21 +144,9 @@ function selectColor(color) {
             </div>
 
 
-            <!-- ================================= -->
-            <!-- FARBE UNTER DEM EDITOR -->
-            <!-- ================================= -->
+            
 
-            <div
-                v-if="selectedCategories.includes('Farbe')"
-                class="color-section"
-            >
-
-                <ColorPanel
-                    @color-selected="selectColor"
-                />
-
-            </div>
-
+          
         </main>
 
 
@@ -260,12 +267,10 @@ function selectColor(color) {
 /* ========================================= */
 
 .color-section {
-    width: 35vw;
-
-    margin-left: calc(
-        35vw + 20px
-    );
+    display: flex;
+    gap: 10px;
 }
+
 
 
 /* ========================================= */
