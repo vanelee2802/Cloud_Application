@@ -10,6 +10,7 @@ import ColorPanel from '@/Components/NailEditor/ColorPanel.vue'
 import DesignPanel from '@/Components/NailEditor/DesignPanel.vue'
 import EffektPanel from '@/Components/NailEditor/EffektPanel.vue'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
+import CartPanel from '@/Components/NailEditor/CartPanel.vue'
 
 // Kategorien
 const selectedCategories = ref([])
@@ -101,20 +102,16 @@ function selectColor(color) {
                 <!-- ================================= -->
 
                 <div class="design-area">
+    <DesignPanel
+        v-if="selectedCategories.includes('Designs')"
+    />
 
-                    <!-- DESIGNS -->
-                    <DesignPanel
-                        v-if="selectedCategories.includes('Designs')"
-                    />
+    <EffektPanel
+        v-if="selectedCategories.includes('Effekte')"
+    />
 
-
-                    <!-- EFFEKTE -->
-                    <EffektPanel
-                        v-if="selectedCategories.includes('Effekte')"
-                    />
-
-                </div>
-
+    <CartPanel />
+</div>
             </div>
 
         </main>

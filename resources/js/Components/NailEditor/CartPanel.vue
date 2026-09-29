@@ -15,6 +15,7 @@
                 class="cart-item"
             >
                 <img
+                    v-if="item.image"
                     :src="item.image"
                     :alt="item.name"
                     class="cart-item-image"
@@ -48,20 +49,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { useCart } from '@/Stores/cart.js'
 
-const emit = defineEmits(['color-selected'])
-
-const colors = ref([])
-
-onMounted(async () => {
-    const response = await fetch('/api/colors')
-    colors.value = await response.json()
-})
-
-function selectColor(color) {
-    emit('color-selected', color)
-}
+const {
+    cartItems,
+    total,
+    removeFromCart
+} = useCart()
 </script>
 
 <style scoped>
@@ -86,9 +80,7 @@ function selectColor(color) {
     display: flex;
     align-items: center;
     gap: 8px;
-
     padding: 8px 0;
-
     border-bottom: 1px solid #eee;
 }
 
@@ -103,14 +95,12 @@ function selectColor(color) {
     display: flex;
     flex-direction: column;
     flex: 1;
-
     font-size: 12px;
 }
 
 .remove-button {
     border: none;
     background: transparent;
-
     font-size: 18px;
     cursor: pointer;
 }
@@ -118,12 +108,9 @@ function selectColor(color) {
 .cart-total {
     display: flex;
     justify-content: space-between;
-
     padding-top: 15px;
     margin-top: 15px;
-
     border-top: 1px solid #ddd;
-
     font-size: 14px;
 }
 
@@ -131,10 +118,8 @@ function selectColor(color) {
     width: 100%;
     margin-top: 20px;
     padding: 12px;
-
     border: none;
     border-radius: 6px;
-
     cursor: pointer;
 }
 
