@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 
 import pagesLayout from '@/Layouts/pagesLayout.vue'
 
@@ -17,6 +17,43 @@ import Checkout from '@/Pages/Checkout.vue'
 const selectedCategories = ref([])
 const showCheckout = ref(false)
 
+// Aktuell ausgewählter Nagel
+const selectedNail = ref(null)
+
+// Zustand jedes einzelnen Nagels
+const nailDesigns = reactive({
+    'Daumen': {
+        form: null,
+        color: null,
+        design: null,
+        effekt: null,
+    },
+    'Zeigefinger': {
+        form: null,
+        color: null,
+        design: null,
+        effekt: null,
+    },
+    'Mittelfinger': {
+        form: null,
+        color: null,
+        design: null,
+        effekt: null,
+    },
+    'Ringfinger': {
+        form: null,
+        color: null,
+        design: null,
+        effekt: null,
+    },
+    'Kleiner Finger': {
+        form: null,
+        color: null,
+        design: null,
+        effekt: null,
+    },
+})
+
 // Kategorie auswählen
 function selectCategory(category) {
     if (selectedCategories.value.includes(category)) {
@@ -28,230 +65,197 @@ function selectCategory(category) {
     }
 }
 
+// Nagel auswählen
+function selectNail(nail) {
+    selectedNail.value = nail
+
+    console.log('Ausgewählter Nagel:', nail)
+}
+
+// Form auswählen
+function selectForm(form) {
+    if (!selectedNail.value) {
+        return
+    }
+
+    nailDesigns[selectedNail.value].form = form
+
+    console.log(
+        'Form ausgewählt:',
+        selectedNail.value,
+        form
+    )
+}
+
 // Farbe auswählen
 function selectColor(color) {
-    console.log('Ausgewählte Farbe:', color)
+    if (!selectedNail.value) {
+        return
+    }
+
+    nailDesigns[selectedNail.value].color = color
+
+    console.log(
+        'Farbe ausgewählt:',
+        selectedNail.value,
+        color
+    )
+}
+
+// Design auswählen
+function selectDesign(design) {
+    if (!selectedNail.value) {
+        return
+    }
+
+    nailDesigns[selectedNail.value].design = design
+
+    console.log(
+        'Design ausgewählt:',
+        selectedNail.value,
+        design
+    )
+}
+
+// Effekt auswählen
+function selectEffekt(effekt) {
+    if (!selectedNail.value) {
+        return
+    }
+
+    nailDesigns[selectedNail.value].effekt = effekt
+
+    console.log(
+        'Effekt ausgewählt:',
+        selectedNail.value,
+        effekt
+    )
+}
+
+// Linke Hand
+function selectLeftHand() {
+    console.log('Linke Hand ausgewählt')
 }
 </script>
 
-
 <template>
-
-    <!-- LAYOUT + NAVBAR -->
     <pagesLayout>
-
         <main class="nail-designer">
-
-            <!-- ================================= -->
-            <!-- EDITOR -->
-            <!-- ================================= -->
-
             <div class="editor-row">
-
-                <!-- ================================= -->
-                <!-- LINKER BEREICH -->
-                <!-- ================================= -->
 
                 <div class="left-editor">
 
-                    <!-- KATEGORIEN + FORM -->
                     <div class="category-row">
-
-                        <!-- KATEGORIEN -->
                         <section class="categories">
-
                             <CategoryPanel
                                 @category-selected="selectCategory"
                             />
-
                         </section>
 
-
-                        <!-- FORM -->
                         <FormPanel
                             v-if="selectedCategories.includes('Form')"
+                            @form-selected="selectForm"
                         />
-
                     </div>
 
-
-                    <!-- FARBE -->
                     <ColorPanel
                         v-if="selectedCategories.includes('Farbe')"
                         @color-selected="selectColor"
                     />
 
-
-                    <!-- NÄGEL AUSWÄHLEN -->
-                    <NailSelectionPanel />
+                    <NailSelectionPanel
+                        @nail-selected="selectNail"
+                        @left-hand-selected="selectLeftHand"
+                    />
 
                 </div>
 
-
-                <!-- ================================= -->
-                <!-- HAND / NAIL CANVAS -->
-                <!-- ================================= -->
-
                 <section class="nail-canvas">
-
-                    <NailCanvas />
-
+                    <NailCanvas
+                        :nail-designs="nailDesigns"
+                        :selected-nail="selectedNail"
+                    />
                 </section>
-
-
-                <!-- ================================= -->
-                <!-- DESIGNS / EFFEKTE -->
-                <!-- ================================= -->
 
                 <div class="design-area">
 
-                    <!-- DESIGNS -->
                     <DesignPanel
                         v-if="selectedCategories.includes('Designs')"
+                        @design-selected="selectDesign"
                     />
 
-
-                    <!-- EFFEKTE -->
                     <EffektPanel
                         v-if="selectedCategories.includes('Effekte')"
+                        @effekt-selected="selectEffekt"
                     />
 
                 </div>
 
-
-                <!-- ================================= -->
-                <!-- WARENKORB -->
-                <!-- ================================= -->
-
                 <div class="Warenkorb">
-
                     <CartPanel @checkout="showCheckout = true" />
-
                 </div>
 
             </div>
-
         </main>
 
-
-        <!-- CHECKOUT POPUP -->
         <Checkout
             v-if="showCheckout"
             @close="showCheckout = false"
         />
-
     </pagesLayout>
-
 </template>
 
-
 <style scoped>
-
-/* ========================================= */
-/* HAUPTBEREICH */
-/* ========================================= */
-
 .nail-designer {
     display: flex;
     flex-direction: column;
-
     width: 100%;
     min-height: 100%;
-
     gap: 20px;
 }
-
-
-/* ========================================= */
-/* EDITOR */
-/* ========================================= */
 
 .editor-row {
     display: flex;
     align-items: flex-start;
-
     width: 100%;
-
     gap: 20px;
 }
-
-
-/* ========================================= */
-/* LINKER BEREICH */
-/* ========================================= */
 
 .left-editor {
     display: flex;
     flex-direction: column;
-
     width: fit-content;
-
     gap: 20px;
-
     flex-shrink: 0;
 }
-
-
-/* ========================================= */
-/* KATEGORIEN + FORM */
-/* ========================================= */
 
 .category-row {
     display: flex;
     align-items: flex-start;
-
     width: fit-content;
-
     gap: 20px;
 }
 
-
-/* ========================================= */
-/* KATEGORIEN */
-/* ========================================= */
-
 .categories {
     width: fit-content;
-
     flex-shrink: 0;
 }
-
-
-/* ========================================= */
-/* HAND / CANVAS */
-/* ========================================= */
 
 .nail-canvas {
     width: 35vw;
-
     aspect-ratio: 1080 / 1056;
-
     flex-shrink: 0;
 }
-
-
-/* ========================================= */
-/* DESIGNS / EFFEKTE */
-/* ========================================= */
 
 .design-area {
     display: flex;
     flex-direction: column;
-
     width: fit-content;
-
     gap: 20px;
-
     flex-shrink: 0;
 }
 
-
-/* ========================================= */
-/* RESPONSIVE */
-/* ========================================= */
-
 @media (max-width: 1200px) {
-
     .editor-row {
         flex-wrap: wrap;
     }
@@ -259,12 +263,9 @@ function selectColor(color) {
     .nail-canvas {
         width: 50vw;
     }
-
 }
 
-
 @media (max-width: 768px) {
-
     .editor-row {
         flex-direction: column;
     }
@@ -276,7 +277,5 @@ function selectColor(color) {
     .category-row {
         flex-direction: column;
     }
-
 }
-
 </style>
