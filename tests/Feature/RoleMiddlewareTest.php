@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Models\NailStudio;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class RoleMiddlewareTest extends TestCase
@@ -13,25 +12,11 @@ class RoleMiddlewareTest extends TestCase
     use RefreshDatabase;
 
     protected function setUp(): void
-    {
-        parent::setUp();
+{
+    parent::setUp();
 
-        Role::create([
-            'name' => 'customer',
-            'guard_name' => 'web',
-        ]);
-
-        Role::create([
-            'name' => 'employee',
-            'guard_name' => 'web',
-        ]);
-
-        Role::create([
-            'name' => 'admin',
-            'guard_name' => 'web',
-        ]);
-    }
-
+    $this->createRoles();
+}
     public function test_customer_cannot_create_service(): void
     {
         $user = User::factory()->create([

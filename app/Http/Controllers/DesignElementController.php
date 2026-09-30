@@ -7,10 +7,28 @@ use Illuminate\Http\Request;
 
 class DesignElementController extends Controller
 {
-    public function index()
-    {
-        return response()->json(DesignElement::all());
+    public function index(Request $request)
+{
+    $query = DesignElement::query();
+
+    if ($request->filled('category')) {
+        $query->where('category', $request->input('category'));
     }
+
+    if ($request->filled('search')) {
+        $query->where('name', 'like', '%' . $request->input('search') . '%');
+    }
+
+    if ($request->filled('min_price')) {
+        $query->where('price_per_nail', '>=', $request->input('min_price'));
+    }
+
+    if ($request->filled('max_price')) {
+        $query->where('price_per_nail', '<=', $request->input('max_price'));
+    }
+
+    return response()->json($query->get());
+}
 
     public function store(Request $request)
     {

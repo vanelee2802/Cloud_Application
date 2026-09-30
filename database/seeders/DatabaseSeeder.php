@@ -8,6 +8,7 @@ use App\Models\NailShape;
 use App\Models\Color;
 use App\Models\DesignElement;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,7 +16,11 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database.
      */
     public function run(): void
-    {
+{
+    Role::firstOrCreate(['name' => 'customer', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'employee', 'guard_name' => 'web']);
+    Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+
         // Euer eines Nagelstudio
         $studio = NailStudio::create([
             'name' => 'Nagelstudio Mix and Match',

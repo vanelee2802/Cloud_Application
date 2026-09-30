@@ -50,18 +50,26 @@ class DesignController extends Controller
                 ]);
 
                 $elementIds = $nailData['element_ids'] ?? [];
+
                 $nail->designElements()->attach($elementIds);
 
-                $totalPrice += DesignElement::whereIn('id', $elementIds)->sum('price_per_nail');
+                $totalPrice += DesignElement::whereIn('id', $elementIds)
+                    ->sum('price_per_nail');
             }
 
-            $design->update(['total_price' => $totalPrice]);
+            $design->update([
+                'total_price' => $totalPrice,
+            ]);
 
             return $design;
         });
 
         return response()->json(
-            $design->load('nails.nailShape', 'nails.color', 'nails.designElements'),
+            $design->load(
+                'nails.nailShape',
+                'nails.color',
+                'nails.designElements'
+            ),
             201
         );
     }
@@ -69,29 +77,60 @@ class DesignController extends Controller
     // Zeigt ein einzelnes Design mit allen Details
     public function show(Request $request, string $id)
     {
-        $design = Design::with('nails.nailShape', 'nails.color', 'nails.designElements')
+        $design = Design::with(
+            'nails.nailShape',
+            'nails.color',
+            'nails.designElements'
+        )
             ->where('user_id', $request->user()->id)
             ->findOrFail($id);
 
         return response()->json($design);
     }
 
-    // Ändert nur den Status (z. B. Mitarbeiter nimmt an/lehnt ab)
+    // Ändert den Status bzw. Namen eines Designs
     public function update(Request $request, string $id)
     {
-        $design = Design::where('user_id', $request->user()->id)
-            ->findOrFail($id);
+        $user = $request->user();
+
+        // Mitarbeiter und Admins dürfen auch Designs von Kunden bearbeiten.
+        // Kunden dürfen nur ihre eigenen Designs bearbeiten.
+        if ($user->hasAnyRole(['employee', 'admin'])) {
+            $design = Design::findOrFail($id);
+        } else {
+            $design = Design::where('user_id', $user->id)
+                ->findOrFail($id);
+        }
 
         $validated = $request->validate([
             'status' => 'sometimes|in:pending,accepted,rejected',
             'name' => 'sometimes|string|max:255',
         ]);
 
+        $oldStatus = $design->status;
+
         $design->update($validated);
+
+        // Bei einer Statusänderung wird der Kunde benachrichtigt.
+        if (isset($validated['status']) && $validated['status'] !== $oldStatus) {
+            $messages = [
+                'accepted' => 'Dein Design wurde angenommen.',
+                'rejected' => 'Dein Design wurde leider abgelehnt.',
+            ];
+
+            if (isset($messages[$validated['status']])) {
+                $design->user->notifications()->create([
+                    'type' => 'design_status_changed',
+                    'message' => $messages[$validated['status']],
+                    'read' => false,
+                ]);
+            }
+        }
 
         return response()->json($design);
     }
 
+    // Löscht nur ein eigenes Design
     public function destroy(Request $request, string $id)
     {
         $design = Design::where('user_id', $request->user()->id)
@@ -99,8 +138,8 @@ class DesignController extends Controller
 
         $design->delete();
 
-        return response()->json(['message' => 'Design gelöscht']);
+        return response()->json([
+            'message' => 'Design gelöscht',
+        ]);
     }
 }
-
-

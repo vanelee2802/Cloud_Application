@@ -9,13 +9,14 @@ use App\Http\Controllers\ColorController;
 use App\Http\Controllers\DesignElementController;
 use App\Http\Controllers\DesignController;
 use App\Http\Controllers\DesignEditorController;
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartItemController;
-
+use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\AdminDashboardController;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -24,23 +25,34 @@ Route::get('/', function () {
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
+});
 
-})->name('welcome');
+Route::get('/payment/cancel', function () {
+    return 'Zahlung abgebrochen.';
+});
+
+Route::get('/payment/success', function () {
+    return 'Zahlung erfolgreich!';
+});
+
+Route::get('/dashboard', function () {
+    return Inertia::render('Dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/Appointments', function () {
     return Inertia::render('Appointments');
 })->name('Appointments');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Welcome');
-})->middleware(['auth'])->name('dashboard');
+Route::get('/checkout', function () {
+    return Inertia::render('Checkout');
+})->name('checkout');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // F++r ALLE eingeloggten Nutzer (lesen + eigene Designs/Termine/Warenkorb verwalten)
+    // F�r alle eingeloggten Nutzer
     Route::get('/studio', [NailStudioController::class, 'show'])->name('studio.show');
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{service}', [ServiceController::class, 'show']);
@@ -52,9 +64,12 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
+    Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
 
-    // NUR f++r Mitarbeiter/Admin
+    // Nur Mitarbeiter/Admin
     Route::middleware('role:employee|admin')->group(function () {
+        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+
         Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
         Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
@@ -69,7 +84,10 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+
 Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
     ->name('DesignEditor');
-    
+
 require __DIR__.'/auth.php';
