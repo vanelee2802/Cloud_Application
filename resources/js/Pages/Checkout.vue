@@ -4,13 +4,12 @@
         <div class="checkout-window">
 
             <!-- X zum Schließen -->
-         <button
-    type="button"
-    class="close-button"
-    @click="closeCheckout"
->
-    ×
-</button>
+            <button
+                class="close-button"
+                @click="emit('close')"
+            >
+                ×
+            </button>
 
             <h1>Checkout</h1>
 
@@ -119,10 +118,6 @@ import { useCart } from '@/Stores/cart.js'
 
 const emit = defineEmits(['close'])
 
-function closeCheckout() {
-    console.log('Checkout wird geschlossen')
-    emit('close')
-}
 const {
     cartItems,
     total
@@ -134,6 +129,11 @@ const selectedTime = ref('')
 
 async function startPayment() {
 
+    if (!selectedDate.value || !selectedTime.value) {
+        alert('Bitte wähle zuerst einen Termin aus.')
+        return
+    }
+
     const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
 
@@ -142,13 +142,21 @@ async function startPayment() {
         },
 
         body: JSON.stringify({
-            payment_id: 1
-        }),
+
+            // hier kommt die logik für die neuen payment _ id!
+    payment_id: 6,
+    date: selectedDate.value,
+    time: selectedTime.value
+}),
     })
 
-    const data = await response.json()
+   const data = await response.json()
 
-    console.log('Stripe Antwort:', data)
+console.log('Stripe Antwort:', data)
+
+if (data.checkout_url) {
+    window.location.href = data.checkout_url
+}
 }
 
 </script>

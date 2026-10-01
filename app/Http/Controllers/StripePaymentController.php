@@ -9,8 +9,11 @@ use Stripe\Stripe;
 
 class StripePaymentController extends Controller
 {
+    /*  Payment Checkout für Dynammische Daten, mit der Datenbank! 
+
     public function checkout(Request $request)
     {
+
         $request->validate([
             'payment_id' => ['required', 'integer', 'exists:payments,id'],
         ]);
@@ -52,5 +55,37 @@ class StripePaymentController extends Controller
         return response()->json([
             'checkout_url' => $session->url,
         ]);
-    }
+    } */
+        // Checkout test für statische Daten, ohne die Datenbank!
+        public function checkout(Request $request)
+{
+    Stripe::setApiKey(config('cashier.secret'));
+
+    $session = Session::create([
+        'mode' => 'payment',
+
+        'line_items' => [
+            [
+                'price_data' => [
+                    'currency' => 'eur',
+
+                    'product_data' => [
+                        'name' => 'Test Nageldesign',
+                    ],
+
+                    'unit_amount' => 1000, // 10,00 €
+                ],
+
+                'quantity' => 1,
+            ],
+        ],
+
+        'success_url' => url('/payment/success'),
+        'cancel_url' => url('/payment/cancel'),
+    ]);
+
+    return response()->json([
+        'checkout_url' => $session->url,
+    ]);
 }
+} 
