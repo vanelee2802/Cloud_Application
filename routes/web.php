@@ -41,10 +41,6 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/Appointments', function () {
-    return Inertia::render('Appointments');
-})->name('Appointments');
-
 Route::get('/checkout', function () {
     return Inertia::render('Checkout');
 })->name('checkout');
@@ -54,6 +50,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
+    Route::get('/studio-dashboard', function () {
+    return Inertia::render('StudioDashboard');
+})->middleware('role:employee,admin')->name('studio.dashboard');
 
     Route::get('/studio', [NailStudioController::class, 'show'])->name('studio.show');
     Route::get('/services', [ServiceController::class, 'index']);

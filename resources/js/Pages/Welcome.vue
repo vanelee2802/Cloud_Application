@@ -5,7 +5,7 @@ import pagesLayout from '@/Layouts/pagesLayout.vue'
 <template>
     <pagesLayout> 
         <h1 class="text-3xl font-bold underline">
-           Your Appointments
+           NagelStudios in der Nähe
         </h1>
     </pagesLayout>
 </template>
