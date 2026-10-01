@@ -24,8 +24,14 @@ const page = usePage()
                 </NavLink>
             </li>
 
+            <li>
+                <NavLink href="/StudioDashboard" :active="route().current('StudioDashboard')">
+                    Studio Dashboard
+                </NavLink>
+            </li>
+
             <!-- Studio Dashboard: nur für Employee und Admin -->
-            <li
+           <!-- <li
                 v-if="
                     page.props.auth?.user &&
                     (
@@ -40,10 +46,15 @@ const page = usePage()
                 >
                     Studio Dashboard
                 </NavLink>
-            </li>
+            </li>-->
 
             <!-- Login: für alle -->
             <li class="login-item">
+
+                <!-- Benutzername, wenn angemeldet, erstmal nur platzhalter-->
+                 <span class="user-name">
+        Vanessa Oetken
+    </span>
                 <a href="/auth/google" class="login-button">
                     Login
                 </a>
@@ -92,5 +103,14 @@ const page = usePage()
 
 .login-item {
     margin-left: auto;
+
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-name {
+    font-weight: 500;
+    color: var(--text-color);
 }
 </style>

@@ -50,9 +50,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     
-    Route::get('/studio-dashboard', function () {
-    return Inertia::render('StudioDashboard');
-})->middleware('role:employee,admin')->name('studio.dashboard');
+   #studioDashboard für Admin und Employee
+   # Route::get('/studio-dashboard', function () {
+   # return Inertia::render('StudioDashboard');
+#})->middleware('role:employee,admin')->name('studio.dashboard');
 
     Route::get('/studio', [NailStudioController::class, 'show'])->name('studio.show');
     Route::get('/services', [ServiceController::class, 'index']);
@@ -87,7 +88,10 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 Route::get('/DesignEditor', function () {
     return Inertia::render('DesignEditor');
 })->name('DesignEditor');
-
+#StudioDashboard zugang ohne Admin rechte
+Route::get('/StudioDashboard', function () {
+    return Inertia::render('StudioDashboard');
+})->name('StudioDashboard');
 
 
 
