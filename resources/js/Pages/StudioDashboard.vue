@@ -1,5 +1,12 @@
 <script setup>
 import pagesLayout from '@/Layouts/pagesLayout.vue'
+import { usePage, router } from '@inertiajs/vue3'
+
+const page = usePage()
+
+const logout = () => {
+    router.post('/logout')
+}
 </script>
 
 <template>
@@ -12,12 +19,7 @@ import pagesLayout from '@/Layouts/pagesLayout.vue'
                 <div>
                     <h1>Studio Dashboard</h1>
                     <p>Übersicht über dein Nagelstudio</p>
-                </div>
-
-                <button class="profile-button">
-                    Admin
-                </button>
-            </div>
+                </div>  
 
 
             <!-- Statistik -->
@@ -75,7 +77,7 @@ import pagesLayout from '@/Layouts/pagesLayout.vue'
                 </div>
 
             </section>
-
+            </div>
 
             <!-- Hauptbereich -->
             <section class="dashboard-grid">

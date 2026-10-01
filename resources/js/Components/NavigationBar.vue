@@ -1,8 +1,23 @@
 <script setup>
 import NavLink from '@/Components/NavLink.vue'
-import { usePage } from '@inertiajs/vue3'
+import { usePage, router } from '@inertiajs/vue3'
 
 const page = usePage()
+
+
+const googleLogout = () => {
+    router.post('/logout')
+}
+
+const adminLogout = () => {
+    router.post('/logout', {}, {
+        onSuccess: () => {
+            router.visit('/StudioDashboard', { method: 'get' })
+        }
+    })
+}
+
+
 </script>
 
 <template>
@@ -29,6 +44,15 @@ const page = usePage()
                     Studio Dashboard
                 </NavLink>
             </li>
+            <!-- Employer: nur für Admin -->
+<li v-if="page.props.auth?.user?.role === 'admin'">
+    <NavLink
+        href="/Employee"
+        :active="route().current('Employee')"
+    >
+        Employee
+    </NavLink>
+</li>
 
             <!-- Studio Dashboard: nur für Employee und Admin -->
            <!-- <li
@@ -50,15 +74,42 @@ const page = usePage()
 
             <!-- Login: für alle -->
             <li class="login-item">
-
-                <!-- Benutzername, wenn angemeldet, erstmal nur platzhalter-->
-                 <span class="user-name">
-        Vanessa Oetken
-    </span>
-                <a href="/auth/google" class="login-button">
+                
+               <a
+                    v-if="!page.props.auth?.user"
+                    href="/auth/google"
+                    class="login-button"
+                                >
                     Login
                 </a>
+
+                <button
+                    v-else
+                    class="login-button"
+                    @click="router.post('/logout')"
+                >
+                    Logout
+                </button>
             </li>
+
+            <!-- Admin Login / Logout OHNE GOOGLE -->
+<li class="login-item">
+    <a
+        v-if="page.props.auth?.user?.role !== 'admin'"
+        href="/login"
+        class="login-button"
+    >
+        Admin Login
+    </a>
+
+    <button
+        v-else
+        class="login-button"
+        @click="adminLogout"
+    >
+        Admin Logout
+    </button>
+</li>
 
         </ul>
 
@@ -108,9 +159,10 @@ const page = usePage()
     align-items: center;
     gap: 1rem;
 }
+.admin-login-item {
+    margin-left: auto;
 
-.user-name {
-    font-weight: 500;
-    color: var(--text-color);
+    display: flex;
+    align-items: center;
 }
 </style>

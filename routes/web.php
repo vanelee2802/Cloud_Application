@@ -93,6 +93,10 @@ Route::get('/StudioDashboard', function () {
     return Inertia::render('StudioDashboard');
 })->name('StudioDashboard');
 
+Route::get('/Employee', function () {
+    return Inertia::render('Employee');
+})->name('Employee');
+
 
 
 require __DIR__.'/auth.php';
