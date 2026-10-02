@@ -102,6 +102,6 @@
     left: 69.87%;
     top: 21.91%;
     transform: rotate(4.14deg);
-};
+}
 </style>
 
