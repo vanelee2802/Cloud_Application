@@ -27,14 +27,17 @@ function selectEffekt(effekt) {
 const effekte = [
     {
         name: 'Chrome',
+        price: 3,
         icon: '/images/icons/effekt.svg',
     },
     {
         name: 'Matt',
+        price: 0,
         icon: '/images/icons/effekt.svg',
     },
     {
         name: 'Glänzend',
+        price: 0,
         icon: '/images/icons/effekt.svg',
     },
 ]

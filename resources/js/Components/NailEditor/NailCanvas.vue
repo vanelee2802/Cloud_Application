@@ -42,6 +42,10 @@ function nailColor(nail) {
     return props.nailDesigns[nail.name]?.color?.value ?? null
 }
 
+function nailImage(nail) {
+    return props.nailDesigns[nail.name]?.form?.image ?? nail.image
+}
+
 function isSelected(nail) {
     return props.selectedNail === nail.name
 }
@@ -50,33 +54,39 @@ function isSelected(nail) {
 <template>
     <div class="hand-container">
 
+        <!-- Hand -->
         <img
             src="/images/nail-editor/Hand.png"
             alt="Hand"
             class="hand-image"
         />
 
+        <!-- Nägel -->
         <div
             v-for="nail in nails"
             :key="nail.name"
             class="nail"
             :class="[nail.className, { selected: isSelected(nail) }]"
         >
+
+            <!-- Original-Nagel -->
             <img
-                :src="nail.image"
+                :src="nailImage(nail)"
                 :alt="`${nail.name} Nagel`"
                 class="nail-image"
             />
 
+            <!-- Farbe -->
             <div
                 v-if="nailColor(nail)"
                 class="nail-color"
                 :style="{
                     backgroundColor: nailColor(nail),
-                    maskImage: `url('${nail.image}')`,
-                    WebkitMaskImage: `url('${nail.image}')`
+                    maskImage: `url('${nailImage(nail)}')`,
+                    WebkitMaskImage: `url('${nailImage(nail)}')`
                 }"
             ></div>
+
         </div>
 
     </div>
@@ -108,7 +118,7 @@ function isSelected(nail) {
     height: auto;
 }
 
-/* Farbebene */
+/* Farbe */
 .nail-color {
     position: absolute;
     inset: 0;
@@ -125,7 +135,7 @@ function isSelected(nail) {
     pointer-events: none;
 }
 
-/* Ausgewählten Nagel markieren */
+/* Ausgewählter Nagel */
 .nail.selected .nail-image {
     filter:
         drop-shadow(0 0 2px black)
@@ -134,41 +144,41 @@ function isSelected(nail) {
 
 /* Daumen */
 .nail-thumb {
-    width: 21.05%;
-    left: 5.19%;
-    top: 40.34%;
+    width: 15%;
+    left: 12%;
+    top: 39%;
     transform: rotate(-0.67deg);
 }
 
 /* Zeigefinger */
 .nail-index {
-    width: 22.31%;
-    left: 24.54%;
-    top: 2.94%;
+    width: 14%;
+    left: 29%;
+    top: 2%;
     transform: rotate(0deg);
 }
 
 /* Mittelfinger */
 .nail-middle {
-    width: 24.44%;
-    left: 37.5%;
-    top: -5.59%;
+    width: 14%;
+    left: 42%;
+    top: -4%;
     transform: rotate(0deg);
 }
 
 /* Ringfinger */
 .nail-ring {
-    width: 23.52%;
-    left: 51.30%;
-    top: 2.94%;
+    width: 14%;
+    left: 55%;
+    top: 0%;
     transform: rotate(0deg);
 }
 
 /* Kleiner Finger */
 .nail-pinky {
-    width: 16.91%;
-    left: 69.87%;
-    top: 21.91%;
+    width: 11%;
+    left: 70%;
+    top: 18%;
     transform: rotate(4.14deg);
 }
 </style>

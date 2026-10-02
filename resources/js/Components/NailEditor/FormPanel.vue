@@ -7,7 +7,7 @@
             v-for="form in forms"
             :key="form.name"
         >
-            <button @click="selectForm(form.name)">
+            <button @click="selectForm(form)">
                 <img :src="form.icon" alt="">
                 <span>{{ form.name }}</span>
             </button>
@@ -27,18 +27,27 @@ function selectForm(form) {
 const forms = [
     {
         name: 'Almond',
+        image: '/images/nail-editor/shapes/almond.png',
         icon: '/images/icons/color.svg',
     },
     {
         name: 'Square',
+        image: '/images/nail-editor/shapes/square.png',
         icon: '/images/icons/color.svg',
     },
     {
         name: 'Coffin',
+        image: '/images/nail-editor/shapes/coffin.png',
         icon: '/images/icons/color.svg',
     },
     {
         name: 'Round',
+        image: '/images/nail-editor/shapes/rounded.png',
+        icon: '/images/icons/color.svg',
+    },
+    {
+        name: 'Stiletto',
+        image: '/images/nail-editor/shapes/stiletto.png',
         icon: '/images/icons/color.svg',
     },
 ]

@@ -12,10 +12,12 @@ import EffektPanel from '@/Components/NailEditor/EffektPanel.vue'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 import CartPanel from '@/Components/NailEditor/CartPanel.vue'
 import Checkout from '@/Pages/Checkout.vue'
+import { useCart } from '@/Stores/cart.js'
 
 // Kategorien
 const selectedCategories = ref([])
 const showCheckout = ref(false)
+const { addToCart } = useCart()
 
 // Aktuell ausgewählter Nagel
 const selectedNail = ref(null)
@@ -132,6 +134,38 @@ function selectEffekt(effekt) {
     )
 }
 
+// Design in den Warenkorb legen
+function addDesignToCart() {
+    let price = 0
+
+    Object.values(nailDesigns).forEach(nail => {
+        // Farbe
+        if (nail.color) {
+            price += nail.color.price ?? 0
+        }
+
+        // Design
+        if (nail.design) {
+            price += nail.design.price ?? 0
+        }
+
+        // Effekt
+        if (nail.effekt) {
+            price += nail.effekt.price ?? 0
+        }
+    })
+
+    addToCart({
+        name: 'Nageldesign',
+        price: price,
+        image: '/images/nail-editor/Hand.png',
+        nailDesigns: JSON.parse(JSON.stringify(nailDesigns)),
+    })
+
+    console.log('Design zum Warenkorb hinzugefügt:', nailDesigns)
+    console.log('Gesamtpreis:', price)
+}
+
 // Linke Hand
 function selectLeftHand() {
     console.log('Linke Hand ausgewählt')
@@ -189,10 +223,17 @@ function selectLeftHand() {
                         @effekt-selected="selectEffekt"
                     />
 
-                </div>
+            </div>
 
                 <div class="Warenkorb">
-                    <CartPanel @checkout="showCheckout = true" />
+                    <button
+                    class="add-to-cart-button"
+                    @click="addDesignToCart"
+                >
+                    Design zum Warenkorb hinzufügen
+                    </button>
+
+                <CartPanel @checkout="showCheckout = true" />
                 </div>
 
             </div>

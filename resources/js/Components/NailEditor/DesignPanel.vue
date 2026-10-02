@@ -27,18 +27,22 @@ function selectDesign(design) {
 const designs = [
     {
         name: 'French',
+        price: 2,
         icon: '/images/icons/nailart.svg',
     },
     {
         name: 'Glitter',
+        price: 1,
         icon: '/images/icons/nailart.svg',
     },
     {
         name: 'Muster',
+        price: 0,
         icon: '/images/icons/nailart.svg',
     },
     {
         name: 'Ombré',
+        price: 2.5,
         icon: '/images/icons/nailart.svg',
     },
 ]
