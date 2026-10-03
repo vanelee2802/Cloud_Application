@@ -9,7 +9,7 @@ use Stripe\Stripe;
 
 class StripePaymentController extends Controller
 {
-    Payment Checkout für Dynammische Daten, mit der Datenbank! 
+   // Payment Checkout für Dynammische Daten, mit der Datenbank! 
 
     public function checkout(Request $request)
     {

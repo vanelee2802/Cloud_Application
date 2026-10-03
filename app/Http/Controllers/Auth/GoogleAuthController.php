@@ -21,18 +21,43 @@ class GoogleAuthController extends Controller
     {
         $googleUser = Socialite::driver('google')->user();
 
-        $user = User::firstOrCreate(
-            ['email' => $googleUser->getEmail()],
-            [
-                'name' => $googleUser->getName(),
-                'password' => Str::random(24), // zufälliges Passwort, da Login über Google läuft
-                'role' => 'customer',
-                'email_verified_at' => now(),
-            ]
-        );
+        // Prüfen, ob die Google-E-Mail bereits existiert
+        $user = User::where('email', $googleUser->getEmail())->first();
 
+        // Standardrolle für neue Benutzer
+        $role = 'customer';
+
+        // Rolle anhand der hinterlegten Google-E-Mail bestimmen
+        if ($googleUser->getEmail() === env('GOOGLE_ADMIN_EMAIL')) {
+            $role = 'admin';
+        } elseif ($googleUser->getEmail() === env('GOOGLE_EMPLOYEE_EMAIL')) {
+            $role = 'employee';
+        }
+
+        // Wenn die E-Mail noch nicht existiert,
+        // neuen Benutzer mit der passenden Rolle erstellen
+        if (!$user) {
+            $user = User::create([
+                'name' => $googleUser->getName(),
+                'email' => $googleUser->getEmail(),
+                'password' => Str::random(24),
+                'role' => $role,
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        // Vorhandenen oder neu erstellten Benutzer einloggen
         Auth::login($user);
 
-        return redirect('/dashboard');
+        // Je nach gespeicherter Rolle weiterleiten
+        if ($user->role === 'admin') {
+            return redirect('/StudioDashboard');
+        }
+
+        if ($user->role === 'employee') {
+            return redirect('/Employee');
+        }
+
+        return redirect('/DesignEditor');
     }
 }

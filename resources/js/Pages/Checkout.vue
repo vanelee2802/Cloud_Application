@@ -94,12 +94,9 @@
 
 
                     <!-- ZAHLUNG -->
-                    <button
-                        class="payment-button"
-                        @click="startPayment"
-                    >
-                        Weiter zur Zahlung
-                    </button>
+                    <button class="payment-button" @click="createAppointment">
+    Termin anfragen
+</button>
 
                 </div>
 
@@ -127,12 +124,58 @@ const selectedDate = ref('')
 const selectedTime = ref('')
 
 
-async function startPayment() {
+/**
+ * Termin anfragen
+ *
+ * Der Termin wird zunächst mit dem Status "requested"
+ * im Backend angelegt.
+ */
+async function createAppointment() {
 
     if (!selectedDate.value || !selectedTime.value) {
         alert('Bitte wähle zuerst einen Termin aus.')
         return
     }
+
+    const response = await fetch('/appointments', {
+        method: 'POST',
+
+        headers: {
+    'Content-Type': 'application/json',
+    'X-CSRF-TOKEN': document
+        .querySelector('meta[name="csrf-token"]')
+        .getAttribute('content'),
+},
+
+        body: JSON.stringify({
+            nail_studio_id: 1,
+            service_id: 1,
+            design_id: null,
+            date: selectedDate.value,
+            time: selectedTime.value,
+        }),
+    })
+
+    const data = await response.json()
+
+    console.log('Termin:', data)
+
+    if (response.ok) {
+        alert('Deine Terminanfrage wurde erfolgreich erstellt.')
+    } else {
+        alert('Der Termin konnte nicht erstellt werden.')
+    }
+}
+
+
+/**
+ * Stripe-Zahlung
+ *
+ * Diese Funktion bleibt bestehen.
+ * Sie wird später aufgerufen, nachdem der
+ * Termin vom Admin bestätigt wurde.
+ */
+async function startPayment() {
 
     const response = await fetch('/api/stripe/checkout', {
         method: 'POST',
@@ -142,21 +185,17 @@ async function startPayment() {
         },
 
         body: JSON.stringify({
-
-            // hier kommt die logik für die neuen payment _ id!
-    payment_id: 6,
-    date: selectedDate.value,
-    time: selectedTime.value
-}),
+            payment_id: 6,
+        }),
     })
 
-   const data = await response.json()
+    const data = await response.json()
 
-console.log('Stripe Antwort:', data)
+    console.log('Stripe Antwort:', data)
 
-if (data.checkout_url) {
-    window.location.href = data.checkout_url
-}
+    if (data.checkout_url) {
+        window.location.href = data.checkout_url
+    }
 }
 
 </script>

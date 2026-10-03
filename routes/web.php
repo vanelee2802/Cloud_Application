@@ -16,6 +16,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\EmployeeController;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -96,7 +97,14 @@ Route::get('/StudioDashboard', function () {
 Route::get('/Employee', function () {
     return Inertia::render('Employee');
 })->name('Employee');
-
+Route::post('/employees', [
+    EmployeeController::class,
+    'store'
+])->name('employees.store');
+Route::delete('/employees/{employee}', [
+    EmployeeController::class,
+    'destroy'
+])->name('employees.destroy');
 
 
 require __DIR__.'/auth.php';
