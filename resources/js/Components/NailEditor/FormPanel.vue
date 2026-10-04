@@ -68,10 +68,7 @@ const forms = [
         icon: 'images/nail-editor/shape_icons/oval.svg'
     },
 
-    {
-        name: 'Edge',
-        icon: 'images/nail-editor/shape_icons/edge.svg'
-    },
+   
 
     {
         name: 'Squoval',
@@ -103,6 +100,10 @@ const forms = [
         12rem
     );
 
+    height: 100%;
+
+    max-height: 100%;
+
     padding: clamp(
         0.8rem,
         1vw,
@@ -125,6 +126,8 @@ const forms = [
         rgba(0, 0, 0, 0.06);
 
     box-sizing: border-box;
+
+    overflow-y: auto;
 
 }
 
