@@ -57,10 +57,10 @@ const roleName = {
                 "
             >
                 <NavLink
-                    href="/Employee"
-                    :active="route().current('Employee')"
+                    href="/Studioverwaltung"
+                    :active="route().current('Studioverwaltung')"
                 >
-                    Employee
+                    Studioverwaltung
                 </NavLink>
             </li>
 
@@ -125,7 +125,6 @@ const roleName = {
 
     </nav>
 </template>
-
 <style lang="css" scoped>
 .navbar {
     background-color: #8f5364;
@@ -281,7 +280,7 @@ const roleName = {
     border-radius: 8px;
 
     background-color: white;
-    color: #8f5364;
+    color: #8f5364 !important;
 
     font-weight: 600;
 
@@ -296,7 +295,7 @@ const roleName = {
 
 .login-button:hover {
     background-color: #754353;
-    color: white;
+    color: white !important;
 
     transform: translateY(-2px);
 

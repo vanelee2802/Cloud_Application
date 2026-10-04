@@ -94,10 +94,10 @@ Route::get('/StudioDashboard', function () {
     return Inertia::render('StudioDashboard');
 })->name('StudioDashboard');
 
-Route::get('/Employee', function () {
-    return Inertia::render('Employee');
-})->name('Employee');
-Route::post('/employees', [
+Route::get('/Studioverwaltung', function () {
+    return Inertia::render('Studioverwaltung');
+})->name('Studioverwaltung');
+Route::post('/Studioverwaltung', [
     EmployeeController::class,
     'store'
 ])->name('employees.store');

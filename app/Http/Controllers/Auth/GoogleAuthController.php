@@ -51,11 +51,11 @@ class GoogleAuthController extends Controller
 
         // Je nach gespeicherter Rolle weiterleiten
         if ($user->role === 'admin') {
-            return redirect('/StudioDashboard');
+            return redirect('/Studioverwaltung');
         }
 
         if ($user->role === 'employee') {
-            return redirect('/Employee');
+            return redirect('/Studiodashboard');
         }
 
         return redirect('/DesignEditor');
