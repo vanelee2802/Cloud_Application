@@ -7,7 +7,7 @@
             v-for="design in designs"
             :key="design.name"
         >
-            <button @click="selectDesign(design.name)">
+            <button @click="selectDesign(design)">
                 <img :src="design.icon" alt="">
                 <span>{{ design.name }}</span>
             </button>
@@ -28,22 +28,22 @@ const designs = [
     {
         name: 'French',
         price: 2,
-        icon: '/images/icons/nailart.svg',
+        icon: '/images/icons/nailart.png',
     },
     {
         name: 'Glitter',
         price: 1,
-        icon: '/images/icons/nailart.svg',
+        icon: '/images/icons/nailart.png',
     },
     {
         name: 'Muster',
         price: 0,
-        icon: '/images/icons/nailart.svg',
+        icon: '/images/icons/nailart.png',
     },
     {
         name: 'Ombré',
         price: 2.5,
-        icon: '/images/icons/nailart.svg',
+        icon: '/images/icons/nailart.png',
     },
 ]
 

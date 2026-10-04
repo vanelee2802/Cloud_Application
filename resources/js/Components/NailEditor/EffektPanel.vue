@@ -7,7 +7,7 @@
             v-for="effekt in effekte"
             :key="effekt.name"
         >
-            <button @click="selectEffekt(effekt.name)">
+            <button @click="selectEffekt(effekt)">
                 <img :src="effekt.icon" alt="">
                 <span>{{ effekt.name }}</span>
             </button>
@@ -28,17 +28,17 @@ const effekte = [
     {
         name: 'Chrome',
         price: 3,
-        icon: '/images/icons/effekt.svg',
+        icon: '/images/icons/effekt.png',
     },
     {
         name: 'Matt',
         price: 0,
-        icon: '/images/icons/effekt.svg',
+        icon: '/images/icons/effekt.png',
     },
     {
         name: 'Glänzend',
         price: 0,
-        icon: '/images/icons/effekt.svg',
+        icon: '/images/icons/effekt.png',
     },
 ]
 

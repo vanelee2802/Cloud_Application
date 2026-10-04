@@ -46,6 +46,14 @@ function nailImage(nail) {
     return props.nailDesigns[nail.name]?.form?.image ?? nail.image
 }
 
+function nailDesign(nail) {
+    return props.nailDesigns[nail.name]?.design?.name ?? null
+}
+
+function nailEffekt(nail) {
+    return props.nailDesigns[nail.name]?.effekt?.name ?? null
+}
+
 function isSelected(nail) {
     return props.selectedNail === nail.name
 }
@@ -86,6 +94,22 @@ function isSelected(nail) {
                     WebkitMaskImage: `url('${nailImage(nail)}')`
                 }"
             ></div>
+
+            <!-- Design -->
+            <div
+                v-if="nailDesign(nail)"
+                class="nail-design"
+                                    >
+                {{ nailDesign(nail) }}
+            </div>
+
+            <!-- Effekt -->
+            <div
+                v-if="nailEffekt(nail)"
+                class="nail-effekt"
+                                    >
+                {{ nailEffekt(nail) }}
+            </div>
 
         </div>
 
@@ -180,5 +204,27 @@ function isSelected(nail) {
     left: 70%;
     top: 18%;
     transform: rotate(4.14deg);
+}
+
+.nail-design {
+    position: absolute;
+    inset: 25% 10% auto 10%;
+
+    text-align: center;
+    font-size: 9px;
+    font-weight: bold;
+
+    pointer-events: none;
+}
+
+.nail-effekt {
+    position: absolute;
+    inset: 55% 10% auto 10%;
+
+    text-align: center;
+    font-size: 8px;
+    font-weight: bold;
+
+    pointer-events: none;
 }
 </style>
