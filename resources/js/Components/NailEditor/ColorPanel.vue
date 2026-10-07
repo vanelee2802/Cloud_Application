@@ -10,7 +10,7 @@
                 :key="color.name"
                 @click="selectColor(color)"
                 class="color-button"
-                :style="{ backgroundColor: color.value }"
+                :style="{ backgroundColor: color.hex_code }"
             >
             </button>
 
@@ -20,6 +20,14 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
+const props = defineProps({
+    colors: {
+        type: Array,
+        default: () => [],
+    },
+})
 
 const emit = defineEmits(['color-selected'])
 
@@ -27,44 +35,7 @@ function selectColor(color) {
     emit('color-selected', color)
 }
 
-const colors = [
-    {
-        name: 'Nude',
-        value: '#F5D0C5',
-        price: 5,
-        image: '/images/colors/nude.png',
-    },
-    {
-        name: 'Rosa',
-        value: '#E8A0A8',
-        price: 5,
-        image: '/images/colors/rosa.png',
-    },
-    {
-        name: 'Rot',
-        value: '#C94C4C',
-        price: 5,
-        image: '/images/colors/rot.png',
-    },
-    {
-        name: 'Pink',
-        value: '#D96C9D',
-        price: 5,
-        image: '/images/colors/pink.png',
-    },
-    {
-        name: 'Weiß',
-        value: '#FFFFFF',
-        price: 5,
-        image: '/images/colors/weiss.png',
-    },
-    {
-        name: 'Schwarz',
-        value: '#222222',
-        price: 5,
-        image: '/images/colors/schwarz.png',
-    },
-]
+const colors = computed(() => props.colors)
 
 </script>
 

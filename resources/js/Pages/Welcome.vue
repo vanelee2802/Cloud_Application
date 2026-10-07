@@ -1,11 +1,17 @@
 <script setup>
-import pagesLayout from '@/Layouts/pagesLayout.vue' 
+import pagesLayout from '@/Layouts/pagesLayout.vue'
 import StudioSelector from '@/Components/StudioSelector.vue'
-</script> 
+
+defineProps({
+    studios: {
+        type: Array,
+        default: () => [],
+    },
+})
+</script>
 
 <template>
-    <pagesLayout> 
-      
-        <StudioSelector />
+    <pagesLayout>
+        <StudioSelector :studios="studios" />
     </pagesLayout>
 </template>

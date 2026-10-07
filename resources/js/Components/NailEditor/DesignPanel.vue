@@ -18,34 +18,26 @@
 
 <script setup>
 
+import { computed } from 'vue'
+
+const props = defineProps({
+    designElements: {
+        type: Array,
+        default: () => [],
+    },
+})
+
 const emit = defineEmits(['design-selected'])
 
 function selectDesign(design) {
     emit('design-selected', design)
 }
 
-const designs = [
-    {
-        name: 'French',
-        price: 2,
-        icon: '/images/icons/nailart.png',
-    },
-    {
-        name: 'Glitter',
-        price: 1,
-        icon: '/images/icons/nailart.png',
-    },
-    {
-        name: 'Muster',
-        price: 0,
-        icon: '/images/icons/nailart.png',
-    },
-    {
-        name: 'Ombré',
-        price: 2.5,
-        icon: '/images/icons/nailart.png',
-    },
-]
+const designs = computed(() => props.designElements.map(design => ({
+    ...design,
+    price: design.price_per_nail,
+    icon: '/images/icons/nailart.png',
+})))
 
 </script>
 

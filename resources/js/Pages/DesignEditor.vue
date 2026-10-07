@@ -1,6 +1,21 @@
 <script setup>
 import { ref, reactive } from 'vue'
 
+const props = defineProps({
+    nailShapes: {
+        type: Array,
+        default: () => [],
+    },
+    colors: {
+        type: Array,
+        default: () => [],
+    },
+    designElements: {
+        type: Array,
+        default: () => [],
+    },
+})
+
 import pagesLayout from '@/Layouts/pagesLayout.vue'
 
 import NailCanvas from '@/Components/NailEditor/NailCanvas.vue'
@@ -188,13 +203,15 @@ function selectLeftHand() {
 
                         <FormPanel
                             v-if="selectedCategories.includes('Form')"
+                            :nail-shapes="props.nailShapes"
                             @form-selected="selectForm"
                         />
                     </div>
 
                     <ColorPanel
-                        v-if="selectedCategories.includes('Farbe')"
-                        @color-selected="selectColor"
+                            v-if="selectedCategories.includes('Farbe')"
+                            :colors="props.colors"
+                            @color-selected="selectColor"
                     />
 
                     <NailSelectionPanel
@@ -215,6 +232,7 @@ function selectLeftHand() {
 
                     <DesignPanel
                         v-if="selectedCategories.includes('Designs')"
+                        :design-elements="props.designElements"
                         @design-selected="selectDesign"
                     />
 

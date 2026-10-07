@@ -1,39 +1,28 @@
 <script setup>
 import { ref, computed } from 'vue'
 
+const props = defineProps({
+    studios: {
+        type: Array,
+        default: () => [],
+    },
+})
+
 const searchTerm = ref('')
 const selectedStudio = ref(null)
-const studios = [
-    {
-        id: 1,
-        name: 'Nail Studio Hannover',
-        city: 'Hannover',
-        rating: 4.8,
-    },
-    {
-        id: 2,
-        name: 'Beauty Nails',
-        city: 'Hannover',
-        rating: 4.6,
-    },
-    {
-        id: 3,
-        name: 'Nail Lounge',
-        city: 'Hannover',
-        rating: 4.7,
-    },
-]
+
+const studios = computed(() => props.studios)
 
 const filteredStudios = computed(() => {
     const search = searchTerm.value.toLowerCase().trim()
 
     if (!search) {
-        return studios
+        return studios.value
     }
 
-    return studios.filter(studio =>
+    return studios.value.filter(studio =>
         studio.name.toLowerCase().includes(search) ||
-        studio.city.toLowerCase().includes(search)
+        studio.address.toLowerCase().includes(search)
     )
 })
 
@@ -61,12 +50,12 @@ const filteredStudios = computed(() => {
                 >
                     <h3>{{ studio.name }}</h3>
 
-                    <p>📍 {{ studio.city }}</p>
-                    <p>⭐ {{ studio.rating }}</p>
+                        <p>📍 {{ studio.address }}</p>
+                        <p>🕐 {{ studio.opening_hours }}</p>
 
-                    <button @click="selectedStudio = studio">
+                        <button @click="selectedStudio = studio">
                         Studio auswählen
-                    </button>
+                        </button>
                 </div>
             </div>
 

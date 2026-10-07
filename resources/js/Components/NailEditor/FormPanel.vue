@@ -18,39 +18,34 @@
 
 <script setup>
 
+import { computed } from 'vue'
+
+const props = defineProps({
+    nailShapes: {
+        type: Array,
+        default: () => [],
+    },
+})
+
 const emit = defineEmits(['form-selected'])
 
 function selectForm(form) {
     emit('form-selected', form)
 }
 
-const forms = [
-    {
-        name: 'Almond',
-        image: '/images/nail-editor/shapes/almond.png',
-        icon: '/images/icons/color.svg',
-    },
-    {
-        name: 'Square',
-        image: '/images/nail-editor/shapes/square.png',
-        icon: '/images/icons/color.svg',
-    },
-    {
-        name: 'Coffin',
-        image: '/images/nail-editor/shapes/coffin.png',
-        icon: '/images/icons/color.svg',
-    },
-    {
-        name: 'Round',
-        image: '/images/nail-editor/shapes/rounded.png',
-        icon: '/images/icons/color.svg',
-    },
-    {
-        name: 'Stiletto',
-        image: '/images/nail-editor/shapes/stiletto.png',
-        icon: '/images/icons/color.svg',
-    },
-]
+const shapeImages = {
+    Almond: 'almond.png',
+    Square: 'square.png',
+    Coffin: 'coffin.png',
+    Round: 'rounded.png',
+    Stiletto: 'stiletto.png',
+}
+
+const forms = computed(() => props.nailShapes.map(form => ({
+    ...form,
+    image: `/images/nail-editor/shapes/${shapeImages[form.name]}`,
+    icon: '/images/icons/color.svg',
+})))
 
 </script>
 
