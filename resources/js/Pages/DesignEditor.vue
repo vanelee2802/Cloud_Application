@@ -186,16 +186,16 @@ if (nails.length === 0) {
     console.log('Design wird gespeichert:', payload)
 
     router.post('/designs', payload, {
-        onSuccess: () => {
+        onSuccess: (page) => {
             alert('Design wurde erfolgreich gespeichert.')
 
-            addToCart({
-                name: 'Nageldesign',
-                price: 0,
-                image: '/images/nail-editor/Hand.png',
-                nailDesigns: JSON.parse(JSON.stringify(nailDesigns)),
-            })
-        },
+        addToCart({
+            name: 'Nageldesign',
+            price: Number(page.props.flash.total_price),
+            image: '/images/nail-editor/Hand.png',
+            nailDesigns: JSON.parse(JSON.stringify(nailDesigns)),
+        })
+    },
 
         onError: (errors) => {
             console.error('Fehler beim Speichern:', errors)
