@@ -1,5 +1,6 @@
 <script setup>
 import { ref, reactive } from 'vue'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
     nailShapes: {
@@ -151,34 +152,56 @@ function selectEffekt(effekt) {
 
 // Design in den Warenkorb legen
 function addDesignToCart() {
-    let price = 0
+    const nails = Object.values(nailDesigns).filter(
+    nail => nail.form || nail.color
+)
 
-    Object.values(nailDesigns).forEach(nail => {
-        // Farbe
-        if (nail.color) {
-            price += nail.color.price ?? 0
-        }
+// Prüfen, ob begonnene Nägel vollständig sind
+const incompleteNail = nails.find(
+    nail => !nail.form || !nail.color
+)
 
-        // Design
-        if (nail.design) {
-            price += nail.design.price ?? 0
-        }
+if (incompleteNail) {
+    alert('Bitte wähle für jeden begonnenen Nagel eine Form und Farbe aus.')
+    return
+}
 
-        // Effekt
-        if (nail.effekt) {
-            price += nail.effekt.price ?? 0
-        }
-    })
+if (nails.length === 0) {
+    alert('Bitte gestalte mindestens einen Nagel.')
+    return
+}
 
-    addToCart({
+    const payload = {
         name: 'Nageldesign',
-        price: price,
-        image: '/images/nail-editor/Hand.png',
-        nailDesigns: JSON.parse(JSON.stringify(nailDesigns)),
-    })
+        nails: nails.map((nail, index) => ({
+            nail_position: index + 1,
+            nail_shape_id: nail.form.id,
+            color_id: nail.color.id,
+            element_ids: nail.design
+                ? [nail.design.id]
+                : [],
+        })),
+    }
 
-    console.log('Design zum Warenkorb hinzugefügt:', nailDesigns)
-    console.log('Gesamtpreis:', price)
+    console.log('Design wird gespeichert:', payload)
+
+    router.post('/designs', payload, {
+        onSuccess: () => {
+            alert('Design wurde erfolgreich gespeichert.')
+
+            addToCart({
+                name: 'Nageldesign',
+                price: 0,
+                image: '/images/nail-editor/Hand.png',
+                nailDesigns: JSON.parse(JSON.stringify(nailDesigns)),
+            })
+        },
+
+        onError: (errors) => {
+            console.error('Fehler beim Speichern:', errors)
+            alert('Das Design konnte nicht gespeichert werden.')
+        },
+    })
 }
 
 // Linke Hand

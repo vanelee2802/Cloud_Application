@@ -64,13 +64,9 @@ class DesignController extends Controller
             return $design;
         });
 
-        return response()->json(
-            $design->load(
-                'nails.nailShape',
-                'nails.color',
-                'nails.designElements'
-            ),
-            201
+        return redirect()->back()->with(
+            'success',
+            'Design wurde erfolgreich gespeichert.'
         );
     }
 

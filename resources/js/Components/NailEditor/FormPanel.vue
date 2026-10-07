@@ -44,7 +44,7 @@ const shapeImages = {
 const forms = computed(() => props.nailShapes.map(form => ({
     ...form,
     image: `/images/nail-editor/shapes/${shapeImages[form.name]}`,
-    icon: '/images/icons/color.svg',
+    icon: '/images/icons/color.png',
 })))
 
 </script>

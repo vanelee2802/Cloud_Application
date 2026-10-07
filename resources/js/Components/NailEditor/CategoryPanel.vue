@@ -27,23 +27,23 @@ function selectCategory(category) {
 const categories = [
     {
         name: 'Form',
-        icon: '/images/icons/color.svg',
+        icon: '/images/icons/color.png',
     },
     {
         name: 'Farbe',
-        icon: '/images/icons/color.svg',
+        icon: '/images/icons/color.png',
     },
     {
         name: 'Designs',
-        icon: '/images/icons/nailart.svg',
+        icon: '/images/icons/nailart.png',
     },
     {
         name: 'Effekte',
-        icon: '/images/icons/effekt.svg',
+        icon: '/images/icons/effekt.png',
     },
     {
         name: 'Verzierung',
-        icon: '/images/icons/sticker.svg',
+        icon: '/images/icons/sticker.png',
     },
 ]
 </script>
