@@ -39,7 +39,7 @@ const nails = [
 ]
 
 function nailColor(nail) {
-    return props.nailDesigns[nail.name]?.color?.value ?? null
+    return props.nailDesigns[nail.name]?.color?.hex_code ?? null
 }
 
 function nailImage(nail) {

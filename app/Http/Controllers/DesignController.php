@@ -64,9 +64,10 @@ class DesignController extends Controller
             return $design;
         });
 
-            return redirect()->back()->with([
-            'success' => 'Design wurde erfolgreich gespeichert.',
-            'total_price' => $design->total_price,
+           return redirect()->back()->with([
+                'success' => 'Design wurde erfolgreich gespeichert.',
+                'total_price' => $design->total_price,
+                'design_id' => $design->id,
         ]);
     }
 

@@ -1,5 +1,8 @@
 <script setup> 
-import NavLink from '@/Components/NavLink.vue'  
+import NavLink from '@/Components/NavLink.vue'
+import { usePage } from '@inertiajs/vue3'
+
+const page = usePage()
 </script>
 
 <template>
@@ -23,43 +26,45 @@ import NavLink from '@/Components/NavLink.vue'
                     Appointments
                 </NavLink>
             </li>
-           <li class="login-item">
-             <a href="/auth/google" class="login-button">
-                Login
-            </a>
+
+            <li class="login-item">
+                <template v-if="page.props.auth.user">
+                    <span>
+                        {{ page.props.auth.user.name }}
+                    </span>
+                </template>
+
+                <a v-else href="/auth/google" class="login-button">
+                    Login
+                </a>
             </li>
         </ul>
 
-      
-
     </nav>
 </template>
-
 <style lang="css" scoped>
 .navbar {
     background-color: var(--background-color);
 
     margin-bottom: 3rem;
 
-
     border-bottom: 1px var(--background-color) solid;
 
     box-shadow:
         0 2px 8px rgba(184, 115, 131, 0.04),
         0 8px 24px rgba(109, 59, 71, 0.06);
-
 }
 
 .nav-links {
-   display: flex;
-   justify-content: left;
-   gap: 1rem;
-   
-  
-   margin-left: 1rem ;
-   padding: 1rem;
-   color: var(--text-color);
+    display: flex;
+    justify-content: left;
+    gap: 1rem;
+
+    margin-left: 1rem;
+    padding: 1rem;
+    color: var(--text-color);
 }
+
 .login-button {
     margin-right: 2rem;
     padding: 0.6rem 1.5rem;
@@ -72,6 +77,7 @@ import NavLink from '@/Components/NavLink.vue'
 
     cursor: pointer;
 }
+
 .login-item {
     margin-left: auto;
 }

@@ -187,15 +187,26 @@ if (nails.length === 0) {
 
     router.post('/designs', payload, {
         onSuccess: (page) => {
-            alert('Design wurde erfolgreich gespeichert.')
+    alert('Design wurde erfolgreich gespeichert.')
 
-        addToCart({
-            name: 'Nageldesign',
-            price: Number(page.props.flash.total_price),
-            image: '/images/nail-editor/Hand.png',
-            nailDesigns: JSON.parse(JSON.stringify(nailDesigns)),
-        })
-    },
+    router.post('/cart-items', {
+        design_id: page.props.flash.design_id,
+        price: Number(page.props.flash.total_price),
+    }, {
+        onSuccess: () => {
+            addToCart({
+                name: 'Nageldesign',
+                price: Number(page.props.flash.total_price),
+                image: '/images/nail-editor/Hand.png',
+                nailDesigns: JSON.parse(JSON.stringify(nailDesigns)),
+            })
+        },
+        onError: (errors) => {
+            console.error('Fehler beim Hinzufügen zum Warenkorb:', errors)
+            alert('Das Design wurde gespeichert, konnte aber nicht in den Warenkorb gelegt werden.')
+        },
+    })
+},
 
         onError: (errors) => {
             console.error('Fehler beim Speichern:', errors)

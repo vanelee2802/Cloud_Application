@@ -25,7 +25,10 @@ class CartItemController extends Controller
 
         $item = $request->user()->cartItems()->create($validated);
 
-        return response()->json($item->load('design'), 201);
+        return redirect()->back()->with(
+            'cart_success',
+            'Design wurde zum Warenkorb hinzugefügt.'
+        );
     }
 
     // Entfernt ein Item aus dem Warenkorb

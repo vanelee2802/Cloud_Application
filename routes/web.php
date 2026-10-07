@@ -88,7 +88,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
-Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
-    ->name('DesignEditor');
+Route::middleware('auth')->group(function () {
+    Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
+        ->name('DesignEditor');
+});
 
 require __DIR__.'/auth.php';
