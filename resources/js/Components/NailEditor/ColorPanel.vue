@@ -272,6 +272,10 @@ const filteredColors = computed(() => {
     |--------------------------------------------------------------------------
     | Suchfeld
     |--------------------------------------------------------------------------
+    |
+    | Sucht im Namen UND in der Kategorie.
+    | So findet "blau" auch "Petrol" oder "Nachtblau".
+    |
     */
 
     const search = searchTerm.value
@@ -283,9 +287,11 @@ const filteredColors = computed(() => {
 
         result = result.filter(color => {
 
-            return color.name
-                ?.toLowerCase()
-                .includes(search)
+            const name = color.name?.toLowerCase() ?? ''
+
+            const category = color.category?.toLowerCase() ?? ''
+
+            return name.includes(search) || category.includes(search)
 
         })
 
@@ -296,6 +302,10 @@ const filteredColors = computed(() => {
     |--------------------------------------------------------------------------
     | Standardfarben
     |--------------------------------------------------------------------------
+    |
+    | Filtert über das Feld "category" statt über den Namen.
+    | So erscheint z. B. "Bordeaux" beim Filter "Rot".
+    |
     */
 
     if (selectedFilter.value) {
@@ -305,9 +315,7 @@ const filteredColors = computed(() => {
 
         result = result.filter(color => {
 
-            return color.name
-                ?.toLowerCase()
-                .includes(filter)
+            return color.category?.toLowerCase() === filter
 
         })
 
@@ -321,7 +329,7 @@ const filteredColors = computed(() => {
 
 /*
 |--------------------------------------------------------------------------
-| Farben aus Datenbank laden
+| Farben laden (Mockup: aus public/colors.json)
 |--------------------------------------------------------------------------
 */
 
@@ -329,7 +337,7 @@ onMounted(async () => {
 
     try {
 
-        const response = await fetch('/colors')
+        const response = await fetch('/colors.json')
 
 
         if (!response.ok) {
@@ -367,7 +375,8 @@ onMounted(async () => {
 
 .color-panel {
 
-width: clamp(10rem, 16vw, 14rem);
+    width: clamp(10rem, 16vw, 14rem);
+
     padding: clamp(1rem, 1.2vw, 1.5rem);
 
     background: #ffffff;

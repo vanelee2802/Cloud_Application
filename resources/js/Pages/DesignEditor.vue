@@ -1,10 +1,11 @@
 <script setup>
 
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 import pagesLayout from '@/Layouts/pagesLayout.vue'
 
 import NailCanvas from '@/Components/NailEditor/NailCanvas.vue'
+import NailHand from '@/Components/NailEditor/NailHand.vue'
 import CategoryPanel from '@/Components/NailEditor/CategoryPanel.vue'
 import FormPanel from '@/Components/NailEditor/FormPanel.vue'
 import ColorPanel from '@/Components/NailEditor/ColorPanel.vue'
@@ -23,6 +24,44 @@ import { useCart } from '@/Stores/cart.js'
 // =========================================
 
 const selectedCategories = ref([])
+
+
+// =========================================
+// NAGELFORM + LÄNGE  (NEU)
+// =========================================
+
+// shape  = Form (id aus dem FormPanel = Ordnername)
+// length = Länge: short | medium | long
+const shape  = ref('almond')
+const length = ref('medium')
+
+
+// Alle Nagelbilder vorladen, damit beim Umschalten nichts flackert
+const FOLDERS = [
+    ...['almond', 'square', 'oval', 'coffin', 'ballerina', 'squoval'].map(s => `${s}-right hand`),
+    ...['almond', 'square', 'oval'].map(s => `${s}-short-right hand`),
+    ...['almond', 'square', 'coffin', 'ballerina', 'oval'].map(s => `${s}-long-right hand`),
+    'stiletto-right hand'
+]
+
+
+const FINGERS = ['thumb', 'index', 'middle', 'ring', 'pinky']
+
+onMounted(() => {
+
+    for (const folder of FOLDERS) {
+
+        for (const finger of FINGERS) {
+
+            const img = new Image()
+
+            img.src = `/images/nail-editor/${folder}/${finger}.png`
+
+        }
+
+    }
+
+})
 
 
 // =========================================
@@ -220,50 +259,17 @@ function toggleCart() {
                             <div class="nail-selection-wrapper">
 
 
-                                <!-- ========================================= -->
-                                <!-- PFEIL -->
-                                <!-- ========================================= -->
-
-                                <button
-                                    type="button"
-                                    class="nail-selection-toggle"
-                                    @click="
-                                        showNailSelection =
-                                            !showNailSelection
-                                    "
-                                    :aria-expanded="
-                                        showNailSelection
-                                    "
-                                    aria-label="Nägel auswählen ein- oder ausblenden"
-                                >
-
-                                    <span
-                                        :class="[
-                                            'arrow',
-                                            {
-                                                'arrow-open':
-                                                    showNailSelection
-                                            }
-                                        ]"
-                                    >
-                                        ›
-                                    </span>
-
-                                </button>
-
+                               
 
                                 <!-- ========================================= -->
                                 <!-- NAIL SELECTION PANEL -->
                                 <!-- ========================================= -->
 
-                                <div
-                                    v-if="showNailSelection"
-                                    class="nail-selection-container"
-                                >
-
-                                    <NailSelectionPanel />
-
-                                </div>
+                                <EffektPanel
+                                v-if="
+                                    selectedCategories.includes('Effekte')
+                                "
+                            />
 
 
                             </div>
@@ -280,13 +286,17 @@ function toggleCart() {
 
 
                             <!-- ========================================= -->
-                            <!-- FORM -->
+                            <!-- FORM + LÄNGE  (GEÄNDERT) -->
                             <!-- ========================================= -->
 
                             <FormPanel
                                 v-if="
                                     selectedCategories.includes('Form')
                                 "
+                                :selected="shape"
+                                :selected-length="length"
+                                @form-selected="shape = $event"
+                                @length-selected="length = $event"
                             />
 
 
@@ -294,11 +304,7 @@ function toggleCart() {
                             <!-- EFFEKT -->
                             <!-- ========================================= -->
 
-                            <EffektPanel
-                                v-if="
-                                    selectedCategories.includes('Effekte')
-                                "
-                            />
+                           
 
 
                         </div>
@@ -316,7 +322,11 @@ function toggleCart() {
 
                 <section class="nail-canvas">
 
-                    <NailCanvas />
+                    <!-- GEÄNDERT: Form und Länge werden an die Hand übergeben -->
+                    <NailHand
+                        :shape="shape"
+                        :length="length"
+                    />
 
                 </section>
 
