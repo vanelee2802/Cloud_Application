@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Spalte nur anlegen, wenn es sie noch nicht gibt
+        if (Schema::hasColumn('users', 'nail_studio_id')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->unsignedBigInteger('nail_studio_id')
                 ->default(1)
@@ -17,8 +22,10 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('nail_studio_id');
-        });
+        if (Schema::hasColumn('users', 'nail_studio_id')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('nail_studio_id');
+            });
+        }
     }
 };
