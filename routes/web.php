@@ -17,6 +17,7 @@ use App\Http\Controllers\AdminDashboardController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\EmployeeController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -66,10 +67,19 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
     Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
+    Route::get('/employees', [EmployeeController::class, 'index'])
+    ->middleware('role:admin')
+    ->name('employees.index');
 
     // Nur Mitarbeiter/Admin
     Route::middleware('role:employee|admin')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+
+        Route::post('/employees', [EmployeeController::class, 'store'])
+            ->name('employees.store');
+
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
+            ->name('employees.destroy');
 
         Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
