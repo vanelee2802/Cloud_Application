@@ -15,7 +15,9 @@ class EmployeeController extends Controller
      */
   public function index(Request $request)
 {
+    
     $employees = User::where('role', 'employee')
+        ->where('nail_studio_id', $request->user()->nail_studio_id)
         ->orderBy('name')
         ->get([
             'id',
@@ -25,6 +27,7 @@ class EmployeeController extends Controller
             'role',
             'nail_studio_id',
         ]);
+
 
     return Inertia::render('EmployeeManagement', [
     'employees' => $employees,
@@ -99,21 +102,25 @@ class EmployeeController extends Controller
                 'email_verified_at' => now(),
             ]);
 
-        } else {
+        
+            } else {
+                // Bestehende Admin- und Mitarbeiterkonten nicht verändern.
+                if (in_array($employee->role, ['admin', 'employee'], true)) {
+                    return redirect()
+                        ->back()
+                        ->withErrors([
+                            'email' => 'Diese E-Mail-Adresse gehört bereits zu einem Admin oder Mitarbeiter.',
+                        ]);
+                }
 
-            /*
-             * ACCOUNT EXISTIERT BEREITS
-             *
-             * Name aktualisieren
-             * Rolle auf employee setzen
-             * Studio zuweisen
-             */
-            $employee->update([
-                'name' => $validated['name'],
-                'role' => 'employee',
-                'nail_studio_id' => $admin->nail_studio_id,
-            ]);
-        }
+                // Nur ein bestehendes Kundenkonto darf zum Mitarbeiter werden.
+                $employee->update([
+                    'name' => $validated['name'],
+                    'role' => 'employee',
+                    'nail_studio_id' => $admin->nail_studio_id,
+                ]);
+            }
+
 
 
         return redirect()

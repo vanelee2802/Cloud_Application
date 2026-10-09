@@ -70,6 +70,12 @@ function removeEmployee(employeeId) {
                                 class="mb-3 w-full rounded border p-2"
                             />
 
+                            
+                            <p v-if="form.errors.email" class="mb-3 text-sm text-red-600">
+                                {{ form.errors.email }}
+                            </p>
+
+
                             <button
                                 type="submit"
                                 class="rounded bg-gray-800 px-4 py-2 text-white"
