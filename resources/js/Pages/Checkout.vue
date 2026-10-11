@@ -59,9 +59,11 @@
                         Datum
                     </label>
 
+                    <!-- GEÄNDERT: :min verhindert vergangene Tage -->
                     <input
                         id="date"
                         type="date"
+                        :min="today"
                         v-model="selectedDate"
                     >
 
@@ -69,22 +71,24 @@
                         Uhrzeit
                     </label>
 
+                    <!-- GEÄNDERT: Uhrzeiten kommen vom Server, ausgebuchte sind gesperrt -->
                     <select
                         id="time"
                         v-model="selectedTime"
+                        :disabled="!selectedDate"
                     >
                         <option value="">
                             Uhrzeit auswählen
                         </option>
 
-                        <option>10:00</option>
-                        <option>11:00</option>
-                        <option>12:00</option>
-                        <option>13:00</option>
-                        <option>14:00</option>
-                        <option>15:00</option>
-                        <option>16:00</option>
-                        <option>17:00</option>
+                        <option
+                            v-for="slot in times"
+                            :key="slot.time"
+                            :value="slot.time"
+                            :disabled="slot.free === 0"
+                        >
+                            {{ slot.time }}{{ slot.free === 0 ? ' – ausgebucht' : '' }}
+                        </option>
                     </select>
 
                     <p v-if="selectedDate && selectedTime">
@@ -95,8 +99,8 @@
 
                     <!-- ZAHLUNG -->
                     <button class="payment-button" @click="createAppointment">
-    Termin anfragen
-</button>
+                        Termin anfragen
+                    </button>
 
                 </div>
 
@@ -110,8 +114,9 @@
 
 <script setup>
 
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useCart } from '@/Stores/cart.js'
+
 
 const emit = defineEmits(['close'])
 
@@ -122,6 +127,37 @@ const {
 
 const selectedDate = ref('')
 const selectedTime = ref('')
+
+
+// ---------- NEU (Schritt 15) ----------
+
+// Freie Plätze pro Uhrzeit vom Server, z. B. [{ time: '14:00', free: 3 }]
+const times = ref([])
+
+// Heute als YYYY-MM-DD, damit keine vergangenen Tage wählbar sind
+const today = new Date().toLocaleDateString('sv-SE')
+
+// Sobald ein Datum gewählt wird: freie Uhrzeiten laden
+watch(selectedDate, async (date) => {
+    selectedTime.value = ''
+    times.value = []
+
+    if (!date) return
+
+    const response = await fetch(`/appointments/availability?nail_studio_id=1&date=${date}`, {
+        headers: { Accept: 'application/json' },
+    })
+
+    if (!response.ok) {
+        alert('Die freien Uhrzeiten konnten nicht geladen werden.')
+        return
+    }
+
+    const data = await response.json()
+    times.value = data.times
+})
+
+// ---------- ENDE NEU ----------
 
 
 /**
@@ -141,11 +177,11 @@ async function createAppointment() {
         method: 'POST',
 
         headers: {
-    'Content-Type': 'application/json',
-    'X-CSRF-TOKEN': document
-        .querySelector('meta[name="csrf-token"]')
-        .getAttribute('content'),
-},
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute('content'),
+        },
 
         body: JSON.stringify({
             nail_studio_id: 1,
@@ -199,7 +235,6 @@ async function startPayment() {
 }
 
 </script>
-
 
 <style scoped>
 
