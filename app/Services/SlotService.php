@@ -112,4 +112,38 @@ class SlotService
 
         return null; // alle Plätze belegt
     }
+
+        /**
+     * Gibt einem bestehenden Termin wieder einen freien Platz,
+     * z. B. wenn die Zahlung knapp nach Ablauf der Frist eintrifft.
+     * true = Platz bekommen, false = alles belegt.
+     */
+    public function claimSeat(Appointment $appointment): bool
+    {
+        $this->releaseExpired();
+
+        $capacity = $this->capacity($appointment->nail_studio_id);
+
+        for ($seat = 1; $seat <= $capacity; $seat++) {
+            try {
+                $appointment->update([
+                    'slot_key' => Appointment::slotKey(
+                        $appointment->nail_studio_id,
+                        $appointment->date,
+                        $appointment->time,
+                        $seat
+                    ),
+                ]);
+
+                return true;
+            } catch (UniqueConstraintViolationException) {
+                // Dieser Platz ist belegt → nächsten probieren
+            }
+        }
+
+        // Alles belegt: den zuletzt probierten Wert im Speicher zurücksetzen
+        $appointment->slot_key = null;
+
+        return false;
+    }
 }
