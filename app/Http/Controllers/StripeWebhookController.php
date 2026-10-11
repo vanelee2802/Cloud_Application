@@ -7,7 +7,6 @@ use App\Notifications\AppointmentDeclined;
 use App\Notifications\AppointmentPaid;
 use App\Services\SlotService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Notification;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -60,18 +59,17 @@ class StripeWebhookController extends Controller
                         'stripe_payment_id' => $session->payment_intent,
                     ]);
 
-                    // GEÄNDERT: Nachricht für die Absage-E-Mail
                     $appointment->update([
                         'status' => 'cancelled',
                         'payment_expires_at' => null,
                         'admin_note' => 'Deine Zahlung kam nach Ablauf der Frist an und der Termin war inzwischen vergeben. Den Betrag haben wir dir vollständig erstattet, er ist in wenigen Tagen wieder auf deinem Konto.',
                     ]);
 
-                    // NEU: Kundin über die Erstattung informieren
-                    if ($appointment->customer_email) {
-                        Notification::route('mail', $appointment->customer_email)
-                            ->notify(new AppointmentDeclined($appointment));
-                    }
+                    // GEÄNDERT (Schritt 63): E-Mail und Kundenportal
+                    $appointment->notifyCustomer(
+                        new AppointmentDeclined($appointment),
+                        'Dein Termin war inzwischen vergeben. Deine Zahlung wurde vollständig erstattet.'
+                    );
 
                     return response()->json(['message' => 'Refunded, no seat left']);
                 }
@@ -87,11 +85,13 @@ class StripeWebhookController extends Controller
                     'payment_expires_at' => null,
                 ]);
 
-                // NEU: Buchungsbestätigung an die Kundin
-                if ($appointment->customer_email) {
-                    Notification::route('mail', $appointment->customer_email)
-                        ->notify(new AppointmentPaid($appointment->load('service', 'payment')));
-                }
+                // GEÄNDERT (Schritt 63): E-Mail und Kundenportal
+                $appointment->load('service', 'payment');
+
+                $appointment->notifyCustomer(
+                    new AppointmentPaid($appointment),
+                    'Dein Termin ist fest gebucht. Vielen Dank für deine Zahlung!'
+                );
             }
         }
 

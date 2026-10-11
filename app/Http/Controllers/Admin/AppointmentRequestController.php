@@ -5,16 +5,15 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Payment;
+use App\Notifications\AlternativesOffered;
+use App\Notifications\AppointmentConfirmed;
+use App\Notifications\AppointmentDeclined;
 use App\Services\SlotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
-use App\Notifications\AppointmentConfirmed;
-use Illuminate\Support\Facades\Notification;
-use App\Notifications\AppointmentDeclined;
-use App\Notifications\AlternativesOffered;
 
 /**
  * Studioleitung: Anfragen für Termine am selben Tag bearbeiten
@@ -36,7 +35,7 @@ class AppointmentRequestController extends Controller
         return response()->json($requests);
     }
 
-     // Anfrage bestätigen → Kundin kann bezahlen
+    // Anfrage bestätigen → Kundin kann bezahlen
     public function confirm(Appointment $appointment)
     {
         // Nur ändern, wenn die Anfrage JETZT noch offen ist
@@ -53,25 +52,23 @@ class AppointmentRequestController extends Controller
             ], 409);
         }
 
-        
-
         $payment = Payment::create([
             'appointment_id' => $appointment->id,
             'amount' => $appointment->service->price,
             'status' => 'pending',
         ]);
 
-        // NEU: Aktuellen Stand laden (Status und Frist wurden eben per Abfrage geändert)
+        // Aktuellen Stand laden (Status und Frist wurden eben per Abfrage geändert)
         $appointment->refresh();
 
-                // Kundin benachrichtigen: E-Mail und, falls sie ein Konto hat, im Kundenportal
+        // Kundin benachrichtigen: E-Mail und, falls sie ein Konto hat, im Kundenportal
         $appointment->notifyCustomer(
             new AppointmentConfirmed($appointment),
             'Dein Termin ist bestätigt. Bitte bezahle jetzt, damit er fest gebucht ist.'
         );
 
         return response()->json([
-            'message' => 'Termin bestätigt. Die Kundin wurde per E-Mail benachrichtigt.',
+            'message' => 'Termin bestätigt. Die Kundin wurde benachrichtigt.',
             'payment_id' => $payment->id,
         ]);
     }
@@ -79,7 +76,7 @@ class AppointmentRequestController extends Controller
     // Anfrage komplett absagen → Platz wird wieder frei
     public function decline(Request $request, Appointment $appointment)
     {
-        // NEU: optionale Nachricht der Studioleitung an die Kundin
+        // Optionale Nachricht der Studioleitung an die Kundin
         $validated = $request->validate([
             'note' => 'nullable|string|max:1000',
         ]);
@@ -99,20 +96,20 @@ class AppointmentRequestController extends Controller
             ], 409);
         }
 
-        // NEU: Aktuellen Stand laden und Kundin benachrichtigen
         $appointment->refresh();
 
-        if ($appointment->customer_email) {
-            Notification::route('mail', $appointment->customer_email)
-                ->notify(new AppointmentDeclined($appointment));
-        }
+        // GEÄNDERT (Schritt 63): E-Mail und Kundenportal
+        $appointment->notifyCustomer(
+            new AppointmentDeclined($appointment),
+            'Dein Terminwunsch konnte leider nicht angenommen werden.'
+        );
 
         return response()->json([
-            'message' => 'Termin abgesagt. Die Kundin wurde per E-Mail benachrichtigt.',
+            'message' => 'Termin abgesagt. Die Kundin wurde benachrichtigt.',
         ]);
-    }  
+    }
 
-    // NEU: Ersatztermine anbieten → Wunschtermin wird frei, Kundin wählt einen Vorschlag
+    // Ersatztermine anbieten → Wunschtermin wird frei, Kundin wählt einen Vorschlag
     public function offerAlternatives(Request $request, Appointment $appointment, SlotService $slots)
     {
         $validated = $request->validate([
@@ -155,22 +152,23 @@ class AppointmentRequestController extends Controller
             return true;
         });
 
-               if (! $ok) {
+        if (! $ok) {
             return response()->json([
                 'message' => 'Diese Anfrage wurde bereits bearbeitet.',
             ], 409);
         }
 
-        // NEU: Aktuellen Stand samt Vorschlägen laden und Kundin benachrichtigen
+        // Aktuellen Stand samt Vorschlägen laden
         $appointment->refresh()->load('alternatives');
 
-        if ($appointment->customer_email) {
-            Notification::route('mail', $appointment->customer_email)
-                ->notify(new AlternativesOffered($appointment));
-        }
+        // GEÄNDERT (Schritt 63): E-Mail und Kundenportal
+        $appointment->notifyCustomer(
+            new AlternativesOffered($appointment),
+            'Dein Wunschtermin ist leider belegt. Wähle jetzt einen der angebotenen Ersatztermine.'
+        );
 
         return response()->json([
-            'message' => 'Alternativen gesendet. Die Kundin wurde per E-Mail benachrichtigt.',
+            'message' => 'Alternativen gesendet. Die Kundin wurde benachrichtigt.',
         ]);
     }
 }
