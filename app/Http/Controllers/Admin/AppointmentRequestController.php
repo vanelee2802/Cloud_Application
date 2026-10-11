@@ -13,6 +13,7 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Notifications\AppointmentConfirmed;
 use Illuminate\Support\Facades\Notification;
+use App\Notifications\AppointmentDeclined;
 
 /**
  * Studioleitung: Anfragen für Termine am selben Tag bearbeiten
@@ -73,14 +74,20 @@ class AppointmentRequestController extends Controller
     }
 
     // Anfrage komplett absagen → Platz wird wieder frei
-    public function decline(Appointment $appointment)
+    public function decline(Request $request, Appointment $appointment)
     {
+        // NEU: optionale Nachricht der Studioleitung an die Kundin
+        $validated = $request->validate([
+            'note' => 'nullable|string|max:1000',
+        ]);
+
         // Nur ändern, wenn die Anfrage JETZT noch offen ist
         $updated = Appointment::whereKey($appointment->id)
             ->where('status', 'requested')
             ->update([
                 'status' => 'rejected',
                 'slot_key' => null,
+                'admin_note' => $validated['note'] ?? null,
             ]);
 
         if (! $updated) {
@@ -89,10 +96,18 @@ class AppointmentRequestController extends Controller
             ], 409);
         }
 
+        // NEU: Aktuellen Stand laden und Kundin benachrichtigen
+        $appointment->refresh();
+
+        if ($appointment->customer_email) {
+            Notification::route('mail', $appointment->customer_email)
+                ->notify(new AppointmentDeclined($appointment));
+        }
+
         return response()->json([
-            'message' => 'Termin abgesagt. Der Platz ist wieder frei.',
+            'message' => 'Termin abgesagt. Die Kundin wurde per E-Mail benachrichtigt.',
         ]);
-    }
+    }  
 
     // NEU: Ersatztermine anbieten → Wunschtermin wird frei, Kundin wählt einen Vorschlag
     public function offerAlternatives(Request $request, Appointment $appointment, SlotService $slots)
