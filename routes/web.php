@@ -55,12 +55,20 @@ Route::get('/checkout', function () {
     return Inertia::render('Checkout');
 })->name('checkout');
 
-// Termin buchen – auch ohne Kundenkonto möglich (Schritt 35)
+// Termin buchen – auch ohne Kundenkonto möglich
 Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
 Route::post('/appointments/hold', [AppointmentController::class, 'hold'])->middleware('throttle:20,1');
 Route::delete('/appointments/{appointment}/hold', [AppointmentController::class, 'releaseHold']);
 Route::post('/appointments/{appointment}/submit', [AppointmentController::class, 'submit'])->middleware('throttle:10,1');
 
+// NEU: Kundin wählt einen Ersatztermin (eingeloggt oder per signiertem Link)
+Route::post('/appointments/{appointment}/alternatives/{alternative}/accept', [AppointmentController::class, 'acceptAlternative'])
+    ->middleware('throttle:10,1')
+    ->name('appointments.alternatives.accept');
+// Bestätigten Termin bezahlen (eingeloggt oder per signiertem Link)
+Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'pay'])
+    ->middleware('throttle:10,1')
+    ->name('appointments.pay');
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

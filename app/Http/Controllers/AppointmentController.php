@@ -9,6 +9,7 @@ use App\Services\SlotService;
 use Illuminate\Validation\Rule;
 use App\Models\Payment;
 use App\Services\StripeCheckoutService;
+use App\Models\AppointmentAlternative;
 
 class AppointmentController extends Controller
 {
@@ -95,6 +96,7 @@ class AppointmentController extends Controller
         ]);
 
         $appointment = $slots->hold($request->user()?->id, $validated);
+
         if (! $appointment) {
             return response()->json([
                 'message' => 'Diese Uhrzeit ist leider schon ausgebucht.',
@@ -125,7 +127,7 @@ class AppointmentController extends Controller
         return response()->noContent();
     }
 
-     // Kundin schickt den reservierten Termin ab
+    // Kundin schickt den reservierten Termin ab
     public function submit(Request $request, Appointment $appointment, StripeCheckoutService $checkout)
     {
         $this->authorizeHold($request, $appointment);
@@ -200,7 +202,99 @@ class AppointmentController extends Controller
             'checkout_url' => $checkoutUrl,
         ]);
     }
-     // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?
+
+    // Kundin wählt einen der angebotenen Ersatztermine → direkt zur Zahlung
+    public function acceptAlternative(
+        Request $request,
+        Appointment $appointment,
+        AppointmentAlternative $alternative,
+        SlotService $slots,
+        StripeCheckoutService $checkout
+    ) {
+        $this->authorizeCustomer($request, $appointment);
+
+        // Der Vorschlag muss zu genau diesem Termin gehören
+        abort_unless((int) $alternative->appointment_id === (int) $appointment->id, 404);
+
+        // Alten Stand merken, falls wir zurücksetzen müssen
+        $oldDate = $appointment->date;
+        $oldTime = $appointment->time;
+
+        // 1. Nur umstellen, wenn JETZT noch kein Vorschlag gewählt wurde
+        $updated = Appointment::whereKey($appointment->id)
+            ->where('status', 'alternatives_offered')
+            ->update([
+                'status' => 'awaiting_payment',
+                'date' => $alternative->date,
+                'time' => $alternative->time,
+                'payment_expires_at' => now()->addMinutes(config('booking.same_day_payment_minutes')),
+            ]);
+
+        if (! $updated) {
+            return response()->json([
+                'message' => 'Du hast bereits einen Termin gewählt.',
+            ], 409);
+        }
+
+        $appointment->refresh();
+
+        // 2. Platz für den neuen Termin holen
+        if (! $slots->claimSeat($appointment)) {
+            // Inzwischen voll → alles zurück, Kundin kann einen anderen Vorschlag wählen
+            $appointment->update([
+                'status' => 'alternatives_offered',
+                'date' => $oldDate,
+                'time' => $oldTime,
+                'payment_expires_at' => null,
+            ]);
+
+            return response()->json([
+                'message' => 'Dieser Termin ist inzwischen vergeben. Bitte wähle einen anderen Vorschlag.',
+            ], 409);
+        }
+
+        // 3. Zahlung vorbereiten
+        $payment = Payment::create([
+            'appointment_id' => $appointment->id,
+            'amount' => $appointment->service->price,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'status' => 'awaiting_payment',
+            'payment_id' => $payment->id,
+            'checkout_url' => $checkout->createCheckoutUrl($payment),
+        ]);
+    }
+
+    // NEU (Schritt 53): Bestätigten Termin bezahlen – eingeloggt oder per signiertem Link
+    public function pay(Request $request, Appointment $appointment, StripeCheckoutService $checkout)
+    {
+        $this->authorizeCustomer($request, $appointment);
+
+        // Die offene Zahlung zu diesem Termin
+        $payment = $appointment->payment()
+            ->where('status', 'pending')
+            ->latest('id')
+            ->first();
+
+        $canPay = $payment
+            && $appointment->status === 'awaiting_payment'
+            && $appointment->payment_expires_at
+            && $appointment->payment_expires_at->isFuture();
+
+        if (! $canPay) {
+            return response()->json([
+                'message' => 'Dieser Termin kann nicht mehr bezahlt werden. Bitte buche neu.',
+            ], 409);
+        }
+
+        return response()->json([
+            'checkout_url' => $checkout->createCheckoutUrl($payment),
+        ]);
+    }
+
+    // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?
     private function authorizeHold(Request $request, Appointment $appointment): void
     {
         $token = (string) $request->header('X-Hold-Token');
@@ -213,5 +307,19 @@ class AppointmentController extends Controller
             || ($request->user() && (int) $appointment->user_id === (int) $request->user()->id);
 
         abort_unless($tokenOk && $userOk, 403);
+    }
+
+    // Prüft: Signierter Link aus der E-Mail ODER eingeloggte Besitzerin des Termins?
+    private function authorizeCustomer(Request $request, Appointment $appointment): void
+    {
+        if ($request->hasValidSignature()) {
+            return;
+        }
+
+        $isOwner = $appointment->user_id !== null
+            && $request->user()
+            && (int) $appointment->user_id === (int) $request->user()->id;
+
+        abort_unless($isOwner, 403);
     }
 }
