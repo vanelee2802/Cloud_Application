@@ -9,4 +9,7 @@ return [
 
     // So viele Minuten hat die Kundin nach dem Abschicken Zeit zum Bezahlen
     'payment_minutes' => 30,
+
+    // So viele Minuten hat die Kundin nach der Bestätigung eines Termins für heute Zeit zum Bezahlen
+    'same_day_payment_minutes' => 60,
 ];

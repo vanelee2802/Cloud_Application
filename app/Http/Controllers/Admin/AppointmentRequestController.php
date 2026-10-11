@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
+use App\Models\Payment;
 
 /**
  * Studioleitung: Anfragen für Termine am selben Tag bearbeiten
@@ -23,5 +24,34 @@ class AppointmentRequestController extends Controller
             ]);
 
         return response()->json($requests);
+    }
+
+    // NEU: Anfrage bestätigen → Kundin kann bezahlen
+    public function confirm(Appointment $appointment)
+    {
+        // Nur ändern, wenn die Anfrage JETZT noch offen ist
+        $updated = Appointment::whereKey($appointment->id)
+            ->where('status', 'requested')
+            ->update([
+                'status' => 'awaiting_payment',
+                'payment_expires_at' => now()->addMinutes(config('booking.same_day_payment_minutes')),
+            ]);
+
+        if (! $updated) {
+            return response()->json([
+                'message' => 'Diese Anfrage wurde bereits bearbeitet.',
+            ], 409);
+        }
+
+        $payment = Payment::create([
+            'appointment_id' => $appointment->id,
+            'amount' => $appointment->service->price,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'Termin bestätigt. Die Kundin kann jetzt bezahlen.',
+            'payment_id' => $payment->id,
+        ]);
     }
 }
