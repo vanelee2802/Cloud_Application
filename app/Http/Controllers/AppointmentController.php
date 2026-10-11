@@ -127,15 +127,10 @@ class AppointmentController extends Controller
         ], 201);
     }
 
-        // Kundin wählt andere Uhrzeit oder schließt den Checkout → Platz freigeben
+       // Kundin wählt andere Uhrzeit oder schließt den Checkout → Platz freigeben
     public function releaseHold(Request $request, Appointment $appointment)
     {
-        $token = (string) $request->header('X-Hold-Token');
-
-        $isOwner = (int) $appointment->user_id === (int) $request->user()->id;
-        $tokenOk = $appointment->hold_token && hash_equals($appointment->hold_token, $token);
-
-        abort_unless($isOwner && $tokenOk, 403);
+        $this->authorizeHold($request, $appointment);
 
         if ($appointment->status === 'held') {
             $appointment->update([
@@ -147,5 +142,15 @@ class AppointmentController extends Controller
         }
 
         return response()->noContent();
+    }
+        // Prüft: Gehört die Reservierung dem eingeloggten Kunden UND stimmt der Token?
+    private function authorizeHold(Request $request, Appointment $appointment): void
+    {
+        $token = (string) $request->header('X-Hold-Token');
+
+        $isOwner = (int) $appointment->user_id === (int) $request->user()->id;
+        $tokenOk = $appointment->hold_token && hash_equals($appointment->hold_token, $token);
+
+        abort_unless($isOwner && $tokenOk, 403);
     }
 }
