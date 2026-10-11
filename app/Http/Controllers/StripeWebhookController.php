@@ -9,45 +9,50 @@ use Stripe\Webhook;
 class StripeWebhookController extends Controller
 {
     public function handle(Request $request)
-{
-    $payload = $request->getContent();
-    $signature = $request->header('Stripe-Signature');
+    {
+        $payload = $request->getContent();
+        $signature = $request->header('Stripe-Signature');
 
-    try {
-        $event = Webhook::constructEvent(
-            $payload,
-            $signature,
-            config('services.stripe.webhook_secret')
-        );
-    } catch (\UnexpectedValueException $e) {
-        return response()->json([
-            'error' => 'Invalid payload',
-        ], 400);
-    } catch (\Stripe\Exception\SignatureVerificationException $e) {
-        return response()->json([
-            'error' => 'Invalid signature',
-        ], 400);
-    }
+        try {
+            $event = Webhook::constructEvent(
+                $payload,
+                $signature,
+                config('services.stripe.webhook_secret')
+            );
+        } catch (\UnexpectedValueException $e) {
+            return response()->json([
+                'error' => 'Invalid payload',
+            ], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            return response()->json([
+                'error' => 'Invalid signature',
+            ], 400);
+        }
 
-    if ($event->type === 'checkout.session.completed') {
-        $session = $event->data->object;
+        if ($event->type === 'checkout.session.completed') {
+            $session = $event->data->object;
 
-        $paymentId = $session->metadata->payment_id ?? null;
+            $paymentId = $session->metadata->payment_id ?? null;
+            $payment = $paymentId ? Payment::find($paymentId) : null;
 
-        if ($paymentId) {
-            $payment = Payment::find($paymentId);
-
-            if ($payment) {
+            // NEU: Nur verarbeiten, wenn die Zahlung existiert und noch nicht verbucht ist
+            // (Stripe schickt Webhooks manchmal doppelt)
+            if ($payment && $payment->status !== 'paid') {
                 $payment->update([
                     'status' => 'paid',
                     'stripe_payment_id' => $session->payment_intent,
                 ]);
+
+                // NEU: Termin ist jetzt fest gebucht
+                $payment->appointment->update([
+                    'status' => 'confirmed',
+                    'payment_expires_at' => null,
+                ]);
             }
         }
-    }
 
-    return response()->json([
-        'message' => 'Webhook received',
-    ]);
-}
+        return response()->json([
+            'message' => 'Webhook received',
+        ]);
+    }
 }
