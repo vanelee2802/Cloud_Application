@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Events\AppointmentStatusChanged;
+use Illuminate\Notifications\Notification as MailNotification;
+use Illuminate\Support\Facades\Notification;
 
 class Appointment extends Model
 {
@@ -34,6 +37,27 @@ protected $fillable = [
         return "{$studioId}|{$date}|{$time}|{$seat}";
     }
 
+        /**
+     * Kundin benachrichtigen:
+     * - E-Mail an customer_email (Gäste und Konten)
+     * - zusätzlich im Kundenportal, wenn der Termin zu einem Konto gehört
+     */
+    public function notifyCustomer(MailNotification $mail, string $portalMessage): void
+    {
+        if ($this->customer_email) {
+            Notification::route('mail', $this->customer_email)->notify($mail);
+        }
+
+        if ($this->user) {
+            $this->user->notifications()->create([
+                'type' => 'appointment_status_changed',
+                'message' => $portalMessage,
+                'read' => false,
+            ]);
+
+            broadcast(new AppointmentStatusChanged($this));
+        }
+    }
 
     public function user()
     {

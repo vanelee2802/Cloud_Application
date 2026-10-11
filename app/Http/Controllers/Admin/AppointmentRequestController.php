@@ -53,6 +53,8 @@ class AppointmentRequestController extends Controller
             ], 409);
         }
 
+        
+
         $payment = Payment::create([
             'appointment_id' => $appointment->id,
             'amount' => $appointment->service->price,
@@ -62,11 +64,11 @@ class AppointmentRequestController extends Controller
         // NEU: Aktuellen Stand laden (Status und Frist wurden eben per Abfrage geändert)
         $appointment->refresh();
 
-        // NEU: Kundin per E-Mail benachrichtigen
-        if ($appointment->customer_email) {
-            Notification::route('mail', $appointment->customer_email)
-                ->notify(new AppointmentConfirmed($appointment));
-        }
+                // Kundin benachrichtigen: E-Mail und, falls sie ein Konto hat, im Kundenportal
+        $appointment->notifyCustomer(
+            new AppointmentConfirmed($appointment),
+            'Dein Termin ist bestätigt. Bitte bezahle jetzt, damit er fest gebucht ist.'
+        );
 
         return response()->json([
             'message' => 'Termin bestätigt. Die Kundin wurde per E-Mail benachrichtigt.',
