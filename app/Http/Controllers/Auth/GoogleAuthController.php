@@ -11,10 +11,12 @@ use Laravel\Socialite\Facades\Socialite;
 class GoogleAuthController extends Controller
 {
     // Schritt 1: Leitet den Nutzer zu Google weiter
-    public function redirect()
-    {
-        return Socialite::driver('google')->redirect();
-    }
+  public function redirect()
+{
+    return Socialite::driver('google')
+        ->with(['prompt' => 'select_account'])
+        ->redirect();
+}
 
     // Schritt 2: Google schickt den Nutzer hierher zurück
     public function callback()
