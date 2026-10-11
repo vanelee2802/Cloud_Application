@@ -14,6 +14,7 @@ use Illuminate\Validation\ValidationException;
 use App\Notifications\AppointmentConfirmed;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\AppointmentDeclined;
+use App\Notifications\AlternativesOffered;
 
 /**
  * Studioleitung: Anfragen für Termine am selben Tag bearbeiten
@@ -152,14 +153,22 @@ class AppointmentRequestController extends Controller
             return true;
         });
 
-        if (! $ok) {
+               if (! $ok) {
             return response()->json([
                 'message' => 'Diese Anfrage wurde bereits bearbeitet.',
             ], 409);
         }
 
+        // NEU: Aktuellen Stand samt Vorschlägen laden und Kundin benachrichtigen
+        $appointment->refresh()->load('alternatives');
+
+        if ($appointment->customer_email) {
+            Notification::route('mail', $appointment->customer_email)
+                ->notify(new AlternativesOffered($appointment));
+        }
+
         return response()->json([
-            'message' => 'Alternativen gesendet. Der Wunschtermin ist wieder frei.',
+            'message' => 'Alternativen gesendet. Die Kundin wurde per E-Mail benachrichtigt.',
         ]);
     }
 }
