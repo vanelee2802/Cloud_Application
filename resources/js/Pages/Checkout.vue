@@ -90,11 +90,9 @@
                             {{ slot.time }}{{ slot.free === 0 ? ' – ausgebucht' : '' }}
                         </option>
                     </select>
-
-                    <p v-if="hold">
-    Diese Uhrzeit ist für dich reserviert.
+<p v-if="hold">
+    Diese Uhrzeit ist für dich reserviert – noch {{ countdown }} Min.
 </p>
-
                     <p v-if="selectedDate && selectedTime">
                         Gewählter Termin:
                         {{ selectedDate }} um {{ selectedTime }}
@@ -115,10 +113,9 @@
     </div>
 </template>
 
-
 <script setup>
 
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'   // GEÄNDERT (Schritt 18)
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'   // GEÄNDERT (Schritt 19): computed
 import { useCart } from '@/Stores/cart.js'
 
 
@@ -175,7 +172,9 @@ function csrfToken() {
 
 // Aktuelle Reservierung auf dem Server freigeben.
 // keepalive = true: Anfrage läuft auch weiter, wenn die Seite gerade geschlossen wird
-async function releaseHold(keepalive = false) {     // GEÄNDERT (Schritt 18)
+async function releaseHold(keepalive = false) {
+    stopCountdown()                                  // NEU (Schritt 19)
+
     if (!hold.value) return
 
     const { id, hold_token } = hold.value
@@ -183,7 +182,7 @@ async function releaseHold(keepalive = false) {     // GEÄNDERT (Schritt 18)
 
     await fetch(`/appointments/${id}/hold`, {
         method: 'DELETE',
-        keepalive: keepalive,                        // NEU (Schritt 18)
+        keepalive: keepalive,
         headers: {
             'Accept': 'application/json',
             'X-CSRF-TOKEN': csrfToken(),
@@ -223,9 +222,51 @@ watch(selectedTime, async (time) => {
     }
 
     hold.value = data
+    startCountdown(data.expires_in)                  // NEU (Schritt 19)
 })
 
-// ---------- NEU (Schritt 18): Checkout verlassen ----------
+
+// ---------- NEU (Schritt 19): Countdown ----------
+
+const secondsLeft = ref(0)
+let timer = null
+
+function startCountdown(seconds) {
+    stopCountdown()
+
+    const endsAt = Date.now() + seconds * 1000
+
+    const tick = () => {
+        secondsLeft.value = Math.max(0, Math.round((endsAt - Date.now()) / 1000))
+
+        if (secondsLeft.value === 0) {
+            stopCountdown()
+            hold.value = null       // Server gibt den Platz selbst frei (releaseExpired)
+            selectedTime.value = ''
+            alert('Deine Reservierung ist abgelaufen. Bitte wähle die Uhrzeit erneut.')
+        }
+    }
+
+    tick()
+    timer = setInterval(tick, 1000)
+}
+
+function stopCountdown() {
+    clearInterval(timer)
+    timer = null
+}
+
+// Sekunden als "2:05"
+const countdown = computed(() => {
+    const minutes = Math.floor(secondsLeft.value / 60)
+    const seconds = String(secondsLeft.value % 60).padStart(2, '0')
+    return `${minutes}:${seconds}`
+})
+
+// ---------- ENDE NEU ----------
+
+
+// ---------- Schritt 18: Checkout verlassen ----------
 
 // × geklickt: erst freigeben, dann schließen
 function close() {
@@ -245,10 +286,8 @@ onMounted(() => {
 // Komponente wird entfernt (z. B. Wechsel auf eine andere Seite der App)
 onBeforeUnmount(() => {
     window.removeEventListener('pagehide', onPageHide)
-    releaseHold(true)
+    releaseHold(true)       // stoppt auch den Countdown
 })
-
-// ---------- ENDE NEU ----------
 
 
 /**
@@ -326,6 +365,7 @@ async function startPayment() {
 }
 
 </script>
+
 <style scoped>
 
 .checkout-overlay {
