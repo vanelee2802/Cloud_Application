@@ -6,7 +6,7 @@
             <!-- X zum Schließen -->
             <button
                 class="close-button"
-                @click="emit('close')"
+                @click="close"
             >
                 ×
             </button>
@@ -118,7 +118,7 @@
 
 <script setup>
 
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'   // GEÄNDERT (Schritt 18)
 import { useCart } from '@/Stores/cart.js'
 
 
@@ -143,7 +143,7 @@ const today = new Date().toLocaleDateString('sv-SE')
 
 // Sobald ein Datum gewählt wird: alten Platz freigeben, freie Uhrzeiten laden
 watch(selectedDate, async (date) => {
-    await releaseHold()            // GEÄNDERT (Schritt 17)
+    await releaseHold()
 
     selectedTime.value = ''
     times.value = []
@@ -164,7 +164,7 @@ watch(selectedDate, async (date) => {
 })
 
 
-// ---------- Schritt 16 + 17: Platz reservieren und freigeben ----------
+// ---------- Schritt 16 bis 18: Platz reservieren und freigeben ----------
 
 // Aktuelle Reservierung: { id, hold_token, expires_in } oder null
 const hold = ref(null)
@@ -173,8 +173,9 @@ function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content')
 }
 
-// NEU (Schritt 17): aktuelle Reservierung auf dem Server freigeben
-async function releaseHold() {
+// Aktuelle Reservierung auf dem Server freigeben.
+// keepalive = true: Anfrage läuft auch weiter, wenn die Seite gerade geschlossen wird
+async function releaseHold(keepalive = false) {     // GEÄNDERT (Schritt 18)
     if (!hold.value) return
 
     const { id, hold_token } = hold.value
@@ -182,6 +183,7 @@ async function releaseHold() {
 
     await fetch(`/appointments/${id}/hold`, {
         method: 'DELETE',
+        keepalive: keepalive,                        // NEU (Schritt 18)
         headers: {
             'Accept': 'application/json',
             'X-CSRF-TOKEN': csrfToken(),
@@ -192,7 +194,7 @@ async function releaseHold() {
 
 // Sobald eine Uhrzeit gewählt wird: alten Platz freigeben, neuen reservieren
 watch(selectedTime, async (time) => {
-    await releaseHold()            // GEÄNDERT (Schritt 17), vorher: hold.value = null
+    await releaseHold()
 
     if (!time) return
 
@@ -222,6 +224,31 @@ watch(selectedTime, async (time) => {
 
     hold.value = data
 })
+
+// ---------- NEU (Schritt 18): Checkout verlassen ----------
+
+// × geklickt: erst freigeben, dann schließen
+function close() {
+    releaseHold(true)
+    emit('close')
+}
+
+// Tab geschlossen oder Seite neu geladen
+function onPageHide() {
+    releaseHold(true)
+}
+
+onMounted(() => {
+    window.addEventListener('pagehide', onPageHide)
+})
+
+// Komponente wird entfernt (z. B. Wechsel auf eine andere Seite der App)
+onBeforeUnmount(() => {
+    window.removeEventListener('pagehide', onPageHide)
+    releaseHold(true)
+})
+
+// ---------- ENDE NEU ----------
 
 
 /**
