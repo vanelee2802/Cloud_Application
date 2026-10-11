@@ -101,6 +101,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/requests', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'index']);
         Route::post('/{appointment}/confirm', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'confirm']);
         Route::post('/{appointment}/decline', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'decline']);
+        Route::post('/{appointment}/alternatives', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'offerAlternatives']);
     });
 });
 

@@ -5,6 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Payment;
+use App\Services\SlotService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Studioleitung: Anfragen für Termine am selben Tag bearbeiten
@@ -26,7 +32,7 @@ class AppointmentRequestController extends Controller
         return response()->json($requests);
     }
 
-    // NEU: Anfrage bestätigen → Kundin kann bezahlen
+    // Anfrage bestätigen → Kundin kann bezahlen
     public function confirm(Appointment $appointment)
     {
         // Nur ändern, wenn die Anfrage JETZT noch offen ist
@@ -54,7 +60,8 @@ class AppointmentRequestController extends Controller
             'payment_id' => $payment->id,
         ]);
     }
-        // NEU: Anfrage komplett absagen → Platz wird wieder frei
+
+    // Anfrage komplett absagen → Platz wird wieder frei
     public function decline(Appointment $appointment)
     {
         // Nur ändern, wenn die Anfrage JETZT noch offen ist
@@ -73,6 +80,60 @@ class AppointmentRequestController extends Controller
 
         return response()->json([
             'message' => 'Termin abgesagt. Der Platz ist wieder frei.',
+        ]);
+    }
+
+    // NEU: Ersatztermine anbieten → Wunschtermin wird frei, Kundin wählt einen Vorschlag
+    public function offerAlternatives(Request $request, Appointment $appointment, SlotService $slots)
+    {
+        $validated = $request->validate([
+            'alternatives' => 'required|array|min:1|max:5',
+            'alternatives.*.date' => 'required|date_format:Y-m-d|after_or_equal:today',
+            'alternatives.*.time' => ['required', Rule::in(config('booking.times'))],
+            'note' => 'nullable|string|max:1000',
+        ]);
+
+        // Jeder Vorschlag muss in der Zukunft liegen und noch frei sein
+        foreach ($validated['alternatives'] as $i => $alt) {
+            $slot = collect($slots->availability($appointment->nail_studio_id, $alt['date']))
+                ->firstWhere('time', $alt['time']);
+
+            $inFuture = Carbon::parse("{$alt['date']} {$alt['time']}")->isFuture();
+
+            if (! $slot || $slot['free'] === 0 || ! $inFuture) {
+                throw ValidationException::withMessages([
+                    "alternatives.$i" => "Der {$alt['date']} um {$alt['time']} Uhr ist nicht frei.",
+                ]);
+            }
+        }
+
+        // Alles oder nichts: Status ändern UND Vorschläge speichern
+        $ok = DB::transaction(function () use ($appointment, $validated) {
+            $updated = Appointment::whereKey($appointment->id)
+                ->where('status', 'requested')
+                ->update([
+                    'status' => 'alternatives_offered',
+                    'slot_key' => null,
+                    'admin_note' => $validated['note'] ?? null,
+                ]);
+
+            if (! $updated) {
+                return false;
+            }
+
+            $appointment->alternatives()->createMany($validated['alternatives']);
+
+            return true;
+        });
+
+        if (! $ok) {
+            return response()->json([
+                'message' => 'Diese Anfrage wurde bereits bearbeitet.',
+            ], 409);
+        }
+
+        return response()->json([
+            'message' => 'Alternativen gesendet. Der Wunschtermin ist wieder frei.',
         ]);
     }
 }
