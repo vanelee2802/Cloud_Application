@@ -143,6 +143,37 @@ class AppointmentController extends Controller
 
         return response()->noContent();
     }
+
+    
+    // Kundin schickt den reservierten Termin ab
+    public function submit(Request $request, Appointment $appointment)
+    {
+        $this->authorizeHold($request, $appointment);
+
+        $isToday = $appointment->date === now()->toDateString();
+
+        // Nur ändern, wenn die Reservierung JETZT noch gültig ist
+        $updated = Appointment::whereKey($appointment->id)
+            ->where('status', 'held')
+            ->where('hold_expires_at', '>', now())
+            ->update([
+                'status' => $isToday ? 'requested' : 'awaiting_payment',
+                'hold_token' => null,
+                'hold_expires_at' => null,
+            ]);
+
+        if (! $updated) {
+            return response()->json([
+                'message' => 'Deine Reservierung ist abgelaufen. Bitte wähle den Termin erneut.',
+            ], 409);
+        }
+
+        return response()->json([
+            'status' => $isToday ? 'requested' : 'awaiting_payment',
+        ]);
+    }
+
+
         // Prüft: Gehört die Reservierung dem eingeloggten Kunden UND stimmt der Token?
     private function authorizeHold(Request $request, Appointment $appointment): void
     {

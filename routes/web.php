@@ -83,7 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
 Route::delete('/appointments/{appointment}/hold', [AppointmentController::class, 'releaseHold']);
         Route::apiResource('payments', PaymentController::class);
-    });
+    });Route::post('/appointments/{appointment}/submit', [AppointmentController::class, 'submit']);
 });
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
