@@ -74,6 +74,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/admin/users', [UserManagementController::class, 'index'])
     ->middleware('role:admin')
     ->name('admin.users.index');
+    Route::patch('/admin/users/{user}', [UserManagementController::class, 'update'])
+    ->middleware('role:admin')
+    ->name('admin.users.update');
 
     // Nur Mitarbeiter/Admin
     Route::middleware('role:employee|admin')->group(function () {

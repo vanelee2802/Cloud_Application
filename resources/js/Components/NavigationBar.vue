@@ -1,6 +1,6 @@
 <script setup> 
 import NavLink from '@/Components/NavLink.vue'
-import { usePage } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
 
 const page = usePage()
 </script>
@@ -27,17 +27,28 @@ const page = usePage()
                 </NavLink>
             </li>
 
+            
             <li class="login-item">
                 <template v-if="page.props.auth.user">
-                    <span>
+                    <span class="user-name">
                         {{ page.props.auth.user.name }}
                     </span>
+
+                    <Link
+                        href="/logout"
+                        method="post"
+                        as="button"
+                        class="logout-button"
+                    >
+                        Logout
+                    </Link>
                 </template>
 
                 <a v-else href="/auth/google" class="login-button">
                     Login
                 </a>
             </li>
+
         </ul>
 
     </nav>
@@ -80,5 +91,23 @@ const page = usePage()
 
 .login-item {
     margin-left: auto;
+}
+
+.user-name {
+    margin-right: 1rem;
+}
+
+.logout-button {
+    margin-right: 2rem;
+    padding: 0.6rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    background-color: var(--text-color);
+    color: white;
+    cursor: pointer;
+}
+
+.logout-button:hover {
+    opacity: 0.85;
 }
 </style>

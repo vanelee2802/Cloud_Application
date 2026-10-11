@@ -25,4 +25,25 @@ class UserManagementController extends Controller
             'users' => $users,
         ]);
     }
+    
+    public function update(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                \Illuminate\Validation\Rule::unique('users', 'email')
+                    ->ignore($user->id),
+            ],
+        ]);
+
+        $user->update($validated);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Benutzerdaten wurden aktualisiert.');
+    }
+
 }
