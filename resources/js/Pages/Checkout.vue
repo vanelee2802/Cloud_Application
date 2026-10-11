@@ -100,9 +100,13 @@
 
 
                     <!-- ZAHLUNG -->
-                    <button class="payment-button" @click="createAppointment">
-                        Termin anfragen
-                    </button>
+                  <button
+    class="payment-button"
+    :disabled="!hold || loading"
+    @click="submitBooking"
+>
+    {{ loading ? 'Einen Moment …' : buttonLabel }}
+</button>>
 
                 </div>
 
@@ -115,7 +119,7 @@
 
 <script setup>
 
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'   // GEÄNDERT (Schritt 19): computed
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useCart } from '@/Stores/cart.js'
 
 
@@ -173,7 +177,7 @@ function csrfToken() {
 // Aktuelle Reservierung auf dem Server freigeben.
 // keepalive = true: Anfrage läuft auch weiter, wenn die Seite gerade geschlossen wird
 async function releaseHold(keepalive = false) {
-    stopCountdown()                                  // NEU (Schritt 19)
+    stopCountdown()
 
     if (!hold.value) return
 
@@ -222,11 +226,11 @@ watch(selectedTime, async (time) => {
     }
 
     hold.value = data
-    startCountdown(data.expires_in)                  // NEU (Schritt 19)
+    startCountdown(data.expires_in)
 })
 
 
-// ---------- NEU (Schritt 19): Countdown ----------
+// ---------- Schritt 19: Countdown ----------
 
 const secondsLeft = ref(0)
 let timer = null
@@ -263,6 +267,58 @@ const countdown = computed(() => {
     return `${minutes}:${seconds}`
 })
 
+
+// ---------- NEU (Schritt 22): Termin abschicken ----------
+
+// Läuft gerade eine Anfrage? Verhindert Doppelklicks auf den Button
+const loading = ref(false)
+
+const isToday = computed(() => selectedDate.value === today)
+
+const buttonLabel = computed(() =>
+    isToday.value ? 'Termin anfragen' : 'Jetzt bezahlen'
+)
+
+async function submitBooking() {
+    if (!hold.value || loading.value) return
+
+    loading.value = true
+
+    const response = await fetch(`/appointments/${hold.value.id}/submit`, {
+        method: 'POST',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+            'X-Hold-Token': hold.value.hold_token,
+        },
+    })
+
+    const data = await response.json()
+    loading.value = false
+
+    if (!response.ok) {
+        alert(data.message ?? 'Der Termin konnte nicht abgeschickt werden.')
+        // Reservierung ist ungültig → Auswahl zurücksetzen
+        stopCountdown()
+        hold.value = null
+        selectedTime.value = ''
+        return
+    }
+
+    // Der Platz gehört jetzt zum Termin → NICHT mehr freigeben
+    stopCountdown()
+    hold.value = null
+
+    if (data.status === 'requested') {
+        alert('Deine Anfrage wurde gesendet! Da der Termin heute ist, prüft das Studio kurz die Verfügbarkeit. Bezahlt wird erst nach der Bestätigung.')
+    } else {
+        // Wird im Teil "Zahlung" durch die Weiterleitung zu Stripe ersetzt
+        alert('Dein Termin ist angenommen. Die Zahlung folgt im nächsten Schritt.')
+    }
+
+    emit('close')
+}
+
 // ---------- ENDE NEU ----------
 
 
@@ -286,52 +342,8 @@ onMounted(() => {
 // Komponente wird entfernt (z. B. Wechsel auf eine andere Seite der App)
 onBeforeUnmount(() => {
     window.removeEventListener('pagehide', onPageHide)
-    releaseHold(true)       // stoppt auch den Countdown
+    releaseHold(true)
 })
-
-
-/**
- * Termin anfragen
- *
- * Der Termin wird zunächst mit dem Status "requested"
- * im Backend angelegt.
- */
-async function createAppointment() {
-
-    if (!selectedDate.value || !selectedTime.value) {
-        alert('Bitte wähle zuerst einen Termin aus.')
-        return
-    }
-
-    const response = await fetch('/appointments', {
-        method: 'POST',
-
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document
-                .querySelector('meta[name="csrf-token"]')
-                .getAttribute('content'),
-        },
-
-        body: JSON.stringify({
-            nail_studio_id: 1,
-            service_id: 1,
-            design_id: null,
-            date: selectedDate.value,
-            time: selectedTime.value,
-        }),
-    })
-
-    const data = await response.json()
-
-    console.log('Termin:', data)
-
-    if (response.ok) {
-        alert('Deine Terminanfrage wurde erfolgreich erstellt.')
-    } else {
-        alert('Der Termin konnte nicht erstellt werden.')
-    }
-}
 
 
 /**
