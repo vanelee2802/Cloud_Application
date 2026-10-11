@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Str;
+use App\Models\Payment;
 
 
 
@@ -26,8 +27,13 @@ class SlotService
         /**
      * Gibt Reservierungen frei, deren 3 Minuten abgelaufen sind.
      */
+      /**
+     * Gibt Plätze frei, deren Frist abgelaufen ist:
+     * 3-Minuten-Reservierungen und nicht bezahlte Termine.
+     */
     public function releaseExpired(): void
     {
+        // 1. Abgelaufene 3-Minuten-Reservierungen
         Appointment::where('status', 'held')
             ->where('hold_expires_at', '<', now())
             ->update([
@@ -35,6 +41,23 @@ class SlotService
                 'slot_key' => null,
                 'hold_expires_at' => null,
             ]);
+
+        // 2. Nicht rechtzeitig bezahlte Termine
+        $unpaidIds = Appointment::where('status', 'awaiting_payment')
+            ->where('payment_expires_at', '<', now())
+            ->pluck('id');
+
+        if ($unpaidIds->isNotEmpty()) {
+            Appointment::whereIn('id', $unpaidIds)->update([
+                'status' => 'expired',
+                'slot_key' => null,
+                'payment_expires_at' => null,
+            ]);
+
+            Payment::whereIn('appointment_id', $unpaidIds)
+                ->where('status', 'pending')
+                ->update(['status' => 'failed']);
+        }
     }
 
         /**
