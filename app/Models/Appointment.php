@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
-  protected $fillable = [
+ protected $fillable = [
     'user_id', 'nail_studio_id', 'service_id', 'employee_id',
     'design_id', 'date', 'time', 'status',
     'slot_key', 'hold_token', 'hold_expires_at',
     'payment_expires_at',
+    'customer_name', 'customer_email',
 ];
 
     protected $hidden = [
