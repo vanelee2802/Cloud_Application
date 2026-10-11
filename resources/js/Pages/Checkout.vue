@@ -287,14 +287,22 @@ async function submitBooking() {
     const response = await fetch(`/appointments/${hold.value.id}/submit`, {
         method: 'POST',
         headers: {
+            'Content-Type': 'application/json',
             'Accept': 'application/json',
             'X-CSRF-TOKEN': csrfToken(),
             'X-Hold-Token': hold.value.hold_token,
         },
+        body: JSON.stringify({}),
     })
 
     const data = await response.json()
     loading.value = false
+
+    // Eingaben fehlen oder sind falsch (z. B. E-Mail) → Reservierung bleibt, nochmal versuchen
+    if (response.status === 422) {
+        alert(data.message ?? 'Bitte prüfe deine Angaben.')
+        return
+    }
 
     if (!response.ok) {
         alert(data.message ?? 'Der Termin konnte nicht abgeschickt werden.')
@@ -309,13 +317,14 @@ async function submitBooking() {
     stopCountdown()
     hold.value = null
 
-    if (data.status === 'requested') {
-        alert('Deine Anfrage wurde gesendet! Da der Termin heute ist, prüft das Studio kurz die Verfügbarkeit. Bezahlt wird erst nach der Bestätigung.')
-    } else {
-        // Wird im Teil "Zahlung" durch die Weiterleitung zu Stripe ersetzt
-        alert('Dein Termin ist angenommen. Die Zahlung folgt im nächsten Schritt.')
+    // Späterer Tag: direkt zur Zahlung
+    if (data.checkout_url) {
+        window.location.href = data.checkout_url
+        return
     }
 
+    // Heute: Anfrage an die Studioleitung
+    alert('Deine Anfrage wurde gesendet! Da der Termin heute ist, prüft das Studio kurz die Verfügbarkeit. Bezahlt wird erst nach der Bestätigung.')
     emit('close')
 }
 
