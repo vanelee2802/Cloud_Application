@@ -6,12 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
- protected $fillable = [
+protected $fillable = [
     'user_id', 'nail_studio_id', 'service_id', 'employee_id',
     'design_id', 'date', 'time', 'status',
     'slot_key', 'hold_token', 'hold_expires_at',
     'payment_expires_at',
     'customer_name', 'customer_email',
+    'admin_note',
 ];
 
     protected $hidden = [
@@ -62,5 +63,10 @@ class Appointment extends Model
     public function payment()
     {
         return $this->hasOne(Payment::class);
+    }
+        // Ersatztermine, die die Studioleitung angeboten hat
+    public function alternatives()
+    {
+        return $this->hasMany(AppointmentAlternative::class);
     }
 }
