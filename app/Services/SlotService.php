@@ -22,12 +22,27 @@ class SlotService
             ->count();
     }
 
+
+        /**
+     * Gibt Reservierungen frei, deren 3 Minuten abgelaufen sind.
+     */
+    public function releaseExpired(): void
+    {
+        Appointment::where('status', 'held')
+            ->where('hold_expires_at', '<', now())
+            ->update([
+                'status' => 'expired',
+                'slot_key' => null,
+                'hold_expires_at' => null,
+            ]);
+    }
+
         /**
      * Freie Plätze pro Uhrzeit an einem Tag,
      * z. B. [['time' => '14:00', 'free' => 2], ...]
      */
     public function availability(int $studioId, string $date): array
-    {
+    {           $this->releaseExpired();
         $capacity = $this->capacity($studioId);
 
         // Wie viele Plätze sind pro Uhrzeit schon belegt?
@@ -51,7 +66,7 @@ class SlotService
      * Gibt den Termin zurück oder null, wenn alles belegt ist.
      */
     public function hold(int $userId, array $data): ?Appointment
-    {
+    {           $this->releaseExpired();
         $capacity = $this->capacity($data['nail_studio_id']);
 
         for ($seat = 1; $seat <= $capacity; $seat++) {
