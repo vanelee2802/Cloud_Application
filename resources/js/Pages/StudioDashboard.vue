@@ -1,5 +1,6 @@
 <script setup>
 import pagesLayout from '@/Layouts/pagesLayout.vue'
+import AppointmentRequests from '@/Components/StudioDashboard/AppointmentRequests.vue'
 import Kennzahlen from '@/Components/StudioDashboard/Kennzahlen.vue'
 import Buchungen from '@/Components/StudioDashboard/Buchungen.vue'
 import Schnellzugriff from '@/Components/StudioDashboard/Schnellzugriff.vue'
@@ -28,6 +29,7 @@ import Schnellzugriff from '@/Components/StudioDashboard/Schnellzugriff.vue'
 
             <!-- Buchungen + Schnellzugriff -->
             <section class="dashboard-grid">
+                <AppointmentRequests />
                 <Buchungen />
                 <Schnellzugriff />
             </section>

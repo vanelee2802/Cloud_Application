@@ -29,8 +29,8 @@ class AppointmentRequestController extends Controller
             ->where('status', 'requested')
             ->orderBy('date')
             ->orderBy('time')
-            ->get([
-                'id', 'service_id', 'date', 'time',
+                      ->get([
+                'id', 'nail_studio_id', 'service_id', 'date', 'time',
                 'customer_name', 'customer_email', 'created_at',
             ]);
 
