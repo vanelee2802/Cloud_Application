@@ -92,8 +92,7 @@ class AppointmentController extends Controller
             'time' => ['required', Rule::in(config('booking.times'))],
         ]);
 
-        $appointment = $slots->hold($request->user()->id, $validated);
-
+        $appointment = $slots->hold($request->user()?->id, $validated);
         if (! $appointment) {
             return response()->json([
                 'message' => 'Diese Uhrzeit ist leider schon ausgebucht.',
@@ -168,14 +167,18 @@ class AppointmentController extends Controller
         ]);
     }
 
-    // Prüft: Gehört die Reservierung dem eingeloggten Kunden UND stimmt der Token?
+     // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?
     private function authorizeHold(Request $request, Appointment $appointment): void
     {
         $token = (string) $request->header('X-Hold-Token');
 
-        $isOwner = (int) $appointment->user_id === (int) $request->user()->id;
+        // Den geheimen Code braucht IMMER jeder, auch eingeloggte Kundinnen
         $tokenOk = $appointment->hold_token && hash_equals($appointment->hold_token, $token);
 
-        abort_unless($isOwner && $tokenOk, 403);
+        // Gehört die Reservierung zu einem Konto, muss genau dieses eingeloggt sein
+        $userOk = $appointment->user_id === null
+            || ($request->user() && (int) $appointment->user_id === (int) $request->user()->id);
+
+        abort_unless($tokenOk && $userOk, 403);
     }
 }
