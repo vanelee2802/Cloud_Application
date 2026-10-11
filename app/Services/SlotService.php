@@ -88,8 +88,7 @@ class SlotService
      * Reserviert einen freien Platz für 3 Minuten.
      * Gibt den Termin zurück oder null, wenn alles belegt ist.
      */
-    public function hold(int $userId, array $data): ?Appointment
-    {           $this->releaseExpired();
+    public function hold(?int $userId, array $data): ?Appointment    {           $this->releaseExpired();
         $capacity = $this->capacity($data['nail_studio_id']);
 
         for ($seat = 1; $seat <= $capacity; $seat++) {
