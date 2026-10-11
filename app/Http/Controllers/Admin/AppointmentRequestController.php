@@ -54,4 +54,25 @@ class AppointmentRequestController extends Controller
             'payment_id' => $payment->id,
         ]);
     }
+        // NEU: Anfrage komplett absagen → Platz wird wieder frei
+    public function decline(Appointment $appointment)
+    {
+        // Nur ändern, wenn die Anfrage JETZT noch offen ist
+        $updated = Appointment::whereKey($appointment->id)
+            ->where('status', 'requested')
+            ->update([
+                'status' => 'rejected',
+                'slot_key' => null,
+            ]);
+
+        if (! $updated) {
+            return response()->json([
+                'message' => 'Diese Anfrage wurde bereits bearbeitet.',
+            ], 409);
+        }
+
+        return response()->json([
+            'message' => 'Termin abgesagt. Der Platz ist wieder frei.',
+        ]);
+    }
 }

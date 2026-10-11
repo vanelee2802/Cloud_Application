@@ -96,10 +96,11 @@ Route::middleware('auth')->group(function () {
         Route::apiResource('payments', PaymentController::class);
     });
     
-        // Studioleitung: Anfragen für heute bearbeiten
+       // Studioleitung: Anfragen für heute bearbeiten
     Route::middleware('role:admin')->prefix('admin/appointments')->group(function () {
         Route::get('/requests', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'index']);
         Route::post('/{appointment}/confirm', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'confirm']);
+        Route::post('/{appointment}/decline', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'decline']);
     });
 });
 
