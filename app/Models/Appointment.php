@@ -21,6 +21,17 @@ class Appointment extends Model
         'hold_expires_at' => 'datetime',
     ];
 
+        /**
+     * Baut den Schlüssel für einen Platz, z. B. "1|2026-10-20|14:00|2".
+     */
+    public static function slotKey(int $studioId, string $date, string $time, int $seat): string
+    {
+        $time = substr($time, 0, 5); // "14:00:00" → "14:00"
+
+        return "{$studioId}|{$date}|{$time}|{$seat}";
+    }
+
+
     public function user()
     {
         return $this->belongsTo(User::class);
