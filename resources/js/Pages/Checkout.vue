@@ -59,7 +59,7 @@
                         Datum
                     </label>
 
-                    <!-- GEÄNDERT: :min verhindert vergangene Tage -->
+                    <!-- :min verhindert vergangene Tage -->
                     <input
                         id="date"
                         type="date"
@@ -71,7 +71,7 @@
                         Uhrzeit
                     </label>
 
-                    <!-- GEÄNDERT: Uhrzeiten kommen vom Server, ausgebuchte sind gesperrt -->
+                    <!-- Uhrzeiten kommen vom Server, ausgebuchte sind gesperrt -->
                     <select
                         id="time"
                         v-model="selectedTime"
@@ -90,23 +90,48 @@
                             {{ slot.time }}{{ slot.free === 0 ? ' – ausgebucht' : '' }}
                         </option>
                     </select>
-<p v-if="hold">
-    Diese Uhrzeit ist für dich reserviert – noch {{ countdown }} Min.
-</p>
+
+                    <!-- Reservierung mit Countdown -->
+                    <p v-if="hold">
+                        Diese Uhrzeit ist für dich reserviert – noch {{ countdown }} Min.
+                    </p>
+
                     <p v-if="selectedDate && selectedTime">
                         Gewählter Termin:
                         {{ selectedDate }} um {{ selectedTime }}
                     </p>
 
+                    <!-- NEU (Schritt 40): Nur für Gäste – Kontaktdaten -->
+                    <template v-if="!user">
+                        <label for="customer-name">
+                            Name
+                        </label>
+                        <input
+                            id="customer-name"
+                            v-model.trim="customerName"
+                            autocomplete="name"
+                        >
+
+                        <label for="customer-email">
+                            E-Mail (für Bestätigung und Quittung)
+                        </label>
+                        <input
+                            id="customer-email"
+                            type="email"
+                            v-model.trim="customerEmail"
+                            autocomplete="email"
+                        >
+                    </template>
 
                     <!-- ZAHLUNG -->
-                  <button
-    class="payment-button"
-    :disabled="!hold || loading"
-    @click="submitBooking"
->
-    {{ loading ? 'Einen Moment …' : buttonLabel }}
-</button>>
+                    <!-- GEÄNDERT (Schritt 40): :disabled="!canSubmit" -->
+                    <button
+                        class="payment-button"
+                        :disabled="!canSubmit"
+                        @click="submitBooking"
+                    >
+                        {{ loading ? 'Einen Moment …' : buttonLabel }}
+                    </button>
 
                 </div>
 
@@ -121,6 +146,7 @@
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useCart } from '@/Stores/cart.js'
+import { usePage } from '@inertiajs/vue3'          // NEU (Schritt 40)
 
 
 const emit = defineEmits(['close'])
@@ -268,7 +294,15 @@ const countdown = computed(() => {
 })
 
 
-// ---------- NEU (Schritt 22): Termin abschicken ----------
+// ---------- Schritt 22, 39, 40: Termin abschicken ----------
+
+// NEU (Schritt 40): Eingeloggte Kundin oder null (Gast)
+const page = usePage()
+const user = computed(() => page.props.auth?.user ?? null)
+
+// NEU (Schritt 40): Nur für Gäste – Kontaktdaten für Bestätigung und Zahlung
+const customerName = ref('')
+const customerEmail = ref('')
 
 // Läuft gerade eine Anfrage? Verhindert Doppelklicks auf den Button
 const loading = ref(false)
@@ -279,8 +313,15 @@ const buttonLabel = computed(() =>
     isToday.value ? 'Termin anfragen' : 'Jetzt bezahlen'
 )
 
+// NEU (Schritt 40): Button nur klickbar, wenn reserviert und (bei Gästen) Name + E-Mail ausgefüllt
+const canSubmit = computed(() =>
+    hold.value
+    && !loading.value
+    && (user.value || (customerName.value && customerEmail.value))
+)
+
 async function submitBooking() {
-    if (!hold.value || loading.value) return
+    if (!canSubmit.value) return                    // GEÄNDERT (Schritt 40)
 
     loading.value = true
 
@@ -292,7 +333,12 @@ async function submitBooking() {
             'X-CSRF-TOKEN': csrfToken(),
             'X-Hold-Token': hold.value.hold_token,
         },
-        body: JSON.stringify({}),
+        // GEÄNDERT (Schritt 40): Eingeloggt nichts mitschicken, als Gast Name + E-Mail
+        body: JSON.stringify(
+            user.value
+                ? {}
+                : { customer_name: customerName.value, customer_email: customerEmail.value }
+        ),
     })
 
     const data = await response.json()
@@ -324,11 +370,9 @@ async function submitBooking() {
     }
 
     // Heute: Anfrage an die Studioleitung
-    alert('Deine Anfrage wurde gesendet! Da der Termin heute ist, prüft das Studio kurz die Verfügbarkeit. Bezahlt wird erst nach der Bestätigung.')
+    alert('Deine Anfrage wurde gesendet! Da der Termin heute ist, prüft das Studio kurz die Verfügbarkeit. Wir melden uns per E-Mail. Bezahlt wird erst nach der Bestätigung.')
     emit('close')
 }
-
-// ---------- ENDE NEU ----------
 
 
 // ---------- Schritt 18: Checkout verlassen ----------
