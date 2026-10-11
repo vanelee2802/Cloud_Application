@@ -1,19 +1,26 @@
 <script setup>
 
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 
 // Offene Anfragen vom Server
 const requests = ref([])
 const loading = ref(true)
 const error = ref('')
 
-// Hinweis nach einer Aktion, z. B. "Termin bestätigt …"
+// Hinweis nach einer Aktion
 const flash = ref('')
+const flashIsError = ref(false)
 
-// ID der Anfrage, die gerade bearbeitet wird (Buttons dieser Zeile sperren)
+// ID der Anfrage, die gerade bearbeitet wird (Buttons sperren)
 const busyId = ref(null)
 
 let timer = null
+
+// Heute als YYYY-MM-DD
+const today = new Date().toLocaleDateString('sv-SE')
+
+
+// ---------- Anfragen laden ----------
 
 async function load() {
     const response = await fetch('/admin/appointments/requests', {
@@ -33,7 +40,9 @@ async function load() {
     requests.value = await response.json()
 }
 
-// Gemeinsame Funktion für alle Aktionen (annehmen, absagen …)
+
+// ---------- Aktionen an den Server schicken ----------
+
 async function send(request, action, body = null) {
     busyId.value = request.id
     flash.value = ''
@@ -52,6 +61,12 @@ async function send(request, action, body = null) {
     busyId.value = null
 
     flash.value = data.message ?? (response.ok ? 'Erledigt.' : 'Das hat leider nicht geklappt.')
+    flashIsError.value = !response.ok
+
+    // Bei Erfolg das Absage-Feld schließen
+    if (response.ok) {
+        openId.value = null
+    }
 
     await load()
 }
@@ -61,15 +76,78 @@ function confirmRequest(request) {
     send(request, 'confirm')
 }
 
-// Absagen → optional mit Nachricht an die Kundin
-function declineRequest(request) {
-    const note = prompt('Termin absagen. Nachricht an die Kundin (optional):')
 
-    // "Abbrechen" im Dialog → nichts tun
-    if (note === null) return
+// ---------- Absage-Feld mit Alternativtermin ----------
 
-    send(request, 'decline', { note: note || null })
+// Bei welcher Anfrage ist das Absage-Feld offen?
+const openId = ref(null)
+
+const altDate = ref('')
+const altTime = ref('')
+const altTimes = ref([])   // freie Plätze am gewählten Tag
+const note = ref('')
+
+// Absage-Feld öffnen oder schließen
+function togglePanel(request) {
+    if (openId.value === request.id) {
+        openId.value = null
+        return
+    }
+
+    openId.value = request.id
+    altDate.value = ''
+    altTime.value = ''
+    altTimes.value = []
+    note.value = ''
 }
+
+// Datum gewählt → freie Uhrzeiten laden, wie im Checkout
+watch(altDate, async (date) => {
+    altTime.value = ''
+    altTimes.value = []
+
+    if (!date || openId.value === null) return
+
+    const request = requests.value.find((r) => r.id === openId.value)
+
+    const response = await fetch(`/appointments/availability?nail_studio_id=${request.nail_studio_id}&date=${date}`, {
+        headers: { Accept: 'application/json' },
+    })
+
+    if (response.ok) {
+        altTimes.value = (await response.json()).times
+    }
+})
+
+// Ist die Uhrzeit wählbar? Frei UND (bei heute) noch nicht vorbei
+function isBookable(slot) {
+    if (slot.free === 0) return false
+
+    if (altDate.value === today) {
+        const now = new Date().toTimeString().slice(0, 5)   // z. B. "14:35"
+        return slot.time > now
+    }
+
+    return true
+}
+
+// Absagen MIT einem Alternativtermin
+function sendAlternative(request) {
+    send(request, 'alternatives', {
+        alternatives: [{ date: altDate.value, time: altTime.value }],
+        note: note.value || null,
+    })
+}
+
+// Absagen OHNE Alternativtermin
+function declineWithout(request) {
+    if (!confirm('Termin wirklich ohne Alternativvorschlag absagen?')) return
+
+    send(request, 'decline', { note: note.value || null })
+}
+
+
+// ---------- Anzeige ----------
 
 // "2026-10-20" → "20"
 function day(date) {
@@ -114,7 +192,9 @@ onBeforeUnmount(() => {
 
 
         <!-- Hinweis nach einer Aktion -->
-        <p v-if="flash" class="flash">{{ flash }}</p>
+        <p v-if="flash" class="flash" :class="{ 'flash-error': flashIsError }">
+            {{ flash }}
+        </p>
 
 
         <!-- Hinweise -->
@@ -161,10 +241,69 @@ onBeforeUnmount(() => {
                         <button
                             class="secondary-button"
                             :disabled="busyId === request.id"
-                            @click="declineRequest(request)"
+                            @click="togglePanel(request)"
                         >
-                            Absagen
+                            {{ openId === request.id ? 'Schließen' : 'Absagen' }}
                         </button>
+                    </div>
+
+                    <!-- Absage-Feld mit Alternativtermin -->
+                    <div v-if="openId === request.id" class="decline-panel">
+
+                        <p class="panel-title">Alternativtermin vorschlagen</p>
+
+                        <label :for="`alt-date-${request.id}`">Datum</label>
+                        <input
+                            :id="`alt-date-${request.id}`"
+                            type="date"
+                            :min="today"
+                            v-model="altDate"
+                        >
+
+                        <label :for="`alt-time-${request.id}`">Uhrzeit</label>
+                        <select
+                            :id="`alt-time-${request.id}`"
+                            v-model="altTime"
+                            :disabled="!altDate"
+                        >
+                            <option value="">Uhrzeit auswählen</option>
+
+                            <option
+                                v-for="slot in altTimes"
+                                :key="slot.time"
+                                :value="slot.time"
+                                :disabled="!isBookable(slot)"
+                            >
+                                {{ slot.time }}{{ isBookable(slot) ? '' : ' – nicht verfügbar' }}
+                            </option>
+                        </select>
+
+                        <label :for="`alt-note-${request.id}`">Nachricht an die Kundin (optional)</label>
+                        <textarea
+                            :id="`alt-note-${request.id}`"
+                            v-model="note"
+                            rows="2"
+                            placeholder="z. B. Heute sind wir leider ausgebucht."
+                        ></textarea>
+
+                        <div class="actions">
+                            <button
+                                class="primary-button"
+                                :disabled="!altDate || !altTime || busyId === request.id"
+                                @click="sendAlternative(request)"
+                            >
+                                Alternative vorschlagen
+                            </button>
+
+                            <button
+                                class="secondary-button"
+                                :disabled="busyId === request.id"
+                                @click="declineWithout(request)"
+                            >
+                                Ohne Alternative absagen
+                            </button>
+                        </div>
+
                     </div>
                 </div>
 
@@ -275,6 +414,12 @@ onBeforeUnmount(() => {
     font-size: 0.85rem;
 }
 
+.flash.flash-error {
+    background: #fdecea;
+
+    color: #b42318;
+}
+
 
 /* =========================================================
    ANFRAGEN
@@ -330,6 +475,51 @@ onBeforeUnmount(() => {
     font-size: 0.8rem;
 
     opacity: 0.6;
+}
+
+
+/* =========================================================
+   ABSAGE-FELD
+   ========================================================= */
+
+.decline-panel {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 0.4rem;
+
+    margin-top: 1rem;
+    padding: 1rem;
+
+    border-radius: 8px;
+
+    background: rgba(184, 115, 131, 0.06);
+}
+
+.panel-title {
+    margin: 0 0 0.4rem;
+
+    font-weight: 600;
+}
+
+.decline-panel label {
+    margin-top: 0.4rem;
+
+    font-size: 0.8rem;
+
+    opacity: 0.7;
+}
+
+.decline-panel input,
+.decline-panel select,
+.decline-panel textarea {
+    padding: 0.5rem;
+
+    border: 1px solid rgba(109, 59, 71, 0.2);
+    border-radius: 6px;
+
+    font: inherit;
 }
 
 

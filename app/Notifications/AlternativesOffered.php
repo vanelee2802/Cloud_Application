@@ -23,7 +23,7 @@ class AlternativesOffered extends Notification
     {
         $a = $this->appointment;
 
-        // Link zur Terminseite – dort wählt die Kundin einen Vorschlag
+        // Link zur Terminseite – dort wählt die Kundin den Vorschlag
         $url = URL::temporarySignedRoute('appointments.manage', now()->addDays(2), [
             'appointment' => $a->id,
         ]);
@@ -31,10 +31,16 @@ class AlternativesOffered extends Notification
         $date = Carbon::parse($a->date)->format('d.m.Y');
         $time = substr($a->time, 0, 5);
 
+        // GEÄNDERT: Text passend zur Anzahl der Vorschläge
+        $intro = $a->alternatives->count() === 1
+            ? 'Wir können dir stattdessen diesen Termin anbieten:'
+            : 'Wir können dir stattdessen folgende Termine anbieten:';
+
         $mail = (new MailMessage)
-            ->subject('Dein Wunschtermin ist leider belegt – wir haben Alternativen für dich')
+            ->subject('Dein Wunschtermin ist leider belegt – wir haben einen Vorschlag für dich')
             ->greeting('Hallo ' . $a->customer_name . ',')
-            ->line("dein Wunschtermin am {$date} um {$time} Uhr ist leider nicht möglich. Wir können dir folgende Termine anbieten:");
+            ->line("dein Wunschtermin am {$date} um {$time} Uhr ist leider nicht möglich.")
+            ->line($intro);
 
         // Eine Zeile pro Vorschlag
         foreach ($a->alternatives as $alt) {
@@ -47,8 +53,9 @@ class AlternativesOffered extends Notification
         }
 
         return $mail
-            ->line('Wer zuerst bucht, bekommt den Termin – am besten wählst du gleich.')
-            ->action('Termin auswählen', $url)
+            ->action('Vorschlag annehmen', $url)
+            // NEU: Was tun, wenn der Vorschlag nicht passt
+            ->line('Passt dir der Vorschlag nicht? Dann buche einfach online einen neuen Termin: ' . url('/'))
             ->salutation('Viele Grüße, dein MixMatch Nagelstudio');
     }
 }

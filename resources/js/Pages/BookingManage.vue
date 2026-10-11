@@ -39,10 +39,11 @@
         </template>
 
         <!-- Studioleitung hat Ersatztermine angeboten -->
+               <!-- Studioleitung hat einen Ersatztermin angeboten -->
         <template v-else-if="appointment.status === 'alternatives_offered'">
             <p>
                 Dein Wunschtermin ist leider nicht möglich.
-                Wähle einen dieser Termine, danach geht es direkt zur Zahlung:
+                Wir können dir stattdessen diesen Termin anbieten:
             </p>
             <div class="alternatives">
                 <button
@@ -51,9 +52,15 @@
                     :disabled="loading"
                     @click="post(alt.acceptUrl)"
                 >
-                    {{ formatDate(alt.date) }} um {{ alt.time }} Uhr
+                    {{ formatDate(alt.date) }} um {{ alt.time }} Uhr – annehmen und bezahlen
                 </button>
             </div>
+
+            <!-- NEU: Wenn der Vorschlag nicht passt -->
+            <p class="other-option">
+                Passt dir der Vorschlag nicht?
+                <Link href="/">Dann buche einfach online einen neuen Termin.</Link>
+            </p>
         </template>
 
         <!-- Bezahlt und gebucht -->
@@ -216,6 +223,16 @@ button,
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.other-option {
+    margin-top: 24px;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.other-option a {
+    color: inherit;
 }
 
 </style>
