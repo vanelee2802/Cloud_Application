@@ -18,6 +18,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\UserManagementController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -70,6 +71,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/employees', [EmployeeController::class, 'index'])
     ->middleware('role:admin')
     ->name('employees.index');
+    Route::get('/admin/users', [UserManagementController::class, 'index'])
+    ->middleware('role:admin')
+    ->name('admin.users.index');
 
     // Nur Mitarbeiter/Admin
     Route::middleware('role:employee|admin')->group(function () {
