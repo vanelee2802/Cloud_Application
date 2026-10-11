@@ -22,6 +22,8 @@ class AppointmentRequestController extends Controller
 {
     // Alle offenen Anfragen, früheste zuerst
     public function index()
+
+    
     {
         $requests = Appointment::with('service')
             ->where('status', 'requested')
@@ -170,5 +172,20 @@ class AppointmentRequestController extends Controller
         return response()->json([
             'message' => 'Alternativen gesendet. Die Kundin wurde benachrichtigt.',
         ]);
+    }
+        // Gebuchte (bezahlte) Termine ab heute, nächste zuerst
+    public function bookings()
+    {
+        $bookings = Appointment::with('service', 'user:id,name')
+            ->where('status', 'confirmed')
+            ->whereDate('date', '>=', now()->toDateString())
+            ->orderBy('date')
+            ->orderBy('time')
+            ->get([
+                'id', 'service_id', 'user_id', 'date', 'time',
+                'customer_name', 'customer_email', 'status',
+            ]);
+
+        return response()->json($bookings);
     }
 }

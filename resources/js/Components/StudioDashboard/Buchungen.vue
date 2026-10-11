@@ -1,4 +1,64 @@
 <script setup>
+
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+
+// Bestätigte Buchungen vom Server
+const bookings = ref([])
+const loading = ref(true)
+const error = ref('')
+
+// Anfangs nur die nächsten 5 zeigen, per Button alle
+const showAll = ref(false)
+const visibleBookings = computed(() =>
+    showAll.value ? bookings.value : bookings.value.slice(0, 5)
+)
+
+let timer = null
+
+async function load() {
+    const response = await fetch('/admin/appointments/bookings', {
+        headers: { Accept: 'application/json' },
+    })
+
+    loading.value = false
+
+    if (!response.ok) {
+        error.value = response.status === 401 || response.status === 403
+            ? 'Nur die Studioleitung kann die Buchungen sehen.'
+            : 'Die Buchungen konnten nicht geladen werden.'
+        return
+    }
+
+    error.value = ''
+    bookings.value = await response.json()
+}
+
+// "2026-10-20" → "20"
+function day(date) {
+    return date.split('-')[2]
+}
+
+// "2026-10-20" → "OKT"
+const months = ['JAN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ']
+
+function month(date) {
+    return months[Number(date.split('-')[1]) - 1]
+}
+
+// Name aus dem Termin, sonst aus dem Kundenkonto (alte Termine)
+function customerName(booking) {
+    return booking.customer_name || booking.user?.name || 'Unbekannt'
+}
+
+onMounted(() => {
+    load()
+    timer = setInterval(load, 30000)   // alle 30 Sekunden neu laden
+})
+
+onBeforeUnmount(() => {
+    clearInterval(timer)
+})
+
 </script>
 
 <template>
@@ -10,78 +70,45 @@
 
             <div>
                 <h2>Aktuelle Buchungen</h2>
-                <p>Die neuesten Termine</p>
+                <p>Bestätigte Termine ab heute</p>
             </div>
 
-            <button class="secondary-button">
-                Alle anzeigen
+            <button
+                v-if="bookings.length > 5"
+                class="secondary-button"
+                @click="showAll = !showAll"
+            >
+                {{ showAll ? 'Weniger anzeigen' : 'Alle anzeigen' }}
             </button>
 
         </div>
 
 
+        <!-- Hinweise -->
+        <p v-if="error" class="hint error">{{ error }}</p>
+        <p v-else-if="loading" class="hint">Buchungen werden geladen …</p>
+        <p v-else-if="bookings.length === 0" class="hint">Noch keine bestätigten Buchungen.</p>
+
+
         <!-- Buchungen -->
-        <div class="appointment-list">
+        <div v-else class="appointment-list">
 
-            <!-- Buchung 1 -->
-            <div class="appointment">
+            <div
+                v-for="booking in visibleBookings"
+                :key="booking.id"
+                class="appointment"
+            >
 
                 <div class="appointment-date">
-                    <strong>24</strong>
-                    <span>SEP</span>
+                    <strong>{{ day(booking.date) }}</strong>
+                    <span>{{ month(booking.date) }}</span>
                 </div>
 
                 <div class="appointment-info">
-                    <strong>Anna Müller</strong>
+                    <strong>{{ customerName(booking) }}</strong>
 
                     <span>
-                        French Nails · 14:00 Uhr
-                    </span>
-                </div>
-
-                <span class="status pending">
-                    Offen
-                </span>
-
-            </div>
-
-
-            <!-- Buchung 2 -->
-            <div class="appointment">
-
-                <div class="appointment-date">
-                    <strong>25</strong>
-                    <span>SEP</span>
-                </div>
-
-                <div class="appointment-info">
-                    <strong>Lisa Schmidt</strong>
-
-                    <span>
-                        Gel Nails · 16:00 Uhr
-                    </span>
-                </div>
-
-                <span class="status confirmed">
-                    Bestätigt
-                </span>
-
-            </div>
-
-
-            <!-- Buchung 3 -->
-            <div class="appointment">
-
-                <div class="appointment-date">
-                    <strong>26</strong>
-                    <span>SEP</span>
-                </div>
-
-                <div class="appointment-info">
-                    <strong>Sarah Weber</strong>
-
-                    <span>
-                        Design Nails · 11:00 Uhr
+                        {{ booking.service?.name }} · {{ booking.time.slice(0, 5) }} Uhr
                     </span>
                 </div>
 
@@ -145,6 +172,25 @@
     font-size: 0.85rem;
 
     opacity: 0.6;
+}
+
+
+/* =========================================================
+   HINWEISE
+   ========================================================= */
+
+.hint {
+    margin: 0;
+
+    font-size: 0.9rem;
+
+    opacity: 0.7;
+}
+
+.hint.error {
+    color: #b42318;
+
+    opacity: 1;
 }
 
 

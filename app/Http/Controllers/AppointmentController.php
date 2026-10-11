@@ -12,6 +12,9 @@ use App\Services\StripeCheckoutService;
 use App\Models\AppointmentAlternative;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
+use App\Models\User;                                   // NEU (Schritt 60)
+use App\Notifications\AppointmentRequested;            // NEU (Schritt 60)
+use Illuminate\Support\Facades\Notification;           // NEU (Schritt 60)
 
 class AppointmentController extends Controller
 {
@@ -168,6 +171,17 @@ class AppointmentController extends Controller
 
         // Heute: Anfrage an die Studioleitung, noch keine Zahlung
         if ($isToday) {
+            // NEU (Schritt 60): Studioleitung dieses Studios per E-Mail benachrichtigen
+            $adminEmails = User::where('role', 'admin')
+                ->where('nail_studio_id', $appointment->nail_studio_id)
+                ->pluck('email')
+                ->all();
+
+            if ($adminEmails) {
+                Notification::route('mail', $adminEmails)
+                    ->notify(new AppointmentRequested($appointment->refresh()));
+            }
+
             return response()->json([
                 'status' => $status,
             ]);
@@ -269,7 +283,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-    // NEU (Schritt 53): Bestätigten Termin bezahlen – eingeloggt oder per signiertem Link
+    // Bestätigten Termin bezahlen – eingeloggt oder per signiertem Link
     public function pay(Request $request, Appointment $appointment, StripeCheckoutService $checkout)
     {
         $this->authorizeCustomer($request, $appointment);
@@ -296,7 +310,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-        // Terminseite aus der E-Mail – Gast per signiertem Link oder eingeloggte Besitzerin
+    // Terminseite aus der E-Mail – Gast per signiertem Link oder eingeloggte Besitzerin
     public function manage(Request $request, Appointment $appointment)
     {
         $this->authorizeCustomer($request, $appointment);
@@ -333,6 +347,7 @@ class AppointmentController extends Controller
             ]),
         ]);
     }
+
     // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?
     private function authorizeHold(Request $request, Appointment $appointment): void
     {
