@@ -91,6 +91,10 @@
                         </option>
                     </select>
 
+                    <p v-if="hold">
+    Diese Uhrzeit ist für dich reserviert.
+</p>
+
                     <p v-if="selectedDate && selectedTime">
                         Gewählter Termin:
                         {{ selectedDate }} um {{ selectedTime }}
@@ -129,7 +133,7 @@ const selectedDate = ref('')
 const selectedTime = ref('')
 
 
-// ---------- NEU (Schritt 15) ----------
+// ---------- Schritt 15: freie Uhrzeiten ----------
 
 // Freie Plätze pro Uhrzeit vom Server, z. B. [{ time: '14:00', free: 3 }]
 const times = ref([])
@@ -155,6 +159,49 @@ watch(selectedDate, async (date) => {
 
     const data = await response.json()
     times.value = data.times
+})
+
+
+// ---------- NEU (Schritt 16): Platz reservieren ----------
+
+// Aktuelle Reservierung: { id, hold_token, expires_in } oder null
+const hold = ref(null)
+
+function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+}
+
+// Sobald eine Uhrzeit gewählt wird: Platz für 3 Minuten reservieren
+watch(selectedTime, async (time) => {
+    hold.value = null
+
+    if (!time) return
+
+    const response = await fetch('/appointments/hold', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+        },
+        body: JSON.stringify({
+            nail_studio_id: 1,
+            service_id: 1,
+            design_id: null,
+            date: selectedDate.value,
+            time: time,
+        }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+        alert(data.message ?? 'Diese Uhrzeit konnte nicht reserviert werden.')
+        selectedTime.value = ''
+        return
+    }
+
+    hold.value = data
 })
 
 // ---------- ENDE NEU ----------
@@ -235,7 +282,6 @@ async function startPayment() {
 }
 
 </script>
-
 <style scoped>
 
 .checkout-overlay {
