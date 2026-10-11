@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/design-elements', [DesignElementController::class, 'index']);
 
     Route::apiResource('designs', DesignController::class);
+   Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);

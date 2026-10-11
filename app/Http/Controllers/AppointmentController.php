@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Events\AppointmentStatusChanged;
 use Illuminate\Http\Request;
+use App\Services\SlotService;
 
 class AppointmentController extends Controller
 {
@@ -84,5 +85,18 @@ class AppointmentController extends Controller
         }
 
         return response()->json($appointment->load('service', 'nailStudio', 'employee'));
+    }
+
+        // Freie Plätze pro Uhrzeit an einem Tag
+    public function availability(Request $request, SlotService $slots)
+    {
+        $validated = $request->validate([
+            'nail_studio_id' => 'required|integer|exists:nail_studios,id',
+            'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+        ]);
+
+        return response()->json([
+            'times' => $slots->availability((int) $validated['nail_studio_id'], $validated['date']),
+        ]);
     }
 }
