@@ -124,10 +124,17 @@ class AppointmentController extends Controller
     }
 
     // Kundin schickt den reservierten Termin ab
-       // Kundin schickt den reservierten Termin ab
     public function submit(Request $request, Appointment $appointment)
     {
         $this->authorizeHold($request, $appointment);
+
+        $user = $request->user();
+
+        // NEU: Gäste müssen Name und E-Mail angeben, eingeloggte Kundinnen nicht
+        $validated = $request->validate([
+            'customer_name' => [Rule::requiredIf(! $user), 'nullable', 'string', 'max:255'],
+            'customer_email' => [Rule::requiredIf(! $user), 'nullable', 'email', 'max:255'],
+        ]);
 
         $isToday = $appointment->date === now()->toDateString();
         $status = $isToday ? 'requested' : 'awaiting_payment';
@@ -142,6 +149,9 @@ class AppointmentController extends Controller
                 'hold_expires_at' => null,
                 // Heute: noch keine Frist, erst nach Bestätigung durch die Studioleitung
                 'payment_expires_at' => $isToday ? null : now()->addMinutes(config('booking.payment_minutes')),
+                // NEU: Kontaktdaten aus dem Konto oder aus dem Formular
+                'customer_name' => $user?->name ?? $validated['customer_name'],
+                'customer_email' => $user?->email ?? $validated['customer_email'],
             ]);
 
         if (! $updated) {
@@ -150,7 +160,7 @@ class AppointmentController extends Controller
             ], 409);
         }
 
-        // Späterer Tag: Payment-Eintrag für deine bestehende checkout-Methode anlegen
+        // Späterer Tag: Payment-Eintrag für die checkout-Methode anlegen
         $payment = null;
 
         if (! $isToday) {
@@ -165,7 +175,7 @@ class AppointmentController extends Controller
             'status' => $status,
             'payment_id' => $payment?->id,
         ]);
-    }
+    }   
 
      // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?
     private function authorizeHold(Request $request, Appointment $appointment): void
