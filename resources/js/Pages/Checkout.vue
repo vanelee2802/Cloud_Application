@@ -141,8 +141,10 @@ const times = ref([])
 // Heute als YYYY-MM-DD, damit keine vergangenen Tage wählbar sind
 const today = new Date().toLocaleDateString('sv-SE')
 
-// Sobald ein Datum gewählt wird: freie Uhrzeiten laden
+// Sobald ein Datum gewählt wird: alten Platz freigeben, freie Uhrzeiten laden
 watch(selectedDate, async (date) => {
+    await releaseHold()            // GEÄNDERT (Schritt 17)
+
     selectedTime.value = ''
     times.value = []
 
@@ -162,7 +164,7 @@ watch(selectedDate, async (date) => {
 })
 
 
-// ---------- NEU (Schritt 16): Platz reservieren ----------
+// ---------- Schritt 16 + 17: Platz reservieren und freigeben ----------
 
 // Aktuelle Reservierung: { id, hold_token, expires_in } oder null
 const hold = ref(null)
@@ -171,9 +173,26 @@ function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content')
 }
 
-// Sobald eine Uhrzeit gewählt wird: Platz für 3 Minuten reservieren
-watch(selectedTime, async (time) => {
+// NEU (Schritt 17): aktuelle Reservierung auf dem Server freigeben
+async function releaseHold() {
+    if (!hold.value) return
+
+    const { id, hold_token } = hold.value
     hold.value = null
+
+    await fetch(`/appointments/${id}/hold`, {
+        method: 'DELETE',
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken(),
+            'X-Hold-Token': hold_token,
+        },
+    })
+}
+
+// Sobald eine Uhrzeit gewählt wird: alten Platz freigeben, neuen reservieren
+watch(selectedTime, async (time) => {
+    await releaseHold()            // GEÄNDERT (Schritt 17), vorher: hold.value = null
 
     if (!time) return
 
@@ -203,8 +222,6 @@ watch(selectedTime, async (time) => {
 
     hold.value = data
 })
-
-// ---------- ENDE NEU ----------
 
 
 /**
