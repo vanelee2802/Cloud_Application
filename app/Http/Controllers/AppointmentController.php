@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Services\SlotService;
 use Illuminate\Validation\Rule;
 use App\Models\Payment;
+use App\Services\StripeCheckoutService;
+
 class AppointmentController extends Controller
 {
     // Zeigt Termine: Kunden sehen ihre eigenen, Mitarbeiter/Admins sehen alle
@@ -123,14 +125,14 @@ class AppointmentController extends Controller
         return response()->noContent();
     }
 
-    // Kundin schickt den reservierten Termin ab
-    public function submit(Request $request, Appointment $appointment)
+     // Kundin schickt den reservierten Termin ab
+    public function submit(Request $request, Appointment $appointment, StripeCheckoutService $checkout)
     {
         $this->authorizeHold($request, $appointment);
 
         $user = $request->user();
 
-        // NEU: Gäste müssen Name und E-Mail angeben, eingeloggte Kundinnen nicht
+        // Gäste müssen Name und E-Mail angeben, eingeloggte Kundinnen nicht
         $validated = $request->validate([
             'customer_name' => [Rule::requiredIf(! $user), 'nullable', 'string', 'max:255'],
             'customer_email' => [Rule::requiredIf(! $user), 'nullable', 'email', 'max:255'],
@@ -149,7 +151,7 @@ class AppointmentController extends Controller
                 'hold_expires_at' => null,
                 // Heute: noch keine Frist, erst nach Bestätigung durch die Studioleitung
                 'payment_expires_at' => $isToday ? null : now()->addMinutes(config('booking.payment_minutes')),
-                // NEU: Kontaktdaten aus dem Konto oder aus dem Formular
+                // Kontaktdaten aus dem Konto oder aus dem Formular
                 'customer_name' => $user?->name ?? $validated['customer_name'],
                 'customer_email' => $user?->email ?? $validated['customer_email'],
             ]);
@@ -160,23 +162,44 @@ class AppointmentController extends Controller
             ], 409);
         }
 
-        // Späterer Tag: Payment-Eintrag für die checkout-Methode anlegen
-        $payment = null;
-
-        if (! $isToday) {
-            $payment = Payment::create([
-                'appointment_id' => $appointment->id,
-                'amount' => $appointment->service->price,
-                'status' => 'pending',
+        // Heute: Anfrage an die Studioleitung, noch keine Zahlung
+        if ($isToday) {
+            return response()->json([
+                'status' => $status,
             ]);
+        }
+
+        // Späterer Tag: Payment-Eintrag anlegen und direkt zu Stripe
+        $payment = Payment::create([
+            'appointment_id' => $appointment->id,
+            'amount' => $appointment->service->price,
+            'status' => 'pending',
+        ]);
+
+        try {
+            $checkoutUrl = $checkout->createCheckoutUrl($payment);
+        } catch (\Throwable $e) {
+            // Stripe nicht erreichbar → Platz wieder freigeben, damit er nicht blockiert
+            report($e);
+
+            Appointment::whereKey($appointment->id)->update([
+                'status' => 'expired',
+                'slot_key' => null,
+                'payment_expires_at' => null,
+            ]);
+            $payment->update(['status' => 'failed']);
+
+            return response()->json([
+                'message' => 'Die Zahlung konnte gerade nicht gestartet werden. Bitte versuche es in einer Minute erneut.',
+            ], 502);
         }
 
         return response()->json([
             'status' => $status,
-            'payment_id' => $payment?->id,
+            'payment_id' => $payment->id,
+            'checkout_url' => $checkoutUrl,
         ]);
-    }   
-
+    }
      // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?
     private function authorizeHold(Request $request, Appointment $appointment): void
     {
