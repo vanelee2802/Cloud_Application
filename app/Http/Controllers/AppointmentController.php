@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use App\Events\AppointmentStatusChanged;
 use Illuminate\Http\Request;
 use App\Services\SlotService;
+use Illuminate\Validation\Rule;
 
 class AppointmentController extends Controller
 {
@@ -98,5 +99,31 @@ class AppointmentController extends Controller
         return response()->json([
             'times' => $slots->availability((int) $validated['nail_studio_id'], $validated['date']),
         ]);
+    }
+
+        // Kundin wählt eine Uhrzeit → Platz für 3 Minuten reservieren
+    public function hold(Request $request, SlotService $slots)
+    {
+        $validated = $request->validate([
+            'nail_studio_id' => 'required|integer|exists:nail_studios,id',
+            'service_id' => 'required|integer|exists:services,id',
+            'design_id' => 'nullable|integer|exists:designs,id',
+            'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+            'time' => ['required', Rule::in(config('booking.times'))],
+        ]);
+
+        $appointment = $slots->hold($request->user()->id, $validated);
+
+        if (! $appointment) {
+            return response()->json([
+                'message' => 'Diese Uhrzeit ist leider schon ausgebucht.',
+            ], 422);
+        }
+
+        return response()->json([
+            'id' => $appointment->id,
+            'hold_token' => $appointment->hold_token,
+            'expires_in' => config('booking.hold_minutes') * 60,
+        ], 201);
     }
 }
