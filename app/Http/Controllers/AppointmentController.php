@@ -126,4 +126,26 @@ class AppointmentController extends Controller
             'expires_in' => config('booking.hold_minutes') * 60,
         ], 201);
     }
+
+        // Kundin wählt andere Uhrzeit oder schließt den Checkout → Platz freigeben
+    public function releaseHold(Request $request, Appointment $appointment)
+    {
+        $token = (string) $request->header('X-Hold-Token');
+
+        $isOwner = (int) $appointment->user_id === (int) $request->user()->id;
+        $tokenOk = $appointment->hold_token && hash_equals($appointment->hold_token, $token);
+
+        abort_unless($isOwner && $tokenOk, 403);
+
+        if ($appointment->status === 'held') {
+            $appointment->update([
+                'status' => 'cancelled',
+                'slot_key' => null,
+                'hold_token' => null,
+                'hold_expires_at' => null,
+            ]);
+        }
+
+        return response()->noContent();
+    }
 }

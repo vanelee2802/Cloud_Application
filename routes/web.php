@@ -81,7 +81,7 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
         Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
-
+Route::delete('/appointments/{appointment}/hold', [AppointmentController::class, 'releaseHold']);
         Route::apiResource('payments', PaymentController::class);
     });
 });
