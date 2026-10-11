@@ -10,6 +10,8 @@ use Illuminate\Validation\Rule;
 use App\Models\Payment;
 use App\Services\StripeCheckoutService;
 use App\Models\AppointmentAlternative;
+use Illuminate\Support\Facades\URL;
+use Inertia\Inertia;
 
 class AppointmentController extends Controller
 {
@@ -294,6 +296,43 @@ class AppointmentController extends Controller
         ]);
     }
 
+        // Terminseite aus der E-Mail – Gast per signiertem Link oder eingeloggte Besitzerin
+    public function manage(Request $request, Appointment $appointment)
+    {
+        $this->authorizeCustomer($request, $appointment);
+
+        $appointment->load('service', 'alternatives');
+
+        // Signierte Adressen für die Buttons, 1 Tag gültig
+        $validUntil = now()->addDay();
+
+        return Inertia::render('BookingManage', [
+            'appointment' => [
+                'id' => $appointment->id,
+                'date' => $appointment->date,
+                'time' => substr($appointment->time, 0, 5),
+                'status' => $appointment->status,
+                'service' => $appointment->service->name,
+                'price' => $appointment->service->price,
+                'admin_note' => $appointment->admin_note,
+                'payment_expires_at' => $appointment->payment_expires_at?->toIso8601String(),
+            ],
+
+            'payUrl' => URL::temporarySignedRoute('appointments.pay', $validUntil, [
+                'appointment' => $appointment->id,
+            ]),
+
+            'alternatives' => $appointment->alternatives->map(fn ($alt) => [
+                'id' => $alt->id,
+                'date' => $alt->date,
+                'time' => $alt->time,
+                'acceptUrl' => URL::temporarySignedRoute('appointments.alternatives.accept', $validUntil, [
+                    'appointment' => $appointment->id,
+                    'alternative' => $alt->id,
+                ]),
+            ]),
+        ]);
+    }
     // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?
     private function authorizeHold(Request $request, Appointment $appointment): void
     {

@@ -69,6 +69,9 @@ Route::post('/appointments/{appointment}/alternatives/{alternative}/accept', [Ap
 Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'pay'])
     ->middleware('throttle:10,1')
     ->name('appointments.pay');
+    // Terminseite aus der E-Mail (eingeloggt oder per signiertem Link)
+Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
+    ->name('appointments.manage');
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
