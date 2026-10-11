@@ -7,7 +7,7 @@ use App\Events\AppointmentStatusChanged;
 use Illuminate\Http\Request;
 use App\Services\SlotService;
 use Illuminate\Validation\Rule;
-
+use App\Models\Payment;
 class AppointmentController extends Controller
 {
     // Zeigt Termine: Kunden sehen ihre eigenen, Mitarbeiter/Admins sehen alle
@@ -22,26 +22,6 @@ class AppointmentController extends Controller
         }
 
         return response()->json($query->get());
-    }
-
-    // Kunde bucht einen neuen Termin
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'nail_studio_id' => 'required|exists:nail_studios,id',
-            'service_id' => 'required|exists:services,id',
-            'design_id' => 'nullable|exists:designs,id',
-            'date' => 'required|date|after_or_equal:today',
-            'time' => 'required|date_format:H:i',
-        ]);
-
-        $appointment = Appointment::create([
-            ...$validated,
-            'user_id' => $request->user()->id,
-            'status' => 'requested',
-        ]);
-
-        return response()->json($appointment->load('service', 'nailStudio'), 201);
     }
 
     // Zeigt einen einzelnen Termin
@@ -88,7 +68,7 @@ class AppointmentController extends Controller
         return response()->json($appointment->load('service', 'nailStudio', 'employee'));
     }
 
-        // Freie Plätze pro Uhrzeit an einem Tag
+    // Freie Plätze pro Uhrzeit an einem Tag
     public function availability(Request $request, SlotService $slots)
     {
         $validated = $request->validate([
@@ -101,7 +81,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-        // Kundin wählt eine Uhrzeit → Platz für 3 Minuten reservieren
+    // Kundin wählt eine Uhrzeit → Platz für 3 Minuten reservieren
     public function hold(Request $request, SlotService $slots)
     {
         $validated = $request->validate([
@@ -127,7 +107,7 @@ class AppointmentController extends Controller
         ], 201);
     }
 
-       // Kundin wählt andere Uhrzeit oder schließt den Checkout → Platz freigeben
+    // Kundin wählt andere Uhrzeit oder schließt den Checkout → Platz freigeben
     public function releaseHold(Request $request, Appointment $appointment)
     {
         $this->authorizeHold($request, $appointment);
@@ -144,22 +124,25 @@ class AppointmentController extends Controller
         return response()->noContent();
     }
 
-    
     // Kundin schickt den reservierten Termin ab
+       // Kundin schickt den reservierten Termin ab
     public function submit(Request $request, Appointment $appointment)
     {
         $this->authorizeHold($request, $appointment);
 
         $isToday = $appointment->date === now()->toDateString();
+        $status = $isToday ? 'requested' : 'awaiting_payment';
 
         // Nur ändern, wenn die Reservierung JETZT noch gültig ist
         $updated = Appointment::whereKey($appointment->id)
             ->where('status', 'held')
             ->where('hold_expires_at', '>', now())
             ->update([
-                'status' => $isToday ? 'requested' : 'awaiting_payment',
+                'status' => $status,
                 'hold_token' => null,
                 'hold_expires_at' => null,
+                // Heute: noch keine Frist, erst nach Bestätigung durch die Studioleitung
+                'payment_expires_at' => $isToday ? null : now()->addMinutes(config('booking.payment_minutes')),
             ]);
 
         if (! $updated) {
@@ -168,13 +151,24 @@ class AppointmentController extends Controller
             ], 409);
         }
 
+        // Späterer Tag: Payment-Eintrag für deine bestehende checkout-Methode anlegen
+        $payment = null;
+
+        if (! $isToday) {
+            $payment = Payment::create([
+                'appointment_id' => $appointment->id,
+                'amount' => $appointment->service->price,
+                'status' => 'pending',
+            ]);
+        }
+
         return response()->json([
-            'status' => $isToday ? 'requested' : 'awaiting_payment',
+            'status' => $status,
+            'payment_id' => $payment?->id,
         ]);
     }
 
-
-        // Prüft: Gehört die Reservierung dem eingeloggten Kunden UND stimmt der Token?
+    // Prüft: Gehört die Reservierung dem eingeloggten Kunden UND stimmt der Token?
     private function authorizeHold(Request $request, Appointment $appointment): void
     {
         $token = (string) $request->header('X-Hold-Token');

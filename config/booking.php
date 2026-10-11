@@ -6,4 +6,7 @@ return [
 
     // So viele Minuten bleibt ein ausgewählter Termin reserviert
     'hold_minutes' => 3,
+
+    // So viele Minuten hat die Kundin nach dem Abschicken Zeit zum Bezahlen
+    'payment_minutes' => 30,
 ];
