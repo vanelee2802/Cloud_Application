@@ -35,6 +35,15 @@ Route::get('/payment/cancel', function () {
 Route::get('/payment/success', function () {
     return 'Zahlung erfolgreich!';
 });
+
+// Rückkehr von Stripe – auch für Gäste erreichbar
+Route::get('/buchung/erfolg', function () {
+    return Inertia::render('BookingResult', ['success' => true]);
+})->name('booking.success');
+
+Route::get('/buchung/abgebrochen', function () {
+    return Inertia::render('BookingResult', ['success' => false]);
+})->name('booking.cancelled');
 #Route::get('/design-editor', [DesignEditorController::class, 'index']);
 #})->name('welcome');
 

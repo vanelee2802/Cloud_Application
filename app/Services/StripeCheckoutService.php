@@ -40,8 +40,8 @@ class StripeCheckoutService
             // Stripe-Seite läuft ab, statt 24 Stunden offen zu bleiben
             'expires_at' => $sessionExpiresAt->timestamp,
 
-            'success_url' => config('app.url') . '/payments/success?payment_id=' . $payment->id,
-            'cancel_url' => config('app.url') . '/payments/cancel',
+                       'success_url' => route('booking.success'),
+            'cancel_url' => route('booking.cancelled'),
         ]);
 
         $payment->update(['stripe_payment_id' => $session->id]);
