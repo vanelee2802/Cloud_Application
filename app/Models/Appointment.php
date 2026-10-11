@@ -9,6 +9,16 @@ class Appointment extends Model
     protected $fillable = [
         'user_id', 'nail_studio_id', 'service_id', 'employee_id',
         'design_id', 'date', 'time', 'status',
+        'slot_key', 'hold_token', 'hold_expires_at',
+    ];
+
+    protected $hidden = [
+        'slot_key',
+        'hold_token',
+    ];
+
+    protected $casts = [
+        'hold_expires_at' => 'datetime',
     ];
 
     public function user()
