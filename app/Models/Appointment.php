@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
-    protected $fillable = [
-        'user_id', 'nail_studio_id', 'service_id', 'employee_id',
-        'design_id', 'date', 'time', 'status',
-        'slot_key', 'hold_token', 'hold_expires_at',
-    ];
+  protected $fillable = [
+    'user_id', 'nail_studio_id', 'service_id', 'employee_id',
+    'design_id', 'date', 'time', 'status',
+    'slot_key', 'hold_token', 'hold_expires_at',
+    'payment_expires_at',
+];
 
     protected $hidden = [
         'slot_key',
@@ -18,9 +19,9 @@ class Appointment extends Model
     ];
 
     protected $casts = [
-        'hold_expires_at' => 'datetime',
-    ];
-
+    'hold_expires_at' => 'datetime',
+    'payment_expires_at' => 'datetime',
+];
         /**
      * Baut den Schlüssel für einen Platz, z. B. "1|2026-10-20|14:00|2".
      */
