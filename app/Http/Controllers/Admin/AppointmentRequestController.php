@@ -11,6 +11,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Notifications\AppointmentConfirmed;
+use Illuminate\Support\Facades\Notification;
 
 /**
  * Studioleitung: Anfragen für Termine am selben Tag bearbeiten
@@ -32,7 +34,7 @@ class AppointmentRequestController extends Controller
         return response()->json($requests);
     }
 
-    // Anfrage bestätigen → Kundin kann bezahlen
+     // Anfrage bestätigen → Kundin kann bezahlen
     public function confirm(Appointment $appointment)
     {
         // Nur ändern, wenn die Anfrage JETZT noch offen ist
@@ -55,8 +57,17 @@ class AppointmentRequestController extends Controller
             'status' => 'pending',
         ]);
 
+        // NEU: Aktuellen Stand laden (Status und Frist wurden eben per Abfrage geändert)
+        $appointment->refresh();
+
+        // NEU: Kundin per E-Mail benachrichtigen
+        if ($appointment->customer_email) {
+            Notification::route('mail', $appointment->customer_email)
+                ->notify(new AppointmentConfirmed($appointment));
+        }
+
         return response()->json([
-            'message' => 'Termin bestätigt. Die Kundin kann jetzt bezahlen.',
+            'message' => 'Termin bestätigt. Die Kundin wurde per E-Mail benachrichtigt.',
             'payment_id' => $payment->id,
         ]);
     }
