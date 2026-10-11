@@ -1,78 +1,124 @@
 <template>
-    <div class="booking-manage">
+    <div class="booking-page">
 
-        <h1>Dein Termin</h1>
+        <div class="booking-card">
 
-        <p class="status">{{ statusLabel }}</p>
+            <h1>Dein Termin</h1>
 
-        <div class="details">
-            <p>
-                <strong>{{ appointment.service }}</strong>
-                · {{ formatPrice(appointment.price) }}
-            </p>
-            <p>
-                {{ appointment.status === 'alternatives_offered' ? 'Dein Wunschtermin:' : 'Termin:' }}
-                {{ formatDate(appointment.date) }} um {{ appointment.time }} Uhr
-            </p>
-        </div>
+            <span class="status" :class="`status-${appointment.status}`">
+                {{ statusLabel }}
+            </span>
 
-        <p v-if="appointment.admin_note" class="note">
-            Nachricht vom Studio: {{ appointment.admin_note }}
-        </p>
 
-        <!-- Anfrage für heute, Studioleitung hat noch nicht entschieden -->
-        <p v-if="appointment.status === 'requested'">
-            Das Studio prüft gerade, ob dein Termin heute möglich ist.
-            Wir melden uns per E-Mail. Bezahlt wird erst nach der Bestätigung.
-        </p>
+            <!-- Termindaten -->
+            <div class="details">
 
-        <!-- Bestätigt, Zahlung offen -->
-        <template v-else-if="appointment.status === 'awaiting_payment'">
-            <p>
-                Dein Termin ist bestätigt. Bitte bezahle bis
-                <strong>{{ deadline }} Uhr</strong>,
-                sonst wird der Termin wieder freigegeben.
-            </p>
-            <button class="primary" :disabled="loading" @click="post(payUrl)">
-                {{ loading ? 'Einen Moment …' : 'Jetzt bezahlen' }}
-            </button>
-        </template>
+                <div class="detail-row">
+                    <span>Service</span>
+                    <strong>{{ appointment.service }}</strong>
+                </div>
 
-        <!-- Studioleitung hat Ersatztermine angeboten -->
-               <!-- Studioleitung hat einen Ersatztermin angeboten -->
-        <template v-else-if="appointment.status === 'alternatives_offered'">
-            <p>
-                Dein Wunschtermin ist leider nicht möglich.
-                Wir können dir stattdessen diesen Termin anbieten:
-            </p>
-            <div class="alternatives">
-                <button
-                    v-for="alt in alternatives"
-                    :key="alt.id"
-                    :disabled="loading"
-                    @click="post(alt.acceptUrl)"
-                >
-                    {{ formatDate(alt.date) }} um {{ alt.time }} Uhr – annehmen und bezahlen
-                </button>
+                <div class="detail-row">
+                    <span>Preis</span>
+                    <strong>{{ formatPrice(appointment.price) }}</strong>
+                </div>
+
+                <div class="detail-row">
+                    <span>{{ isOffer ? 'Dein Wunschtermin' : 'Termin' }}</span>
+                    <strong :class="{ crossed: isOffer }">
+                        {{ formatDate(appointment.date) }} um {{ appointment.time }} Uhr
+                    </strong>
+                </div>
+
             </div>
 
-            <!-- NEU: Wenn der Vorschlag nicht passt -->
-            <p class="other-option">
-                Passt dir der Vorschlag nicht?
-                <Link href="/">Dann buche einfach online einen neuen Termin.</Link>
-            </p>
-        </template>
 
-        <!-- Bezahlt und gebucht -->
-        <p v-else-if="appointment.status === 'confirmed'" class="success">
-            Dein Termin ist fest gebucht. Wir freuen uns auf dich!
-        </p>
+            <!-- Nachricht vom Studio -->
+            <div v-if="appointment.admin_note" class="note">
+                <span>Nachricht vom Studio</span>
+                <p>{{ appointment.admin_note }}</p>
+            </div>
 
-        <!-- Abgesagt, abgelaufen, storniert -->
-        <template v-else>
-            <p>Dieser Termin ist nicht mehr aktiv.</p>
-            <Link href="/" class="primary">Neuen Termin buchen</Link>
-        </template>
+
+            <!-- Anfrage für heute, Studioleitung hat noch nicht entschieden -->
+            <div v-if="appointment.status === 'requested'" class="info-box">
+                Das Studio prüft gerade, ob dein Termin heute möglich ist.
+                Wir melden uns per E-Mail. Bezahlt wird erst nach der Bestätigung.
+            </div>
+
+
+            <!-- Bestätigt, Zahlung offen -->
+            <template v-else-if="appointment.status === 'awaiting_payment'">
+                <div class="info-box">
+                    Dein Termin ist bestätigt. Bitte bezahle bis
+                    <strong>{{ deadline }} Uhr</strong>,
+                    sonst wird er wieder freigegeben.
+                </div>
+
+                <button class="primary-button" :disabled="loading" @click="post(payUrl)">
+                    {{ loading ? 'Einen Moment …' : 'Jetzt bezahlen' }}
+                </button>
+            </template>
+
+
+            <!-- Studioleitung hat einen Ersatztermin angeboten -->
+            <template v-else-if="isOffer">
+
+                <h2>Unser Vorschlag</h2>
+
+                <p class="muted">
+                    Dein Wunschtermin ist leider nicht möglich.
+                    Wir können dir stattdessen diesen Termin anbieten:
+                </p>
+
+                <div
+                    v-for="alt in alternatives"
+                    :key="alt.id"
+                    class="offer"
+                >
+                    <div class="offer-date">
+                        <strong>{{ day(alt.date) }}</strong>
+                        <span>{{ month(alt.date) }}</span>
+                    </div>
+
+                    <div class="offer-info">
+                        <strong>{{ weekday(alt.date) }}, {{ formatDate(alt.date) }}</strong>
+                        <span>{{ alt.time }} Uhr · {{ appointment.service }}</span>
+                    </div>
+
+                    <button
+                        class="primary-button"
+                        :disabled="loading"
+                        @click="post(alt.acceptUrl)"
+                    >
+                        {{ loading ? 'Einen Moment …' : 'Annehmen und bezahlen' }}
+                    </button>
+                </div>
+
+                <p class="other-option">
+                    Passt dir der Vorschlag nicht?
+                    <Link href="/">Dann buche einfach online einen neuen Termin.</Link>
+                </p>
+
+            </template>
+
+
+            <!-- Bezahlt und gebucht -->
+            <div v-else-if="appointment.status === 'confirmed'" class="success-box">
+                Dein Termin ist fest gebucht. Wir freuen uns auf dich!
+            </div>
+
+
+            <!-- Abgesagt, abgelaufen, storniert -->
+            <template v-else>
+                <p class="muted">Dieser Termin ist nicht mehr aktiv.</p>
+
+                <Link href="/" class="primary-button">
+                    Neuen Termin buchen
+                </Link>
+            </template>
+
+        </div>
 
     </div>
 </template>
@@ -91,11 +137,14 @@ const props = defineProps({
 
 const loading = ref(false)
 
+// Wurde ein Ersatztermin angeboten?
+const isOffer = computed(() => props.appointment.status === 'alternatives_offered')
+
 // Deutscher Text zum Status
 const statusLabels = {
     requested: 'Anfrage wird geprüft',
     awaiting_payment: 'Bestätigt – Zahlung offen',
-    alternatives_offered: 'Ersatztermine verfügbar',
+    alternatives_offered: 'Ersatztermin verfügbar',
     confirmed: 'Gebucht',
     rejected: 'Abgesagt',
     expired: 'Abgelaufen',
@@ -119,7 +168,24 @@ function formatDate(date) {
     return `${day}.${month}.${year}`
 }
 
-// "45.00" → "45,00 €"
+// "2026-10-21" → "21"
+function day(date) {
+    return date.split('-')[2]
+}
+
+// "2026-10-21" → "OKT"
+const months = ['JAN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ']
+
+function month(date) {
+    return months[Number(date.split('-')[1]) - 1]
+}
+
+// "2026-10-21" → "Mittwoch"
+function weekday(date) {
+    return new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', { weekday: 'long' })
+}
+
+// "25.00" → "25,00 €"
 function formatPrice(price) {
     return Number(price).toFixed(2).replace('.', ',') + ' €'
 }
@@ -146,7 +212,7 @@ async function post(url) {
     loading.value = false
     alert(data.message ?? 'Das hat leider nicht geklappt.')
 
-    // Seite mit dem aktuellen Stand neu laden (z. B. wenn ein Vorschlag inzwischen vergeben ist)
+    // Seite mit dem aktuellen Stand neu laden (z. B. wenn der Vorschlag inzwischen vergeben ist)
     router.reload()
 }
 
@@ -155,84 +221,297 @@ async function post(url) {
 
 <style scoped>
 
-.booking-manage {
-    max-width: 560px;
-    margin: 60px auto;
-    padding: 40px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+/* =========================================================
+   SEITE UND KARTE
+   ========================================================= */
+
+.booking-page {
+    display: flex;
+
+    justify-content: center;
+
+    padding: 4rem 1rem;
 }
 
-.booking-manage h1 {
-    margin-bottom: 8px;
+.booking-card {
+    width: 100%;
+    max-width: 520px;
+
+    padding: 2.5rem;
+
+    background: white;
+
+    border-radius: 16px;
+
+    box-shadow:
+        0 2px 8px rgba(184, 115, 131, 0.04),
+        0 8px 24px rgba(109, 59, 71, 0.08);
+
+    box-sizing: border-box;
 }
+
+.booking-card h1 {
+    margin: 0 0 0.8rem;
+}
+
+.booking-card h2 {
+    margin: 2rem 0 0.4rem;
+
+    font-size: 1.2rem;
+}
+
+.muted {
+    margin: 0 0 1rem;
+
+    font-size: 0.9rem;
+
+    opacity: 0.7;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
 
 .status {
     display: inline-block;
-    margin-bottom: 20px;
-    padding: 4px 12px;
-    border-radius: 999px;
-    background: #f1f1f1;
-    font-size: 14px;
+
+    padding: 0.35rem 0.8rem;
+
+    border-radius: 20px;
+
+    font-size: 0.8rem;
 }
 
-.details p {
-    margin: 4px 0;
+.status-requested,
+.status-awaiting_payment,
+.status-alternatives_offered {
+    background: #fff3cd;
+}
+
+.status-confirmed {
+    background: #e2f4e8;
+}
+
+.status-rejected,
+.status-expired,
+.status-cancelled {
+    background: #fdecea;
+
+    color: #b42318;
+}
+
+
+/* =========================================================
+   TERMINDATEN
+   ========================================================= */
+
+.details {
+    margin-top: 1.8rem;
+
+    border-top: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.detail-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 1rem;
+
+    padding: 0.8rem 0;
+
+    border-bottom: 1px solid rgba(109, 59, 71, 0.08);
+}
+
+.detail-row span {
+    font-size: 0.85rem;
+
+    opacity: 0.6;
+}
+
+.detail-row strong {
+    text-align: right;
+}
+
+.crossed {
+    text-decoration: line-through;
+
+    opacity: 0.5;
+}
+
+
+/* =========================================================
+   HINWEISE
+   ========================================================= */
+
+.note,
+.info-box,
+.success-box {
+    margin-top: 1.5rem;
+    padding: 1rem 1.2rem;
+
+    border-radius: 10px;
+
+    font-size: 0.9rem;
 }
 
 .note {
-    margin: 20px 0;
-    padding: 12px 14px;
-    border-radius: 8px;
-    background: #fff4e5;
+    background: rgba(184, 115, 131, 0.08);
 }
 
-.success {
-    padding: 12px 14px;
-    border-radius: 8px;
-    background: #e8f6ee;
+.note span {
+    display: block;
+
+    margin-bottom: 0.3rem;
+
+    font-size: 0.75rem;
+
+    opacity: 0.6;
 }
 
-.alternatives {
+.note p {
+    margin: 0;
+}
+
+.info-box {
+    background: #fff8e6;
+}
+
+.success-box {
+    background: #e2f4e8;
+}
+
+
+/* =========================================================
+   VORSCHLAG
+   ========================================================= */
+
+.offer {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+
+    flex-wrap: wrap;
+
+    align-items: center;
+
+    gap: 1rem;
+
+    margin-bottom: 0.8rem;
+    padding: 1.2rem;
+
+    border: 1px solid rgba(109, 59, 71, 0.12);
+    border-radius: 12px;
 }
 
-button,
-.primary {
-    display: inline-block;
-    margin-top: 16px;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 6px;
-    background: #222;
-    color: white;
-    font-size: 15px;
-    text-decoration: none;
-    cursor: pointer;
+.offer-date {
+    width: 50px;
+
+    text-align: center;
 }
 
-.alternatives button {
-    margin-top: 0;
-    background: #f1f1f1;
-    color: #222;
+.offer-date strong {
+    display: block;
+
+    font-size: 1.5rem;
+
+    line-height: 1;
+
+    color: #6d3b47;
 }
 
-button:disabled {
+.offer-date span {
+    font-size: 0.7rem;
+
     opacity: 0.5;
-    cursor: not-allowed;
+}
+
+.offer-info {
+    display: flex;
+
+    flex-direction: column;
+
+    flex: 1;
+}
+
+.offer-info span {
+    margin-top: 0.2rem;
+
+    font-size: 0.85rem;
+
+    opacity: 0.6;
+}
+
+.offer .primary-button {
+    width: 100%;
+
+    margin-top: 0.4rem;
 }
 
 .other-option {
-    margin-top: 24px;
-    font-size: 14px;
-    opacity: 0.8;
+    margin-top: 1.5rem;
+
+    font-size: 0.85rem;
+
+    opacity: 0.75;
 }
 
 .other-option a {
-    color: inherit;
+    color: #6d3b47;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.primary-button {
+    display: inline-block;
+
+    margin-top: 1.5rem;
+    padding: 0.8rem 1.4rem;
+
+    border: none;
+    border-radius: 8px;
+
+    background: rgba(109, 59, 71, 0.9);
+
+    color: white;
+
+    font: inherit;
+    font-size: 0.95rem;
+    text-align: center;
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.primary-button:hover {
+    opacity: 0.85;
+}
+
+.primary-button:disabled {
+    opacity: 0.5;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 500px) {
+
+    .booking-page {
+        padding: 1.5rem 0.75rem;
+    }
+
+    .booking-card {
+        padding: 1.5rem;
+    }
+
 }
 
 </style>
