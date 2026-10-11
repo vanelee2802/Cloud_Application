@@ -46,11 +46,17 @@ Route::get('/checkout', function () {
     return Inertia::render('Checkout');
 })->name('checkout');
 
+// Termin buchen – auch ohne Kundenkonto möglich (Schritt 35)
+Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
+Route::post('/appointments/hold', [AppointmentController::class, 'hold'])->middleware('throttle:20,1');
+Route::delete('/appointments/{appointment}/hold', [AppointmentController::class, 'releaseHold']);
+Route::post('/appointments/{appointment}/submit', [AppointmentController::class, 'submit'])->middleware('throttle:10,1');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
    #studioDashboard für Admin und Employee
    # Route::get('/studio-dashboard', function () {
    # return Inertia::render('StudioDashboard');
@@ -63,10 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/design-elements', [DesignElementController::class, 'index']);
 
     Route::apiResource('designs', DesignController::class);
-  
-    Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
-    Route::post('/appointments/hold', [AppointmentController::class, 'hold']);
-    Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
+    Route::apiResource('appointments', AppointmentController::class)->only(['index', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
     Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
@@ -81,9 +84,8 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
         Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
-Route::delete('/appointments/{appointment}/hold', [AppointmentController::class, 'releaseHold']);
         Route::apiResource('payments', PaymentController::class);
-    });Route::post('/appointments/{appointment}/submit', [AppointmentController::class, 'submit']);
+    });
 });
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
@@ -111,4 +113,3 @@ Route::delete('/employees/{employee}', [
 
 
 require __DIR__.'/auth.php';
-
