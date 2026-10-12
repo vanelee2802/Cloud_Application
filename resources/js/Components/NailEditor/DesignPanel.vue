@@ -379,13 +379,23 @@ const ausgewaehltId = ref(null)
 
 function selectDesign(design) {
 
+    // Zweiter Klick auf dasselbe Design: Auswahl aufheben
+    if (ausgewaehltId.value === design.id) {
+
+        ausgewaehltId.value = null
+
+        emit('design-selected', null)
+
+        return
+
+    }
+
     ausgewaehltId.value = design.id
 
     // Ganzes Objekt weitergeben: id, name, image_path, price_per_nail, …
     emit('design-selected', design)
 
 }
-
 
 function formatPreis(preis) {
 
@@ -783,7 +793,7 @@ function formatPreis(preis) {
 
     color: var(--bordeaux);
 
-    box-shadow: inset 0 0 0 1px var(--bordeaux);
+    box-shadow: inset 0 0 0 2px var(--bordeaux);
 
 }
 

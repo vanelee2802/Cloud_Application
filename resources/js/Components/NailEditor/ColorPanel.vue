@@ -149,11 +149,13 @@
         <!-- Farbliste -->
         <div class="color-list">
 
-            <button
+                     <button
                 v-for="color in filteredColors"
                 :key="color.id ?? color.name"
                 type="button"
                 class="color-button"
+                :class="{ active: selectedKey === colorKey(color) }"
+                :aria-pressed="selectedKey === colorKey(color)"
                 :title="color.name"
                 @click="selectColor(color)"
             >
@@ -213,8 +215,29 @@ const showSearch = ref(false)
 | Farbe auswählen
 |--------------------------------------------------------------------------
 */
+// Gewählte Farbe merken (id, oder Name falls keine id vorhanden)
+const selectedKey = ref(null)
+
+function colorKey(color) {
+
+    return color.id ?? color.name
+
+}
 
 function selectColor(color) {
+
+    // Zweiter Klick auf dieselbe Farbe: Auswahl aufheben
+    if (selectedKey.value === colorKey(color)) {
+
+        selectedKey.value = null
+
+        emit('color-selected', null)
+
+        return
+
+    }
+
+    selectedKey.value = colorKey(color)
 
     emit('color-selected', color)
 
@@ -905,6 +928,7 @@ onMounted(async () => {
 }
 
 
+
 /*
 |--------------------------------------------------------------------------
 | KEINE ERGEBNISSE
@@ -989,6 +1013,26 @@ onMounted(async () => {
         transform: none;
 
     }
+
+}
+
+/*
+|--------------------------------------------------------------------------
+| AUSGEWÄHLTE FARBE (gleicher Stil wie Form + Designs)
+|--------------------------------------------------------------------------
+*/
+
+.color-panel .color-button.active {
+
+    background: #f8f0f2;
+
+    box-shadow: inset 0 0 0 2px #7d1024;
+
+}
+
+.color-panel .color-button.active .color-name {
+
+    color: #7d1024;
 
 }
 
