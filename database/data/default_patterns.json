@@ -1,0 +1,72 @@
+[
+    {
+        "name": "Schildpatt Karamell",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "image": "/images/nail-editor/designs/patterns/schildpatt-karamell.svg",
+        "tags": ["schildpatt", "tortoise", "karamell", "braun", "animal", "herbst"]
+    },
+    {
+        "name": "Zopfstrick Creme",
+        "category": "Muster",
+        "price_per_nail": 3.50,
+        "image": "/images/nail-editor/designs/patterns/zopfstrick-creme.svg",
+        "tags": ["strick", "zopf", "pullover", "creme", "matt", "herbst", "winter"]
+    },
+    {
+        "name": "Rost Ombré",
+        "category": "Ombre",
+        "price_per_nail": 2.50,
+        "image": "/images/nail-editor/designs/patterns/rost-ombre.svg",
+        "tags": ["ombre", "verlauf", "gradient", "rost", "orange", "herbst"]
+    },
+    {
+        "name": "Karo",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "image": "/images/nail-editor/designs/patterns/karo-herbst.svg",
+        "tags": ["karo", "plaid", "tartan", "kariert", "muster", "herbst"]
+    },
+    {
+        "name": "Karamell French",
+        "category": "French",
+        "price_per_nail": 2.00,
+        "image": "/images/nail-editor/designs/patterns/karamell-french.svg",
+        "tags": ["french", "spitze", "tip", "karamell", "klassisch", "herbst"]
+    },
+    {
+        "name": "Goldfolie",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "image": "/images/nail-editor/designs/patterns/goldfolie.svg",
+        "tags": ["gold", "folie", "flakes", "nude", "glamour", "herbst"]
+    },
+    {
+        "name": "Herbstblätter",
+        "category": "Nail Art",
+        "price_per_nail": 3.50,
+        "image": "/images/nail-editor/designs/patterns/herbstblaetter.svg",
+        "tags": ["blätter", "laub", "ahorn", "nail art", "nude", "herbst"]
+    },
+    {
+        "name": "Burgund & Goldlinie",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "image": "/images/nail-editor/designs/patterns/burgund-goldlinie.svg",
+        "tags": ["burgund", "bordeaux", "gold", "linie", "elegant", "herbst"]
+    },
+    {
+        "name": "Rost Glitzer",
+        "category": "Glitzer",
+        "price_per_nail": 1.00,
+        "image": "/images/nail-editor/designs/patterns/rost-glitzer.svg",
+        "tags": ["glitzer", "glitter", "rost", "kupfer", "funkeln", "herbst"]
+    },
+    {
+        "name": "Brauner Marmor",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "image": "/images/nail-editor/designs/patterns/marmor-braun.svg",
+        "tags": ["marmor", "marble", "braun", "creme", "gold", "herbst"]
+    }
+]
