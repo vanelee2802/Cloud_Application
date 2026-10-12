@@ -47,9 +47,17 @@
                     :style="patternStyle(finger.key)"
                 ></span>
 
+                                <!-- 3b. Umfärbbare Farbschichten (z. B. French-Spitze, Karo-Linien) -->
+                <span
+                    v-for="(layer, index) in layers"
+                    :key="`${finger.key}-layer-${index}`"
+                    class="nail-layer"
+                    :style="layerStyle(finger.key, layer)"
+                ></span>
+
                             <!-- 4. Wölbung vom Original-Nagel -->
                 <img
-                    v-if="color || pattern"
+                 v-if="hasPaint"
                     :src="nailSrc(finger.key)"
                     alt=""
                     aria-hidden="true"
@@ -58,7 +66,7 @@
 
                 <!-- 5. Glanz (Standard-Finish, später durch Effekte ersetzbar) -->
                 <span
-                    v-if="color || pattern"
+                    v-if="hasPaint"
                     class="nail-layer nail-gloss"
                     :style="maskStyle(finger.key)"
                 ></span>
@@ -78,9 +86,15 @@ import { computed } from 'vue'
 const props = defineProps({
     shape:   { type: String, default: 'almond' },
     length:  { type: String, default: 'medium' },
-    color:   { type: String, default: null },   // Hex-Code, z. B. "#B01C2E"
-    pattern: { type: String, default: null },   // Bildpfad des Musters
+    color:   { type: String, default: null },        // Hex-Code, z. B. "#B01C2E"
+    pattern: { type: String, default: null },        // Bildpfad eines deckenden Musters
+    layers:  { type: Array,  default: () => [] },    // [{ mask, color }, …] umfärbbares Muster
 })
+
+// Ist überhaupt etwas auf dem Nagel? Dann Wölbung + Glanz zeigen
+const hasPaint = computed(() =>
+    Boolean(props.color || props.pattern || props.layers.length)
+)
 
 // Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge)
 const SINGLE_SET = ['stiletto']
@@ -141,6 +155,32 @@ function patternStyle(finger) {
     return {
         ...maskStyle(finger),
         backgroundImage: `url("${props.pattern}")`,
+    }
+
+}
+// Farbschicht: Form aus der Schicht-Maske UND Nagelform, Farbe frei wählbar
+function layerStyle(finger, layer) {
+
+    const masks = `url("${layer.mask}"), url("${nailSrc(finger)}")`
+
+    return {
+        backgroundColor: layer.color,
+
+        WebkitMaskImage:     masks,
+        maskImage:           masks,
+
+        WebkitMaskSize:      'cover, 100% 100%',
+        maskSize:            'cover, 100% 100%',
+
+        WebkitMaskPosition:  'center top, center',
+        maskPosition:        'center top, center',
+
+        WebkitMaskRepeat:    'no-repeat',
+        maskRepeat:          'no-repeat',
+
+        // nur dort sichtbar, wo BEIDE Masken etwas zeigen
+        WebkitMaskComposite: 'source-in',
+        maskComposite:       'intersect',
     }
 
 }

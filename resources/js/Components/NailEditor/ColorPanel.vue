@@ -4,8 +4,9 @@
         <!-- Überschrift + Lupe -->
         <div class="color-header">
 
-            <h3>FARBE</h3>
-
+                      <h3>
+                FARBE<span v-if="targetLabel" class="target-label"> · {{ targetLabel }}</span>
+            </h3>
             <button
                 type="button"
                 class="search-toggle"
@@ -154,8 +155,8 @@
                 :key="color.id ?? color.name"
                 type="button"
                 class="color-button"
-                :class="{ active: selectedKey === colorKey(color) }"
-                :aria-pressed="selectedKey === colorKey(color)"
+                                :class="{ active: isActive(color) }"
+                :aria-pressed="isActive(color)"
                 :title="color.name"
                 @click="selectColor(color)"
             >
@@ -210,13 +211,27 @@ const selectedFilter = ref(null)
 const showSearch = ref(false)
 
 
-/*
-|--------------------------------------------------------------------------
-| Farbe auswählen
-|--------------------------------------------------------------------------
-*/
-// Gewählte Farbe merken (id, oder Name falls keine id vorhanden)
-const selectedKey = ref(null)
+/// Vom Editor gesteuert:
+// activeHex   = welche Farbe markiert ist
+// targetLabel = wofür gerade gefärbt wird (z. B. "Spitze"), leer = Grundfarbe
+const props = defineProps({
+    activeHex:   { type: String, default: null },
+    targetLabel: { type: String, default: '' },
+})
+
+function isActive(color) {
+
+    return Boolean(props.activeHex) &&
+        color.hex_code?.toLowerCase() === props.activeHex.toLowerCase()
+
+}
+
+// Der Editor entscheidet, was mit der Farbe passiert
+function selectColor(color) {
+
+    emit('color-selected', color)
+
+}
 
 function colorKey(color) {
 
@@ -1033,6 +1048,19 @@ onMounted(async () => {
 .color-panel .color-button.active .color-name {
 
     color: #7d1024;
+
+}
+
+/* Ziel der Farbauswahl, z. B. "· Spitze" */
+.target-label {
+
+    font-family: system-ui, sans-serif;
+
+    font-size: 0.8em;
+
+    letter-spacing: 0.02em;
+
+    color: #555555;
 
 }
 

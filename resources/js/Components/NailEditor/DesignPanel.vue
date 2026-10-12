@@ -4,7 +4,7 @@
         <!-- ========================================= -->
         <!-- KOPFZEILE                                 -->
         <!-- Ebene 1: DESIGNS 🔍                       -->
-        <!-- Ebene 2: ← MUSTER 🔍                      -->
+        <!-- Ebene 2: ← MUSTER 🔍        ● Spitze      -->
         <!-- ========================================= -->
 
         <div class="design-header">
@@ -56,6 +56,34 @@
 
             </div>
 
+                      <!-- Schichten: Klick = Ziel für die Farbauswahl im ColorPanel -->
+            <div
+                v-if="selectedLayers.length"
+                class="layer-colors"
+            >
+
+                <button
+                    v-for="(layer, index) in selectedLayers"
+                    :key="index"
+                    type="button"
+                    class="layer-color"
+                    :class="{ active: activeLayer === index }"
+                    :aria-pressed="activeLayer === index"
+                    :title="`„${layer.name}“ mit der Farbauswahl färben`"
+                    @click="toggleLayerTarget(index)"
+                >
+
+                    <span
+                        class="layer-swatch"
+                        :style="{ backgroundColor: layer.color }"
+                    ></span>
+
+                    <span>{{ layer.name }}</span>
+
+                </button>
+
+            </div>
+
         </div>
 
 
@@ -87,7 +115,6 @@
 
         <!-- ========================================= -->
         <!-- EBENE 1: KATEGORIEN                       -->
-        <!-- (nur ohne aktive Suche)                   -->
         <!-- ========================================= -->
 
         <div
@@ -105,11 +132,23 @@
             >
 
                 <span class="press-on-wrap">
+
                     <span
                         class="press-on"
-                        :style="{ backgroundImage: `url('${kategorie.vorschau}')` }"
-                    ></span>
-                   
+                        :style="pressOnStyle(kategorie.vorschau)"
+                    >
+                        <span
+                            v-for="(layer, index) in layersOf(kategorie.vorschau)"
+                            :key="index"
+                            class="press-on-layer"
+                            :style="pressOnLayerStyle(layer)"
+                        ></span>
+                    </span>
+
+                    <span class="count">
+                        {{ kategorie.anzahl }}
+                    </span>
+
                 </span>
 
                 <span class="label">
@@ -142,10 +181,19 @@
             >
 
                 <span class="press-on-wrap">
+
                     <span
                         class="press-on"
-                        :style="{ backgroundImage: `url('${design.image_path}')` }"
-                    ></span>
+                        :style="pressOnStyle(design)"
+                    >
+                        <span
+                            v-for="(layer, index) in layersOf(design)"
+                            :key="index"
+                            class="press-on-layer"
+                            :style="pressOnLayerStyle(layer)"
+                        ></span>
+                    </span>
+
                 </span>
 
                 <span class="label">
@@ -172,8 +220,14 @@
 import { ref, computed, nextTick, onMounted } from 'vue'
 
 const emit = defineEmits([
-    'design-selected'
+    'design-selected',
+    'layer-target',      // welche Schicht gerade gefärbt wird (Index oder null)
 ])
+
+// Vom Editor: welche Schicht gerade Ziel der Farbauswahl ist
+const props = defineProps({
+    activeLayer: { type: Number, default: null },
+})
 
 
 // =========================================
@@ -243,8 +297,8 @@ const kategorien = computed(() => {
     return Object.entries(gruppen)
         .map(([name, liste]) => ({
             name,
-            anzahl:  liste.length,
-            vorschau: liste[0].image_path,
+            anzahl:   liste.length,
+            vorschau: liste[0],        // erstes Design als Vorschau
         }))
         .sort((a, b) => {
 
@@ -377,12 +431,31 @@ const sichtbareDesigns = computed(() => {
 
 const ausgewaehltId = ref(null)
 
+// Eigene Farben der Schichten für das gewählte Muster
+const layerColors = ref([])
+
+
+const selectedDesign = computed(() =>
+    designs.value.find((design) => design.id === ausgewaehltId.value) ?? null
+)
+
+// Schichten des gewählten Musters MIT den eingestellten Farben
+const selectedLayers = computed(() =>
+    (selectedDesign.value?.layers ?? []).map((layer, index) => ({
+        ...layer,
+        color: layerColors.value[index] ?? layer.color,
+    }))
+)
+
+
 function selectDesign(design) {
 
     // Zweiter Klick auf dasselbe Design: Auswahl aufheben
     if (ausgewaehltId.value === design.id) {
 
         ausgewaehltId.value = null
+
+        layerColors.value = []
 
         emit('design-selected', null)
 
@@ -392,10 +465,83 @@ function selectDesign(design) {
 
     ausgewaehltId.value = design.id
 
-    // Ganzes Objekt weitergeben: id, name, image_path, price_per_nail, …
-    emit('design-selected', design)
+    // Mit den Standardfarben starten
+    layerColors.value = (design.layers ?? []).map((layer) => layer.color)
+    emit('layer-target', null)
+    emitSelected()
 
 }
+
+
+function setLayerColor(index, color) {
+
+    layerColors.value[index] = color
+
+    emitSelected()
+
+}
+
+// Klick auf "● Spitze": Ziel setzen, zweiter Klick: Ziel lösen
+function toggleLayerTarget(index) {
+
+    emit('layer-target', props.activeLayer === index ? null : index)
+
+}
+
+// Der Editor ruft setLayerColor auf, wenn im ColorPanel eine Farbe gewählt wird
+defineExpose({ setLayerColor })
+
+
+// Gewähltes Design inkl. eingestellter Schicht-Farben an den Editor geben
+function emitSelected() {
+
+    if (!selectedDesign.value) return
+
+    emit('design-selected', {
+        ...selectedDesign.value,
+        layers: selectedLayers.value,
+    })
+
+}
+
+
+// =========================================
+// PRESS-ON-VORSCHAU
+// =========================================
+
+// Deckendes Muster: Bild als Hintergrund
+function pressOnStyle(design) {
+
+    return design?.image_path
+        ? { backgroundImage: `url('${design.image_path}')` }
+        : {}
+
+}
+
+// Umfärbbares Muster: Schichten (beim gewählten mit eigenen Farben)
+function layersOf(design) {
+
+    if (!design?.layers) return []
+
+    return design.id === ausgewaehltId.value
+        ? selectedLayers.value
+        : design.layers
+
+}
+
+// Eine Farbschicht in der Vorschau
+function pressOnLayerStyle(layer) {
+
+    const mask = `url('${layer.mask}')`
+
+    return {
+        backgroundColor: layer.color,
+        WebkitMaskImage: mask,
+        maskImage:       mask,
+    }
+
+}
+
 
 function formatPreis(preis) {
 
@@ -676,6 +822,112 @@ function formatPreis(preis) {
 
 /*
 |--------------------------------------------------------------------------
+| FARBEN DER SCHICHTEN (rechts in der Kopfzeile)
+|--------------------------------------------------------------------------
+*/
+
+.layer-colors {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.6rem;
+
+    margin-left: auto;
+
+    min-width: 0;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
+
+}
+
+.layer-colors::-webkit-scrollbar {
+
+    display: none;
+
+}
+
+.layer-color {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 0.3rem;
+
+    flex-shrink: 0;
+
+    padding: 0.15rem 0.5rem 0.15rem 0.2rem;
+
+    border: 1px solid #e6dadd;
+
+    border-radius: 100vw;
+
+    background: #ffffff;
+
+    color: #555555;
+
+    font-size: clamp(0.62rem, 0.7vw, 0.75rem);
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease;
+
+}
+
+.layer-color:hover {
+
+    border-color: var(--bordeaux);
+
+    background: #f8f0f2;
+
+    color: var(--bordeaux);
+
+}
+
+.layer-color:focus-within {
+
+    outline: 2px solid var(--bordeaux);
+
+    outline-offset: 1px;
+
+}
+
+/* Farbkreis im Schicht-Knopf */
+.layer-swatch {
+
+    width: 1.1rem;
+
+    height: 1.1rem;
+
+    flex-shrink: 0;
+
+    border: 1px solid rgba(0, 0, 0, 0.15);
+
+    border-radius: 50%;
+
+}
+
+/* Aktives Ziel der Farbauswahl */
+.layer-color.active {
+
+    border-color: var(--bordeaux);
+
+    background: #f8f0f2;
+
+    color: var(--bordeaux);
+
+    box-shadow: inset 0 0 0 1px var(--bordeaux);
+
+}
+
+/*
+|--------------------------------------------------------------------------
 | LISTE (WAAGERECHT)
 |--------------------------------------------------------------------------
 */
@@ -820,9 +1072,8 @@ function formatPreis(preis) {
 |--------------------------------------------------------------------------
 | PRESS-ON-VORSCHAU
 |--------------------------------------------------------------------------
-| Das Musterbild wird live mit einer Mandel-Maske zugeschnitten.
-| Darüber: Volumen (Rand dunkler) und Glanzlicht.
-| Der Schatten sitzt auf dem Wrapper, weil die Maske ihn sonst abschneidet.
+| Mandel-Maske schneidet Bild UND Farbschichten zu.
+| Schatten sitzt auf dem Wrapper, weil die Maske ihn sonst abschneidet.
 */
 
 .press-on-wrap {
@@ -853,7 +1104,7 @@ function formatPreis(preis) {
 
     inset: 0;
 
-    /* Nude als Grundfarbe für transparente PNG-Muster */
+    /* Nude als Grundfarbe (sichtbar bei transparenten Mustern) */
     background-color: #f3dcd0;
 
     background-size: cover;
@@ -865,6 +1116,24 @@ function formatPreis(preis) {
 
 }
 
+/* Farbschicht eines umfärbbaren Musters */
+.press-on-layer {
+
+    position: absolute;
+
+    inset: 0;
+
+    -webkit-mask-size: cover;
+            mask-size: cover;
+
+    -webkit-mask-position: center top;
+            mask-position: center top;
+
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+
+}
+
 /* Volumen: Rand leicht abgedunkelt */
 .press-on::before {
 
@@ -873,6 +1142,8 @@ function formatPreis(preis) {
     position: absolute;
 
     inset: 0;
+
+    z-index: 1;
 
     background: radial-gradient(
         ellipse 70% 65% at 45% 42%,
@@ -891,12 +1162,46 @@ function formatPreis(preis) {
 
     inset: 0;
 
+    z-index: 1;
+
     background:
         radial-gradient(ellipse 6% 10% at 64% 16%, rgba(255, 255, 255, 0.85), transparent 100%),
         linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.55) 28%, transparent 40%);
 
 }
 
+/* Anzahl-Badge bei Kategorien */
+.count {
+
+    position: absolute;
+
+    right: -0.45rem;
+
+    bottom: -0.2rem;
+
+    min-width: 1.1rem;
+
+    height: 1.1rem;
+
+    padding: 0 0.25rem;
+
+    border-radius: 1rem;
+
+    background: var(--bordeaux);
+
+    color: #ffffff;
+
+    font-size: 0.6rem;
+
+    font-weight: 600;
+
+    line-height: 1.1rem;
+
+    text-align: center;
+
+    box-sizing: border-box;
+
+}
 
 
 /*
@@ -956,6 +1261,20 @@ function formatPreis(preis) {
 
     }
 
+    .design-header {
+
+        flex-wrap: wrap;
+
+    }
+
+    .layer-colors {
+
+        flex-basis: 100%;
+
+        margin-left: 0;
+
+    }
+
 }
 
 
@@ -970,7 +1289,8 @@ function formatPreis(preis) {
     .design-item,
     .press-on-wrap,
     .back-button,
-    .search-toggle {
+    .search-toggle,
+    .layer-color {
 
         transition: none;
 
