@@ -129,9 +129,12 @@ function selectColor(color) {
 
 }
 
+// Gewähltes Design (ganzes Objekt aus der Datenbank)
+const selectedDesign = ref(null)
+
 function selectDesign(design) {
 
-    console.log('Ausgewähltes Design:', design)
+    selectedDesign.value = design
 
 }
 
@@ -239,9 +242,10 @@ function toggleCart() {
                     <div class="nail-canvas-inner">
 
                         <NailHand
-                            :shape="shape"
-                            :length="length"
-                        />
+    :shape="shape"
+    :length="length"
+    :pattern="selectedDesign?.image_path"
+/>
 
                     </div>
 
