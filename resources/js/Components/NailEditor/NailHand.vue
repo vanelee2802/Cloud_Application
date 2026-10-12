@@ -47,7 +47,7 @@
                     :style="patternStyle(finger.key)"
                 ></span>
 
-                <!-- 4. Glanz und Wölbung vom Original-Nagel -->
+                            <!-- 4. Wölbung vom Original-Nagel -->
                 <img
                     v-if="color || pattern"
                     :src="nailSrc(finger.key)"
@@ -56,6 +56,12 @@
                     class="nail-shine"
                 />
 
+                <!-- 5. Glanz (Standard-Finish, später durch Effekte ersetzbar) -->
+                <span
+                    v-if="color || pattern"
+                    class="nail-layer nail-gloss"
+                    :style="maskStyle(finger.key)"
+                ></span>
             </span>
 
         </div>
@@ -231,7 +237,43 @@ const fingers = [
     pointer-events: none;
 }
 
+/* 5. Glanz: wie echter Lack, schmal, scharf, seitlich versetzt */
+.nail-gloss {
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
 
+/* Lichtstreifen: läuft oben und unten weich aus */
+.nail-gloss::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: linear-gradient(
+        90deg,
+        transparent 22%,
+        rgba(255, 255, 255, 0.08) 26%,
+        rgba(255, 255, 255, 0.55) 31%,
+        rgba(255, 255, 255, 0.60) 35%,
+        rgba(255, 255, 255, 0.12) 40%,
+        transparent 46%
+    );
+
+    -webkit-mask-image: linear-gradient(180deg, transparent 4%, #000 18%, #000 55%, transparent 88%);
+            mask-image: linear-gradient(180deg, transparent 4%, #000 18%, #000 55%, transparent 88%);
+}
+
+/* Glanzpunkt an der Spitze + Randreflex rechts + Schimmer am Nagelbett */
+.nail-gloss::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background:
+        radial-gradient(ellipse 6% 5% at 66% 12%, rgba(255, 255, 255, 0.9), transparent),
+        linear-gradient(90deg, transparent 84%, rgba(255, 255, 255, 0.22) 90%, transparent 96%),
+        radial-gradient(ellipse 40% 7% at 50% 96%, rgba(255, 255, 255, 0.25), transparent);
+}
 /* =========================================
    POSITIONEN
    ========================================= */
