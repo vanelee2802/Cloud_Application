@@ -4,19 +4,18 @@ import { ref, computed, onMounted } from 'vue'
 
 import pagesLayout from '@/Layouts/pagesLayout.vue'
 
-import NailCanvas from '@/Components/NailEditor/NailCanvas.vue'
 import NailHand from '@/Components/NailEditor/NailHand.vue'
 import CategoryPanel from '@/Components/NailEditor/CategoryPanel.vue'
 import FormPanel from '@/Components/NailEditor/FormPanel.vue'
 import ColorPanel from '@/Components/NailEditor/ColorPanel.vue'
 import DesignPanel from '@/Components/NailEditor/DesignPanel.vue'
 import EffektPanel from '@/Components/NailEditor/EffektPanel.vue'
-import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 import CartPanel from '@/Components/NailEditor/CartPanel.vue'
 import Checkout from '@/Pages/Checkout.vue'
 import CharmPanel from '@/Components/NailEditor/CharmPanel.vue'
 
 import { useCart } from '@/Stores/cart.js'
+import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 
 
 // =========================================
@@ -27,7 +26,7 @@ const selectedCategories = ref([])
 
 
 // =========================================
-// NAGELFORM + LÄNGE  (NEU)
+// NAGELFORM + LÄNGE
 // =========================================
 
 // shape  = Form (id aus dem FormPanel = Ordnername)
@@ -43,7 +42,6 @@ const FOLDERS = [
     ...['almond', 'square', 'coffin', 'ballerina', 'oval'].map(s => `${s}-long-right hand`),
     'stiletto-right hand'
 ]
-
 
 const FINGERS = ['thumb', 'index', 'middle', 'ring', 'pinky']
 
@@ -62,13 +60,6 @@ onMounted(() => {
     }
 
 })
-
-
-// =========================================
-// NÄGEL AUSWÄHLEN
-// =========================================
-
-const showNailSelection = ref(false)
 
 
 // =========================================
@@ -97,6 +88,16 @@ const cartItemCount = computed(() => {
 
 
 // =========================================
+// UNTERE ROW: Farbe und/oder Designs offen?
+// =========================================
+
+const showBottomRow = computed(() =>
+    selectedCategories.value.includes('Farbe') ||
+    selectedCategories.value.includes('Designs')
+)
+
+
+// =========================================
 // KATEGORIE AUSWÄHLEN
 // =========================================
 
@@ -119,29 +120,30 @@ function selectCategory(category) {
 
 
 // =========================================
-// FARBE AUSWÄHLEN
+// AUSWAHL-EVENTS
 // =========================================
 
 function selectColor(color) {
 
-    console.log(
-        'Ausgewählte Farbe:',
-        color
-    )
+    console.log('Ausgewählte Farbe:', color)
 
 }
 
+function selectDesign(design) {
 
-// =========================================
-// VERZIERUNG AUSWÄHLEN
-// =========================================
+    console.log('Ausgewähltes Design:', design)
+
+}
+
+function selectEffekt(effekt) {
+
+    console.log('Ausgewählter Effekt:', effekt)
+
+}
 
 function selectVerziehrung(verziehrung) {
 
-    console.log(
-        'Ausgewählte Verzierung:',
-        verziehrung
-    )
+    console.log('Ausgewählte Verzierung:', verziehrung)
 
 }
 
@@ -165,198 +167,99 @@ function toggleCart() {
 
 
         <!-- ========================================= -->
-        <!-- WARENKORB BUTTON -->
-        <!-- ========================================= -->
-
-        <button
-            type="button"
-            class="cart-toggle"
-            @click="toggleCart"
-        >
-
-            <span class="cart-icon">
-                🛒
-            </span>
-
-            <span class="cart-label">
-                Warenkorb
-            </span>
-
-            <span
-                v-if="cartItemCount > 0"
-                class="cart-badge"
-            >
-                {{ cartItemCount }}
-            </span>
-
-        </button>
-
-
-        <!-- ========================================= -->
-        <!-- WARENKORB -->
-        <!-- ========================================= -->
-
-        <div
-            v-if="showCart"
-            class="cart-dropdown"
-        >
-
-            <CartPanel
-                @checkout="showCheckout = true"
-            />
-
-        </div>
-
-
-        <!-- ========================================= -->
         <!-- HAUPTBEREICH -->
         <!-- ========================================= -->
 
         <main class="nail-designer">
 
 
-            <!-- ========================================= -->
-            <!-- EDITOR -->
-            <!-- ========================================= -->
+            <!-- ===================================================== -->
+            <!-- EDITOR (GRID)                                         -->
+            <!--                                                       -->
+            <!--  Kategorien | Form  | Hand    | Verzierung | Korb-Panel -->
+            <!--  Kategorien | Farbe | Designs ──────────── | Korb-Button-->
+            <!-- ===================================================== -->
 
             <div class="editor-row">
 
 
                 <!-- ========================================= -->
-                <!-- LINKER BEREICH -->
+                <!-- SPALTE 1: KATEGORIEN + EFFEKT -->
                 <!-- ========================================= -->
 
-                <div class="left-editor">
+                <section class="categories area-kategorien">
 
+                    <CategoryPanel
+                        @category-selected="selectCategory"
+                    />
 
-                    <!-- ========================================= -->
-                    <!-- KATEGORIEN / FORM / EFFEKT -->
-                    <!-- ========================================= -->
+                    <div
+                        v-if="
+                            selectedCategories.includes('Effekte')
+                        "
+                        class="nail-selection-wrapper"
+                    >
 
-                    <div class="category-layout">
-
-
-                        <!-- ========================================= -->
-                        <!-- KATEGORIEN -->
-                        <!-- ========================================= -->
-
-                        <section class="categories">
-
-
-                            <!-- ========================================= -->
-                            <!-- CATEGORY PANEL -->
-                            <!-- ========================================= -->
-
-                            <CategoryPanel
-                                @category-selected="selectCategory"
-                            />
-
-
-                            <!-- ========================================= -->
-                            <!-- NÄGEL AUSWÄHLEN -->
-                            <!-- ========================================= -->
-
-                            <div class="nail-selection-wrapper">
-
-
-                               
-
-                                <!-- ========================================= -->
-                                <!-- NAIL SELECTION PANEL -->
-                                <!-- ========================================= -->
-
-                                <EffektPanel
-                                v-if="
-                                    selectedCategories.includes('Effekte')
-                                "
-                            />
-
-
-                            </div>
-
-
-                        </section>
-
-
-                        <!-- ========================================= -->
-                        <!-- FORM + EFFEKT -->
-                        <!-- ========================================= -->
-
-                        <div class="form-effekt-area">
-
-
-                            <!-- ========================================= -->
-                            <!-- FORM + LÄNGE  (GEÄNDERT) -->
-                            <!-- ========================================= -->
-
-                            <FormPanel
-                                v-if="
-                                    selectedCategories.includes('Form')
-                                "
-                                :selected="shape"
-                                :selected-length="length"
-                                @form-selected="shape = $event"
-                                @length-selected="length = $event"
-                            />
-
-
-                            <!-- ========================================= -->
-                            <!-- EFFEKT -->
-                            <!-- ========================================= -->
-
-                           
-
-
-                        </div>
-
+                        <EffektPanel
+                            @effekt-selected="selectEffekt"
+                        />
 
                     </div>
-
-
-                </div>
-
-
-                <!-- ========================================= -->
-                <!-- NAGEL CANVAS -->
-                <!-- ========================================= -->
-
-                <section class="nail-canvas">
-
-                    <!-- GEÄNDERT: Form und Länge werden an die Hand übergeben -->
-                    <NailHand
-                        :shape="shape"
-                        :length="length"
-                    />
 
                 </section>
 
 
                 <!-- ========================================= -->
-                <!-- DESIGN + VERZIERUNG -->
+                <!-- SPALTE 2: FORM + LÄNGE -->
                 <!-- ========================================= -->
 
-                <div class="design-area">
+                <div
+                    v-if="
+                        selectedCategories.includes('Form')
+                    "
+                    class="form-effekt-area area-form"
+                >
 
-
-                    <!-- ========================================= -->
-                    <!-- DESIGNS -->
-                    <!-- ========================================= -->
-
-                    <DesignPanel
-                        v-if="
-                            selectedCategories.includes('Designs')
-                        "
+                    <FormPanel
+                        :selected="shape"
+                        :selected-length="length"
+                        @form-selected="shape = $event"
+                        @length-selected="length = $event"
                     />
 
+                </div>
 
-                    <!-- ========================================= -->
-                    <!-- VERZIERUNG -->
-                    <!-- ========================================= -->
+
+                <!-- ========================================= -->
+                <!-- SPALTE 3: NAGEL CANVAS -->
+                <!-- ========================================= -->
+
+                <section class="nail-canvas area-canvas">
+
+                    <div class="nail-canvas-inner">
+
+                        <NailHand
+                            :shape="shape"
+                            :length="length"
+                        />
+
+                    </div>
+
+                </section>
+
+
+                <!-- ========================================= -->
+                <!-- SPALTE 4: VERZIERUNG -->
+                <!-- ========================================= -->
+
+                <div
+                    v-if="
+                        selectedCategories.includes('Verzierung')
+                    "
+                    class="design-area area-deko"
+                >
 
                     <CharmPanel
-                        v-if="
-                            selectedCategories.includes('Verzierung')
-                        "
                         @verziehrung-selected="
                             selectVerziehrung
                         "
@@ -365,21 +268,98 @@ function toggleCart() {
 
                 </div>
 
+                
 
+                
                 <!-- ========================================= -->
-                <!-- FARBE -->
+                <!-- UNTERE ROW: FARBE + DESIGNS -->
+                <!-- reicht bis zum Ende der Verzierung -->
                 <!-- ========================================= -->
 
                 <div
-                    v-if="
-                        selectedCategories.includes('Farbe')
-                    "
-                    class="color-section"
+                    v-if="showBottomRow"
+                    class="bottom-row area-bottom"
                 >
 
-                    <ColorPanel
-                        @color-selected="selectColor"
-                    />
+                    <div
+                        v-if="
+                            selectedCategories.includes('Farbe')
+                        "
+                        class="color-section"
+                    >
+
+                        <ColorPanel
+                            @color-selected="selectColor"
+                        />
+
+                    </div>
+
+                    <div
+                        v-if="
+                            selectedCategories.includes('Designs')
+                        "
+                        class="design-section"
+                    >
+
+                        <DesignPanel
+                            @design-selected="selectDesign"
+                        />
+
+                    </div>
+
+                </div>
+
+
+                <!-- ========================================= -->
+                <!-- SPALTE 5 OBEN: WARENKORB-PANEL -->
+                <!-- (neben Verzierung) -->
+                <!-- ========================================= -->
+
+                <Transition name="cart">
+
+                    <div
+                        v-if="showCart"
+                        class="cart-dropdown area-cartpanel"
+                    >
+
+                        <CartPanel
+                            @checkout="showCheckout = true"
+                        />
+
+                    </div>
+
+                </Transition>
+
+
+                <!-- ========================================= -->
+                <!-- SPALTE 5 UNTEN: WARENKORB-BUTTON -->
+                <!-- ========================================= -->
+
+                <div class="cart-cell area-cart">
+
+                    <button
+                        type="button"
+                        class="cart-toggle"
+                        :aria-expanded="showCart"
+                        @click="toggleCart"
+                    >
+
+                        <span class="cart-icon">
+                            🛒
+                        </span>
+
+                        <span class="cart-label">
+                            Warenkorb
+                        </span>
+
+                        <span
+                            v-if="cartItemCount > 0"
+                            class="cart-badge"
+                        >
+                            {{ cartItemCount }}
+                        </span>
+
+                    </button>
 
                 </div>
 
@@ -414,17 +394,387 @@ function toggleCart() {
 
 .nail-designer {
 
+    /*
+    | Höhe von allem, was ÜBER dem Editor liegt
+    | (Navigation aus pagesLayout + dessen Padding).
+    | Wenn unten eine Scrollbar erscheint: Wert erhöhen.
+    */
+    --header-h: 80px;
+
+    --gap: 20px;
+
+    /* Höhe der unteren Row, wenn Farbe/Designs offen sind */
+    --farbe-h: 10rem;
+
+    /* Höhe der unteren Row, wenn nur der Warenkorb-Button da ist */
+    --cart-row-h: 2.8rem;
+
+    /* Breite der Warenkorb-Spalte */
+    --cart-w: clamp(13rem, 15vw, 16rem);
+
+    /* Seitenverhältnis der Hand inkl. Freiraum für lange Nägel */
+    --hand-ratio: 1080 / 1186;
+
     position: relative;
+
+    width: 100%;
+
+    height: calc(100vh - var(--header-h));
+    height: calc(100dvh - var(--header-h));
+
+    box-sizing: border-box;
+
+    /* Damit die Hand-Spalte ihre Breite aus der Höhe berechnen kann */
+    container-type: size;
+
+}
+
+
+/* ========================================= */
+/* EDITOR GRID */
+/* ========================================= */
+
+.editor-row {
+
+    /* aktuelle Höhe der unteren Row */
+    --bottom-h: var(--cart-row-h);
+
+    /* Höhe, die der Hand zur Verfügung steht */
+    --canvas-h: calc(100cqh - var(--bottom-h) - var(--gap));
+
+    display: grid;
+
+    /*
+    | Die Hand-Spalte ist genau so breit wie das Bild bei voller Höhe.
+    | Ist der Bildschirm zu schmal, schrumpft sie (minmax 0).
+    */
+    grid-template-columns:
+        auto                                                  /* Kategorien + Effekt */
+        auto                                                  /* Form */
+        minmax(0, calc(var(--canvas-h) * var(--hand-ratio))) /* Hand */
+        auto                                                  /* Verzierung */
+        var(--cart-w);                                        /* Warenkorb */
+
+    grid-template-rows:
+        minmax(0, 1fr)
+        var(--bottom-h);
+
+    grid-template-areas:
+        "kategorien form   canvas deko   cartpanel"
+        "kategorien bottom bottom bottom cart";
+
+    /* Spalten nicht strecken, sondern als Block zentrieren */
+    justify-content: center;
+
+    gap: var(--gap);
+
+    width: 100%;
+    height: 100%;
+
+    padding:
+        0
+        clamp(0.25rem, 0.5vw, 0.75rem);
+
+    box-sizing: border-box;
+
+}
+
+/* Untere Row bekommt volle Höhe, wenn Farbe oder Designs offen sind */
+.editor-row:has(.area-bottom) {
+
+    --bottom-h: var(--farbe-h);
+
+}
+
+
+/* ========================================= */
+/* BEREICHE */
+/* ========================================= */
+
+/*
+| min-height: 0 ist entscheidend: Ohne das wachsen die Panels
+| über den Bildschirm hinaus, statt intern zu scrollen.
+*/
+
+.area-kategorien,
+.area-form,
+.area-canvas,
+.area-deko,
+.area-bottom,
+.area-cartpanel,
+.area-cart {
+
+    min-width: 0;
+    min-height: 0;
+
+}
+
+.area-kategorien { grid-area: kategorien; }
+.area-form       { grid-area: form; }
+.area-canvas     { grid-area: canvas; }
+.area-deko       { grid-area: deko; }
+.area-bottom     { grid-area: bottom; }
+.area-cartpanel  { grid-area: cartpanel; }
+.area-cart       { grid-area: cart; }
+
+
+/* Spalten, die zu lang werden können, scrollen intern */
+.area-form,
+.area-deko {
+
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #d9b3bc transparent;
+
+}
+
+.area-form::-webkit-scrollbar,
+.area-deko::-webkit-scrollbar {
+    width: 0.3rem;
+}
+
+.area-form::-webkit-scrollbar-thumb,
+.area-deko::-webkit-scrollbar-thumb {
+
+    background: #d9b3bc;
+
+    border-radius: 1rem;
+
+}
+
+
+/* ========================================= */
+/* KATEGORIEN */
+/* ========================================= */
+
+.categories {
 
     display: flex;
 
     flex-direction: column;
 
+    gap: var(--gap);
+
+}
+
+
+/* ========================================= */
+/* EFFEKT: füllt die Spalte bis zur          */
+/* Unterkante der unteren Row                */
+/* ========================================= */
+
+.nail-selection-wrapper {
+
+    position: relative;
+
+    display: flex;
+
+    flex: 1;
+
+    /* darf schrumpfen, aber nicht kleiner als ~4 Einträge */
+    min-height: 14rem;
+
+}
+
+/* EffektPanel selbst: volle Höhe */
+.nail-selection-wrapper > * {
+
+    height: 100%;
+
+}
+
+/* Liste nimmt den Rest ein und scrollt intern */
+.nail-selection-wrapper :deep(.effekt-liste) {
+
+    flex: 1;
+
+    min-height: 0;
+
+    max-height: none;
+
+}
+
+
+/* ========================================= */
+/* FORM */
+/* ========================================= */
+
+.form-effekt-area {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: var(--gap);
+
+}
+
+
+/* ========================================= */
+/* NAGEL CANVAS */
+/* ========================================= */
+
+.nail-canvas {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: center;
+
+    container-type: size;
+
+}
+
+.nail-canvas-inner {
+
+    width: min(
+        100cqw,
+        100cqh * var(--hand-ratio)
+    );
+
+    aspect-ratio: var(--hand-ratio);
+
+}
+
+
+/* ========================================= */
+/* VERZIERUNG */
+/* ========================================= */
+
+.design-area {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: var(--gap);
+
+}
+
+
+/* ========================================= */
+/* UNTERE ROW: FARBE + DESIGNS NEBENEINANDER */
+/* ========================================= */
+
+.bottom-row {
+
+    display: flex;
+
+    gap: var(--gap);
+
+    height: 100%;
+
+    /*
+    | Inhalt der Row zählt NICHT für die Spaltenbreite.
+    | Die Row übernimmt nur die Breite der Spalten darüber.
+    */
+    contain: inline-size;
+
+    overflow: hidden;
+
+}
+
+/*
+| Farbe bekommt etwas mehr Platz als Designs.
+| Ist nur eins von beiden offen, nimmt es die ganze Breite.
+*/
+.color-section {
+
+    flex: 1.3 1 0;
+
+}
+
+.design-section {
+
+    flex: 1 1 0;
+
+}
+
+.color-section,
+.design-section {
+
+    display: flex;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+}
+
+/* Panels füllen ihren Bereich komplett aus */
+.color-section > *,
+.design-section > * {
+
+    flex: 1;
+
+    width: 100%;
+    max-width: none;
+
+    height: 100%;
+
+    box-sizing: border-box;
+
+}
+
+
+/* ========================================= */
+/* WARENKORB-PANEL (oben, neben Verzierung) */
+/* ========================================= */
+
+.cart-dropdown {
+
+    align-self: start;
+
+    max-height: 100%;
+
+    overflow-y: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: #d9b3bc transparent;
+
+}
+
+.cart-dropdown > * {
+
     width: 100%;
 
-    min-height: 100%;
+    max-width: none;
 
-    gap: 20px;
+    box-sizing: border-box;
+
+}
+
+/* Kurzes Einblenden */
+.cart-enter-active,
+.cart-leave-active {
+
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+
+}
+
+.cart-enter-from,
+.cart-leave-to {
+
+    opacity: 0;
+
+    transform: translateY(0.4rem);
+
+}
+
+
+/* ========================================= */
+/* WARENKORB-ZELLE (unten rechts) */
+/* ========================================= */
+
+.cart-cell {
+
+    display: flex;
+
+    align-items: flex-end;
 
 }
 
@@ -435,22 +785,6 @@ function toggleCart() {
 
 .cart-toggle {
 
-    position: fixed;
-
-    right: clamp(
-        1rem,
-        2vw,
-        2.5rem
-    );
-
-    bottom: clamp(
-        1rem,
-        2vw,
-        2rem
-    );
-
-    z-index: 1000;
-
     display: flex;
 
     align-items: center;
@@ -459,11 +793,12 @@ function toggleCart() {
 
     gap: 0.5rem;
 
-    min-height: 2.8rem;
+    /* so breit wie das Panel darüber */
+    width: 100%;
 
-    padding:
-        0.65rem
-        1rem;
+    min-height: var(--cart-row-h);
+
+    padding: 0.65rem 1rem;
 
     border: none;
 
@@ -473,13 +808,11 @@ function toggleCart() {
 
     color: #ffffff;
 
+    white-space: nowrap;
+
     cursor: pointer;
 
-    box-shadow:
-        0
-        0.3vw
-        1vw
-        rgba(0, 0, 0, 0.15);
+    box-shadow: 0 0.3vw 1vw rgba(0, 0, 0, 0.15);
 
     transition:
         background-color 0.2s ease,
@@ -488,24 +821,27 @@ function toggleCart() {
 
 }
 
-
 .cart-toggle:hover {
 
     background: #64101f;
 
     transform: translateY(-0.1rem);
 
-    box-shadow:
-        0
-        0.5vw
-        1.2vw
-        rgba(125, 16, 36, 0.2);
+    box-shadow: 0 0.5vw 1.2vw rgba(125, 16, 36, 0.2);
+
+}
+
+.cart-toggle:focus-visible {
+
+    outline: 2px solid #7d1024;
+
+    outline-offset: 2px;
 
 }
 
 
 /* ========================================= */
-/* WARENKORB ICON */
+/* WARENKORB ICON / TEXT / ANZAHL */
 /* ========================================= */
 
 .cart-icon {
@@ -516,27 +852,13 @@ function toggleCart() {
 
 }
 
-
-/* ========================================= */
-/* WARENKORB TEXT */
-/* ========================================= */
-
 .cart-label {
 
-    font-size: clamp(
-        0.7rem,
-        0.8vw,
-        0.9rem
-    );
+    font-size: clamp(0.7rem, 0.8vw, 0.9rem);
 
     font-weight: 500;
 
 }
-
-
-/* ========================================= */
-/* WARENKORB ANZAHL */
-/* ========================================= */
 
 .cart-badge {
 
@@ -550,9 +872,7 @@ function toggleCart() {
 
     height: 1.35rem;
 
-    padding:
-        0
-        0.25rem;
+    padding: 0 0.25rem;
 
     border-radius: 50%;
 
@@ -568,329 +888,108 @@ function toggleCart() {
 
 
 /* ========================================= */
-/* WARENKORB DROPDOWN */
-/* ========================================= */
-
-.cart-dropdown {
-
-    position: fixed;
-
-    right: clamp(
-        1rem,
-        2vw,
-        2.5rem
-    );
-
-    bottom: clamp(
-        4.8rem,
-        6vw,
-        6rem
-    );
-
-    z-index: 999;
-
-}
-
-
-/* ========================================= */
-/* EDITOR ROW */
-/* ========================================= */
-
-.editor-row {
-
-    display: flex;
-
-    align-items: flex-start;
-
-    width: 100%;
-
-    gap: 20px;
-
-}
-
-
-/* ========================================= */
-/* LINKER BEREICH */
-/* ========================================= */
-
-.left-editor {
-
-    display: flex;
-
-    flex-direction: column;
-
-    width: fit-content;
-
-    gap: 20px;
-
-    flex-shrink: 0;
-
-    margin-left: clamp(
-        0.25rem,
-        0.5vw,
-        0.75rem
-    );
-
-}
-
-
-/* ========================================= */
-/* KATEGORIEN-BEREICH */
-/* ========================================= */
-
-.category-layout {
-
-    display: grid;
-
-    grid-template-columns:
-        fit-content(100%)
-        fit-content(100%);
-
-    grid-template-rows:
-        auto;
-
-    align-items: start;
-
-    column-gap: 20px;
-
-}
-
-
-/* ========================================= */
-/* KATEGORIEN */
-/* ========================================= */
-
-.categories {
-
-    grid-column: 1;
-
-    grid-row: 1;
-
-    display: flex;
-
-    flex-direction: column;
-
-    width: fit-content;
-
-    align-self: start;
-
-}
-
-
-/* ========================================= */
-/* NÄGEL AUSWÄHLEN */
-/* ========================================= */
-
-.nail-selection-wrapper {
-
-    position: relative;
-
-    width: fit-content;
-
-    margin-top: 20px;
-
-}
-
-
-/* ========================================= */
-/* NÄGEL PANEL */
-/* ========================================= */
-
-.nail-selection-container {
-
-    width: fit-content;
-
-}
-
-
-/* ========================================= */
-/* PFEIL BUTTON */
-/* ========================================= */
-
-.nail-selection-toggle {
-
-    position: absolute;
-
-    top: 50%;
-
-    right: -1.2rem;
-
-    z-index: 10;
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    width: 1.5rem;
-
-    height: 3rem;
-
-    padding: 0;
-
-    border: none;
-
-    border-radius:
-        0
-        0.5rem
-        0.5rem
-        0;
-
-    background: #ffffff;
-
-    color: #7d1024;
-
-    cursor: pointer;
-
-    box-shadow:
-        0.2vw
-        0
-        0.5vw
-        rgba(0, 0, 0, 0.08);
-
-    transform: translateY(-50%);
-
-    transition:
-        background-color 0.2s ease,
-        color 0.2s ease;
-
-}
-
-
-.nail-selection-toggle:hover {
-
-    background: #f8f0f2;
-
-    color: #64101f;
-
-}
-
-
-/* ========================================= */
-/* PFEIL */
-/* ========================================= */
-
-.arrow {
-
-    display: block;
-
-    font-size: 1.5rem;
-
-    line-height: 1;
-
-    transition:
-        transform 0.25s ease;
-
-}
-
-
-.arrow-open {
-
-    transform: rotate(180deg);
-
-}
-
-
-/* ========================================= */
-/* FORM + EFFEKT */
-/* ========================================= */
-
-.form-effekt-area {
-
-    grid-column: 2;
-
-    grid-row: 1;
-
-    display: flex;
-
-    flex-direction: column;
-
-    width: fit-content;
-
-    gap: 20px;
-
-    align-self: start;
-
-}
-
-
-/* ========================================= */
-/* NAGEL CANVAS */
-/* ========================================= */
-
-.nail-canvas {
-
-    width: 35vw;
-
-    aspect-ratio: 1080 / 1056;
-
-    flex-shrink: 0;
-
-}
-
-
-/* ========================================= */
-/* DESIGN + VERZIERUNG */
-/* ========================================= */
-
-.design-area {
-
-    display: flex;
-
-    flex-direction: column;
-
-    width: fit-content;
-
-    gap: 20px;
-
-    flex-shrink: 0;
-
-    align-self: flex-start;
-
-}
-
-
-/* ========================================= */
-/* FARBE */
-/* ========================================= */
-
-.color-section {
-
-    display: flex;
-
-    gap: 10px;
-
-    flex-shrink: 0;
-
-}
-
-
-/* ========================================= */
-/* TABLET */
+/* TABLET: Seite darf scrollen,              */
+/* Warenkorb schwebt unten rechts            */
 /* ========================================= */
 
 @media (max-width: 1200px) {
 
-    .editor-row {
+    .nail-designer {
 
-        flex-wrap: wrap;
+        height: auto;
+
+        /* Wichtig: ohne feste Höhe darf kein Size-Container aktiv sein */
+        container-type: normal;
 
     }
 
+    .editor-row {
+
+        grid-template-columns:
+            auto
+            auto
+            minmax(0, 1fr);
+
+        grid-template-rows: auto;
+
+        grid-template-areas:
+            "kategorien form   canvas"
+            "bottom     bottom bottom"
+            "deko       deko   deko";
+
+        justify-content: normal;
+
+        height: auto;
+
+    }
 
     .nail-canvas {
 
-        width: 50vw;
+        height: 60vh;
+
+        align-items: center;
 
     }
 
+    .bottom-row {
 
-    .color-section {
+        height: 11rem;
 
-        width: 50vw;
+    }
 
-        margin-left: 0;
+    /* Effekt wieder normale Höhe */
+    .nail-selection-wrapper {
+
+        flex: none;
+
+        min-height: 0;
+
+    }
+
+    .nail-selection-wrapper > * {
+
+        height: auto;
+
+    }
+
+    .nail-selection-wrapper :deep(.effekt-liste) {
+
+        max-height: 22rem;
+
+    }
+
+    /* Warenkorb schwebend */
+    .cart-cell {
+
+        position: fixed;
+
+        right: 1rem;
+
+        bottom: 1rem;
+
+        z-index: 1000;
+
+    }
+
+    .cart-toggle {
+
+        width: auto;
+
+    }
+
+    .cart-dropdown {
+
+        position: fixed;
+
+        right: 1rem;
+
+        bottom: 4.8rem;
+
+        z-index: 999;
+
+        width: min(18rem, calc(100vw - 2rem));
+
+        max-height: calc(100vh - 7rem);
 
     }
 
@@ -903,92 +1002,72 @@ function toggleCart() {
 
 @media (max-width: 768px) {
 
-    .cart-toggle {
-
-        right: 1rem;
-
-        bottom: 1rem;
-
-    }
-
-
-    .cart-dropdown {
-
-        right: 1rem;
-
-        bottom: 4.8rem;
-
-        max-width:
-            calc(100vw - 2rem);
-
-    }
-
-
     .editor-row {
 
-        flex-direction: column;
+        grid-template-columns: minmax(0, 1fr);
+
+        grid-template-areas:
+            "canvas"
+            "kategorien"
+            "form"
+            "bottom"
+            "deko";
+
+        padding: 0;
 
     }
-
-
-    .left-editor {
-
-        margin-left: 0;
-
-    }
-
 
     .nail-canvas {
 
-        width: 90vw;
+        height: 50vh;
 
     }
 
+    .area-form,
+    .area-deko {
 
-    .category-layout {
+        overflow: visible;
 
-        display: flex;
+    }
+
+    /* Farbe und Designs untereinander */
+    .bottom-row {
 
         flex-direction: column;
 
-        gap: 20px;
+        height: auto;
 
     }
 
+    .color-section,
+    .design-section {
 
-    .categories {
+        flex: none;
 
-        width: fit-content;
-
-    }
-
-
-    .form-effekt-area {
-
-        width: fit-content;
+        height: 11rem;
 
     }
 
+}
 
-    .design-area {
 
-        width: fit-content;
+/* ========================================= */
+/* REDUCED MOTION */
+/* ========================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .cart-toggle,
+    .cart-enter-active,
+    .cart-leave-active {
+
+        transition: none;
 
     }
 
+    .cart-toggle:hover {
 
-    .color-section {
-
-        width: 90vw;
-
-        margin-left: 0;
-
-    }
-
-
-    .nail-selection-toggle {
-
-        right: -1rem;
+        transform: none;
 
     }
 

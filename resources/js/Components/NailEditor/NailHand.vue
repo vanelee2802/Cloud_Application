@@ -1,22 +1,31 @@
 <template>
-    <div
-        class="hand-container"
-        :class="{ 'is-tall': isTall }"
-    >
+    <!--
+    | hand-stage = Hand + fester Freiraum oben für lange Nägel.
+    | Der Freiraum ist IMMER da, damit die Hand beim Umschalten
+    | der Länge nicht springt.
+    -->
+    <div class="hand-stage">
 
-        <img
-            src="/images/nail-editor/Hand.png"
-            alt="Hand"
-            class="hand-image"
-        />
+        <div
+            class="hand-container"
+            :class="{ 'is-tall': isTall }"
+        >
 
-        <img
-            v-for="finger in fingers"
-            :key="finger.key"
-            :src="`${basePath}/${finger.key}.png`"
-            :alt="finger.alt"
-            :class="['nail', `nail-${finger.key}`]"
-        />
+            <img
+                src="/images/nail-editor/Hand.png"
+                alt="Hand"
+                class="hand-image"
+            />
+
+            <img
+                v-for="finger in fingers"
+                :key="finger.key"
+                :src="`${basePath}/${finger.key}.png`"
+                :alt="finger.alt"
+                :class="['nail', `nail-${finger.key}`]"
+            />
+
+        </div>
 
     </div>
 </template>
@@ -57,9 +66,8 @@ const basePath = computed(() => {
 
 })
 
-// Die Stiletto-Bilder haben eine höhere Leinwand (1080 x 1556),
-// damit die sehr langen Spitzen Platz haben. Dafür gelten unten
-// andere "top"-Werte (Klasse .is-tall).
+// Lange Nägel / Stiletto haben eine höhere Leinwand (1080 x 1556).
+// Dafür gelten unten andere "top"-Werte (Klasse .is-tall).
 const isTall = computed(() =>
     props.length === 'long' || props.shape === 'stiletto'
 )
@@ -74,17 +82,31 @@ const fingers = [
 </script>
 
 <style scoped>
-.hand-container {
-    position: relative;
-    width: 40vw;
-    aspect-ratio: 1080 / 1056;
-    display: block;
+
+/* =========================================
+   STAGE
+   Füllt die Breite des Elternelements.
+   padding-top in % bezieht sich auf die BREITE
+   -> der Freiraum skaliert immer mit der Hand mit.
+   Gesamtverhältnis: 1080 / 1186
+   ========================================= */
+
+.hand-stage {
+    width: 100%;
+    padding-top: 12%;
+    box-sizing: border-box;
 }
 
-/* Platz nach oben, damit die langen Stiletto-Spitzen
-   (vor allem am Mittelfinger) nicht abgeschnitten werden */
-.hand-container.is-tall {
-    margin-top: 4.2vw;
+
+/* =========================================
+   HAND
+   ========================================= */
+
+.hand-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1080 / 1056;
+    display: block;
 }
 
 .hand-image {
@@ -140,10 +162,9 @@ const fingers = [
 
 
 /* =========================================
-   STILETTO (höhere Leinwand)
+   LANG / STILETTO (höhere Leinwand)
    Breite, left und Rotation bleiben gleich,
-   nur "top" ist um die Zusatzhöhe nach oben verschoben.
-   Der Daumen hat dieselbe Leinwand wie vorher.
+   nur "top" ist nach oben verschoben.
    ========================================= */
 
 .is-tall .nail-index  { top: -2.34%; }
@@ -153,4 +174,5 @@ const fingers = [
 .is-tall .nail-ring   { top: -2.63%; }
 
 .is-tall .nail-pinky  { top: 17.91%; }
+
 </style>

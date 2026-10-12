@@ -369,28 +369,62 @@ onMounted(async () => {
 
 /*
 |--------------------------------------------------------------------------
-| PANEL
+| PANEL (WAAGERECHT FÜR DIE UNTERE ROW)
 |--------------------------------------------------------------------------
+|
+|  FARBE 🔍 [Suche]  Rot Blau Grün …          Filter: Rot ×
+|  ●    ●    ●    ●    ●    ●    ●    ●    ●    ●   →
+|
 */
 
 .color-panel {
 
-    width: clamp(10rem, 16vw, 14rem);
+    display: grid;
 
-    padding: clamp(1rem, 1.2vw, 1.5rem);
+    grid-template-columns:
+        auto              /* Überschrift + Lupe */
+        auto              /* Suchfeld (0, wenn zu) */
+        minmax(0, 1fr)    /* Filter-Chips */
+        auto;             /* Filter-Info */
+
+    grid-template-rows:
+        auto
+        minmax(0, 1fr);
+
+    grid-template-areas:
+        "title search chips info"
+        "list  list   list  list";
+
+    align-items: center;
+
+    column-gap: 1rem;
+    row-gap: 0.6rem;
+
+    width: 100%;
+    height: 100%;
+
+    padding: 0.9rem 1.2rem;
 
     background: #ffffff;
 
-    border: 0.08vw solid #eeeeee;
+    border: 1px solid #eeeeee;
 
-    border-radius: 1vw;
+    border-radius: 1rem;
 
-    box-shadow:
-        0 0.3vw 1.2vw rgba(0, 0, 0, 0.06);
+    box-shadow: 0 0.3vw 1.2vw rgba(0, 0, 0, 0.06);
 
     box-sizing: border-box;
 
+    overflow: hidden;
+
 }
+
+.color-header    { grid-area: title; }
+.color-search    { grid-area: search; }
+.standard-colors { grid-area: chips; }
+.filter-info     { grid-area: info; }
+.color-list,
+.no-results      { grid-area: list; }
 
 
 /*
@@ -405,12 +439,11 @@ onMounted(async () => {
 
     align-items: center;
 
-    justify-content: space-between;
+    gap: 0.3rem;
 
-    margin-bottom: 1rem;
+    margin: 0;
 
 }
-
 
 .color-header h3 {
 
@@ -420,11 +453,7 @@ onMounted(async () => {
 
     font-family: Georgia, serif;
 
-    font-size: clamp(
-        0.85rem,
-        1vw,
-        1.1rem
-    );
+    font-size: clamp(0.85rem, 1vw, 1.1rem);
 
     font-weight: 400;
 
@@ -437,6 +466,8 @@ onMounted(async () => {
 |--------------------------------------------------------------------------
 | LUPE
 |--------------------------------------------------------------------------
+| Das Emoji im Template wird ausgeblendet und durch ein
+| Linien-Icon in Bordeaux ersetzt (passt zu den anderen Icons).
 */
 
 .search-toggle {
@@ -447,17 +478,9 @@ onMounted(async () => {
 
     justify-content: center;
 
-    width: clamp(
-        2rem,
-        2.5vw,
-        2.8rem
-    );
+    width: 2rem;
 
-    height: clamp(
-        2rem,
-        2.5vw,
-        2.8rem
-    );
+    height: 2rem;
 
     padding: 0;
 
@@ -469,65 +492,71 @@ onMounted(async () => {
 
     cursor: pointer;
 
-    font-size: clamp(
-        0.9rem,
-        1.2vw,
-        1.2rem
-    );
+    font-size: 0;
 
-    transition:
-        background-color 0.2s ease,
-        transform 0.2s ease;
+    transition: background-color 0.2s ease;
 
 }
 
+.search-toggle::before {
+
+    content: "";
+
+    width: 1rem;
+
+    height: 1rem;
+
+    background: #7d1024;
+
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") center / contain no-repeat;
+
+}
 
 .search-toggle:hover {
 
     background: #f3e5e8;
 
-    transform: scale(1.08);
+}
+
+.search-toggle:focus-visible {
+
+    outline: 2px solid #7d1024;
+
+    outline-offset: 1px;
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| SUCHFELD
+| SUCHFELD (erscheint in derselben Zeile)
 |--------------------------------------------------------------------------
 */
 
 .color-search {
 
-    width: 100%;
+    width: clamp(9rem, 12vw, 13rem);
 
-    margin-bottom: 1rem;
+    margin: 0;
 
 }
-
 
 .color-search input {
 
     width: 100%;
 
-    padding:
-        0.618em
-        0.8em;
+    padding: 0.4em 0.8em;
 
-    border:
-        0.08vw solid #dddddd;
+    border: 1px solid #e6dadd;
 
-    border-radius: 0.618em;
+    border-radius: 0.5rem;
 
-    background: #fafafa;
+    background: #fbf7f8;
 
     color: #333333;
 
-    font-size: clamp(
-        0.75rem,
-        0.9vw,
-        1rem
-    );
+    font-size: clamp(0.72rem, 0.8vw, 0.85rem);
 
     outline: none;
 
@@ -535,27 +564,18 @@ onMounted(async () => {
 
 }
 
-
 .color-search input:focus {
 
     background: #ffffff;
 
     border-color: #7d1024;
 
-    box-shadow:
-        0 0 0 0.15vw rgba(
-            125,
-            16,
-            36,
-            0.1
-        );
-
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| STANDARD FARBEN
+| FILTER-CHIPS (eine Zeile, scrollbar wenn zu viele)
 |--------------------------------------------------------------------------
 */
 
@@ -563,23 +583,33 @@ onMounted(async () => {
 
     display: flex;
 
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 
-    gap: 0.4rem;
+    gap: 0.35rem;
 
-    margin-bottom: 1rem;
+    margin: 0;
+
+    min-width: 0;
+
+    overflow-x: auto;
+
+    scrollbar-width: none;
 
 }
 
+.standard-colors::-webkit-scrollbar {
+
+    display: none;
+
+}
 
 .standard-color {
 
-    padding:
-        0.35em
-        0.7em;
+    flex-shrink: 0;
 
-    border:
-        0.08vw solid #e4e4e4;
+    padding: 0.3em 0.75em;
+
+    border: 1px solid #e4e4e4;
 
     border-radius: 100vw;
 
@@ -587,22 +617,16 @@ onMounted(async () => {
 
     color: #555555;
 
-    font-size: clamp(
-        0.65rem,
-        0.75vw,
-        0.8rem
-    );
+    font-size: clamp(0.65rem, 0.72vw, 0.78rem);
 
     cursor: pointer;
 
     transition:
         background-color 0.2s ease,
         color 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.2s ease;
+        border-color 0.2s ease;
 
 }
-
 
 .standard-color:hover {
 
@@ -612,10 +636,7 @@ onMounted(async () => {
 
     color: #7d1024;
 
-    transform: translateY(-0.1rem);
-
 }
-
 
 .standard-color.active {
 
@@ -642,30 +663,23 @@ onMounted(async () => {
 
     align-items: center;
 
-    justify-content: space-between;
-
     gap: 0.5rem;
 
-    margin-bottom: 0.8rem;
+    margin: 0;
 
-    padding:
-        0.45rem
-        0.7rem;
+    padding: 0.3rem 0.7rem;
 
-    border-radius: 0.618rem;
+    border-radius: 100vw;
 
     background: #f8f0f2;
 
     color: #7d1024;
 
-    font-size: clamp(
-        0.7rem,
-        0.8vw,
-        0.9rem
-    );
+    font-size: clamp(0.68rem, 0.75vw, 0.8rem);
+
+    white-space: nowrap;
 
 }
-
 
 .filter-info button {
 
@@ -679,6 +693,8 @@ onMounted(async () => {
 
     font-size: 1rem;
 
+    line-height: 1;
+
     cursor: pointer;
 
 }
@@ -686,7 +702,7 @@ onMounted(async () => {
 
 /*
 |--------------------------------------------------------------------------
-| FARB-LISTE
+| FARB-LISTE (WAAGERECHT)
 |--------------------------------------------------------------------------
 */
 
@@ -694,32 +710,60 @@ onMounted(async () => {
 
     display: flex;
 
-    flex-direction: column;
+    flex-direction: row;
 
-    gap: 0.618rem;
+    align-items: flex-start;
 
-    max-height: clamp(
-        12rem,
-        25vw,
-        24rem
-    );
+    gap: 0.4rem;
 
-    overflow-y: auto;
+    height: 100%;
 
-    padding-right: 0.3rem;
+    min-width: 0;
+
+    padding: 0.2rem 0 0.4rem;
+
+    overflow-x: auto;
+
+    overflow-y: hidden;
+
+    scroll-snap-type: x proximity;
 
     scrollbar-width: thin;
 
-    scrollbar-color:
-        #d8bcc2
-        transparent;
+    scrollbar-color: #d8bcc2 transparent;
+
+}
+
+.color-list::-webkit-scrollbar {
+
+    height: 0.3rem;
+
+}
+
+.color-list::-webkit-scrollbar-track {
+
+    background: transparent;
+
+}
+
+.color-list::-webkit-scrollbar-thumb {
+
+    background: #d8bcc2;
+
+    border-radius: 1rem;
+
+}
+
+.color-list::-webkit-scrollbar-thumb:hover {
+
+    background: #7d1024;
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| EINZELNE FARBE
+| EINZELNE FARBE: Kreis oben, Name darunter
 |--------------------------------------------------------------------------
 */
 
@@ -727,30 +771,22 @@ onMounted(async () => {
 
     display: flex;
 
+    flex-direction: column;
+
     align-items: center;
 
-    gap: 0.8rem;
+    gap: 0.35rem;
 
-    width: 100%;
+    flex-shrink: 0;
 
-    min-height: clamp(
-        2.3rem,
-        3vw,
-        3.2rem
-    );
+    width: clamp(3.6rem, 4.4vw, 4.6rem);
 
-    padding:
-        0.4rem
-        0.6rem;
+    padding: 0.35rem 0.2rem;
 
-    /*
-    WICHTIG:
-    Der Button selbst bekommt KEINE Farbe.
-    */
-
+    /* Der Button selbst bekommt KEINE Farbe */
     border: none;
 
-    border-radius: 0.618rem;
+    border-radius: 0.6rem;
 
     background: transparent;
 
@@ -758,7 +794,7 @@ onMounted(async () => {
 
     cursor: pointer;
 
-    text-align: left;
+    text-align: center;
 
     appearance: none;
 
@@ -768,9 +804,9 @@ onMounted(async () => {
 
     outline: none;
 
-    transition:
-        background-color 0.2s ease,
-        transform 0.2s ease;
+    scroll-snap-align: start;
+
+    transition: background-color 0.2s ease;
 
 }
 
@@ -783,36 +819,25 @@ onMounted(async () => {
 
 .color-circle {
 
-    display: block;
+    display: flex;
 
-    width: clamp(
-        1.8rem,
-        2.5vw,
-        2.8rem
-    );
+    width: clamp(2.2rem, 2.7vw, 2.8rem);
 
-    height: clamp(
-        1.8rem,
-        2.5vw,
-        2.8rem
-    );
+    height: clamp(2.2rem, 2.7vw, 2.8rem);
 
     flex-shrink: 0;
 
-    border:
-        0.1vw solid #dddddd;
+    border: 1px solid #dddddd;
 
     border-radius: 50%;
 
     box-sizing: border-box;
 
-    box-shadow:
-        0 0.15vw 0.5vw rgba(
-            0,
-            0,
-            0,
-            0.08
-        );
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 
 }
 
@@ -825,15 +850,15 @@ onMounted(async () => {
 
 .color-name {
 
+    max-width: 100%;
+
     overflow: hidden;
 
-    color: #333333;
+    color: #555555;
 
-    font-size: clamp(
-        0.75rem,
-        0.9vw,
-        1rem
-    );
+    font-size: clamp(0.62rem, 0.68vw, 0.75rem);
+
+    line-height: 1.2;
 
     text-overflow: ellipsis;
 
@@ -844,44 +869,36 @@ onMounted(async () => {
 
 /*
 |--------------------------------------------------------------------------
-| HOVER
+| HOVER / FOCUS
 |--------------------------------------------------------------------------
+| Wichtig: Auch beim Anklicken darf der Button NICHT rot werden.
 */
 
 .color-button:hover {
 
     background: #f8f0f2;
 
-    transform: translateX(0.25rem);
-
 }
 
+.color-button:hover .color-circle {
 
-/*
-|--------------------------------------------------------------------------
-| FOCUS
-|--------------------------------------------------------------------------
-|
-| Wichtig:
-| Auch beim Anklicken darf der Button NICHT rot werden.
-|
-*/
+    transform: scale(1.08);
+
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+
+}
 
 .color-button:focus {
 
     outline: none;
 
-    background: #f8f0f2;
-
 }
-
 
 .color-button:focus-visible {
 
-    outline:
-        0.1vw solid #7d1024;
+    outline: 2px solid #7d1024;
 
-    outline-offset: 0.1rem;
+    outline-offset: 1px;
 
     background: #f8f0f2;
 
@@ -896,53 +913,15 @@ onMounted(async () => {
 
 .no-results {
 
-    margin: 1rem 0;
+    align-self: center;
+
+    margin: 0;
 
     color: #999999;
 
-    font-size: clamp(
-        0.7rem,
-        0.8vw,
-        0.9rem
-    );
+    font-size: clamp(0.7rem, 0.8vw, 0.9rem);
 
     text-align: center;
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| SCROLLBAR
-|--------------------------------------------------------------------------
-*/
-
-.color-list::-webkit-scrollbar {
-
-    width: 0.4rem;
-
-}
-
-
-.color-list::-webkit-scrollbar-track {
-
-    background: transparent;
-
-}
-
-
-.color-list::-webkit-scrollbar-thumb {
-
-    background: #d8bcc2;
-
-    border-radius: 1rem;
-
-}
-
-
-.color-list::-webkit-scrollbar-thumb:hover {
-
-    background: #7d1024;
 
 }
 
@@ -957,19 +936,57 @@ onMounted(async () => {
 
     .color-panel {
 
-        width: 90vw;
+        grid-template-columns: auto minmax(0, 1fr);
 
-        margin:
-            0 auto;
+        grid-template-areas:
+            "title  info"
+            "search search"
+            "chips  chips"
+            "list   list";
 
-        padding: 1.618rem;
+        grid-template-rows: auto;
+
+        height: auto;
+
+        padding: 1rem;
 
     }
 
+    .color-search {
 
-    .color-list {
+        width: 100%;
 
-        max-height: 50vw;
+    }
+
+    .filter-info {
+
+        justify-self: end;
+
+    }
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| REDUCED MOTION
+|--------------------------------------------------------------------------
+*/
+
+@media (prefers-reduced-motion: reduce) {
+
+    .color-circle,
+    .color-button,
+    .search-toggle,
+    .standard-color {
+
+        transition: none;
+
+    }
+
+    .color-button:hover .color-circle {
+
+        transform: none;
 
     }
 
