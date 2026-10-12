@@ -2,12 +2,24 @@
     <div class="design-panel">
 
         <!-- ========================================= -->
-        <!-- KOPFZEILE: Überschrift + Lupe + Suchfeld  -->
+        <!-- KOPFZEILE                                 -->
+        <!-- Ebene 1: DESIGNS 🔍                       -->
+        <!-- Ebene 2: ← MUSTER 🔍                      -->
         <!-- ========================================= -->
 
         <div class="design-header">
 
-            <h3>DESIGNS</h3>
+            <button
+                v-if="aktiveKategorie"
+                type="button"
+                class="back-button"
+                aria-label="Zurück zu den Kategorien"
+                @click="zurueck"
+            ></button>
+
+            <h3>
+                {{ aktiveKategorie ? aktiveKategorie.toUpperCase() : 'DESIGNS' }}
+            </h3>
 
             <button
                 type="button"
@@ -27,7 +39,7 @@
                     ref="searchInput"
                     v-model="suche"
                     type="search"
-                    placeholder="Design suchen"
+                    :placeholder="aktiveKategorie ? `In ${aktiveKategorie} suchen` : 'Alle Designs durchsuchen'"
                     aria-label="Design suchen"
                     @keydown.esc="closeSearch"
                 >
@@ -48,31 +60,95 @@
 
 
         <!-- ========================================= -->
-        <!-- DESIGNS (WAAGERECHT)                      -->
+        <!-- LADEN / FEHLER                            -->
+        <!-- ========================================= -->
+
+        <p
+            v-if="laden"
+            class="status"
+        >
+            Designs werden geladen …
+        </p>
+
+        <p
+            v-else-if="fehler"
+            class="status"
+        >
+            Designs konnten nicht geladen werden.
+            <button
+                type="button"
+                class="retry"
+                @click="ladeDesigns"
+            >
+                Erneut versuchen
+            </button>
+        </p>
+
+
+        <!-- ========================================= -->
+        <!-- EBENE 1: KATEGORIEN                       -->
+        <!-- (nur ohne aktive Suche)                   -->
         <!-- ========================================= -->
 
         <div
-            v-if="gefilterteDesigns.length"
+            v-else-if="zeigeKategorien"
             class="design-list"
         >
 
             <button
-                v-for="design in gefilterteDesigns"
-                :key="design.name"
+                v-for="kategorie in kategorien"
+                :key="kategorie.name"
                 type="button"
                 class="design-item"
-                :class="{ active: ausgewaehlt === design.name }"
-                :aria-pressed="ausgewaehlt === design.name"
-                :title="design.name"
-                @click="selectDesign(design.name)"
+                :title="kategorie.name"
+                @click="oeffneKategorie(kategorie.name)"
             >
 
-                <img
-                    :src="design.icon"
-                    alt=""
-                >
+                <span class="press-on-wrap">
+                    <span
+                        class="press-on"
+                        :style="{ backgroundImage: `url('${kategorie.vorschau}')` }"
+                    ></span>
+                   
+                </span>
 
-                <span>
+                <span class="label">
+                    {{ kategorie.name }}
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- ========================================= -->
+        <!-- EBENE 2 / SUCHERGEBNISSE: DESIGNS         -->
+        <!-- ========================================= -->
+
+        <div
+            v-else-if="sichtbareDesigns.length"
+            class="design-list"
+        >
+
+            <button
+                v-for="design in sichtbareDesigns"
+                :key="design.id"
+                type="button"
+                class="design-item"
+                :class="{ active: ausgewaehltId === design.id }"
+                :aria-pressed="ausgewaehltId === design.id"
+                :title="`${design.name} · ${formatPreis(design.price_per_nail)}`"
+                @click="selectDesign(design)"
+            >
+
+                <span class="press-on-wrap">
+                    <span
+                        class="press-on"
+                        :style="{ backgroundImage: `url('${design.image_path}')` }"
+                    ></span>
+                </span>
+
+                <span class="label">
                     {{ design.name }}
                 </span>
 
@@ -82,7 +158,7 @@
 
         <p
             v-else
-            class="no-results"
+            class="status"
         >
             Kein Design gefunden
         </p>
@@ -93,7 +169,7 @@
 
 <script setup>
 
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, onMounted } from 'vue'
 
 const emit = defineEmits([
     'design-selected'
@@ -101,28 +177,122 @@ const emit = defineEmits([
 
 
 // =========================================
-// AUSWAHL
+// DESIGNS AUS DER DATENBANK LADEN
 // =========================================
 
-const ausgewaehlt = ref(null)
+const designs = ref([])
+const laden   = ref(true)
+const fehler  = ref(false)
 
-function selectDesign(design) {
 
-    ausgewaehlt.value = design
+async function ladeDesigns() {
 
-    emit('design-selected', design)
+    laden.value  = true
+    fehler.value = false
+
+    try {
+
+        const response = await fetch('/design-elements?patterns=1', {
+            headers: { Accept: 'application/json' },
+        })
+
+        if (!response.ok) {
+            throw new Error(response.status)
+        }
+
+        designs.value = await response.json()
+
+    } catch (error) {
+
+        console.error('Designs laden fehlgeschlagen:', error)
+
+        fehler.value = true
+
+    } finally {
+
+        laden.value = false
+
+    }
+
+}
+
+onMounted(ladeDesigns)
+
+
+// =========================================
+// KATEGORIEN (Ebene 1)
+// =========================================
+
+// Feste Reihenfolge für bekannte Kategorien, neue kommen alphabetisch dahinter
+const REIHENFOLGE = ['French', 'Muster', 'Motive', 'Nail Art', 'Ombre', 'Glitzer']
+
+const kategorien = computed(() => {
+
+    const gruppen = {}
+
+    for (const design of designs.value) {
+
+        if (!gruppen[design.category]) {
+            gruppen[design.category] = []
+        }
+
+        gruppen[design.category].push(design)
+
+    }
+
+    return Object.entries(gruppen)
+        .map(([name, liste]) => ({
+            name,
+            anzahl:  liste.length,
+            vorschau: liste[0].image_path,
+        }))
+        .sort((a, b) => {
+
+            const ia = REIHENFOLGE.indexOf(a.name)
+            const ib = REIHENFOLGE.indexOf(b.name)
+
+            if (ia !== -1 && ib !== -1) return ia - ib
+            if (ia !== -1) return -1
+            if (ib !== -1) return 1
+
+            return a.name.localeCompare(b.name, 'de')
+
+        })
+
+})
+
+
+// =========================================
+// NAVIGATION ZWISCHEN DEN EBENEN
+// =========================================
+
+const aktiveKategorie = ref(null)
+
+function oeffneKategorie(name) {
+
+    aktiveKategorie.value = name
+
+    suche.value = ''
+
+}
+
+function zurueck() {
+
+    aktiveKategorie.value = null
+
+    suche.value = ''
 
 }
 
 
 // =========================================
 // SUCHE
+// Ebene 1: über ALLE Designs
+// Ebene 2: nur in der aktuellen Kategorie
 // =========================================
 
-const showSearch = ref(false)
-
-const suche = ref('')
-
+const showSearch  = ref(false)
+const suche       = ref('')
 const searchInput = ref(null)
 
 
@@ -144,7 +314,6 @@ async function toggleSearch() {
 
 }
 
-
 function closeSearch() {
 
     showSearch.value = false
@@ -154,13 +323,10 @@ function closeSearch() {
 }
 
 
-/*
-| Groß-/Kleinschreibung und Umlaute egal
-| ("ombre" findet "Ombré")
-*/
+// Groß-/Kleinschreibung und Akzente egal ("ombre" findet "Ombré")
 function normalisieren(text) {
 
-    return text
+    return String(text ?? '')
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -168,38 +334,67 @@ function normalisieren(text) {
 
 }
 
+function passtZurSuche(design, begriff) {
 
-// =========================================
-// DESIGNS
-// tags = zusätzliche Suchbegriffe
-// =========================================
+    const texte = [
+        design.name,
+        design.category,
+        ...(design.tags ?? []).map((tag) => tag.name),
+    ]
 
-const ICON_PATH = '/images/nail-editor/designs_icon'
+    return texte.some((text) => normalisieren(text).includes(begriff))
 
-const designs = [
-
-    { name: 'French',  icon: `${ICON_PATH}/french.svg`,  tags: ['klassisch', 'spitze', 'weiß', 'tip'] },
-    { name: 'Glitter', icon: `${ICON_PATH}/glitter.svg`, tags: ['glitzer', 'funkeln', 'sparkle'] },
-    { name: 'Muster',  icon: `${ICON_PATH}/muster.svg`,  tags: ['streifen', 'pattern', 'linien'] },
-    { name: 'Ombré',   icon: `${ICON_PATH}/ombre.svg`,   tags: ['verlauf', 'gradient', 'babyboomer'] },
-
-]
+}
 
 
-const gefilterteDesigns = computed(() => {
+// Kategorien nur zeigen, wenn keine Kategorie offen ist UND nicht gesucht wird
+const zeigeKategorien = computed(() =>
+    !aktiveKategorie.value && !normalisieren(suche.value)
+)
+
+const sichtbareDesigns = computed(() => {
 
     const begriff = normalisieren(suche.value)
 
-    if (!begriff) {
-        return designs
+    let liste = designs.value
+
+    if (aktiveKategorie.value) {
+        liste = liste.filter((design) => design.category === aktiveKategorie.value)
     }
 
-    return designs.filter((design) =>
-        [design.name, ...design.tags]
-            .some((text) => normalisieren(text).includes(begriff))
-    )
+    if (begriff) {
+        liste = liste.filter((design) => passtZurSuche(design, begriff))
+    }
+
+    return liste
 
 })
+
+
+// =========================================
+// AUSWAHL
+// =========================================
+
+const ausgewaehltId = ref(null)
+
+function selectDesign(design) {
+
+    ausgewaehltId.value = design.id
+
+    // Ganzes Objekt weitergeben: id, name, image_path, price_per_nail, …
+    emit('design-selected', design)
+
+}
+
+
+function formatPreis(preis) {
+
+    return Number(preis).toLocaleString('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+    }) + ' / Nagel'
+
+}
 
 </script>
 
@@ -208,15 +403,13 @@ const gefilterteDesigns = computed(() => {
 
 /*
 |--------------------------------------------------------------------------
-| DESIGN PANEL (WAAGERECHT, WIE COLOR-PANEL)
+| DESIGN PANEL
 |--------------------------------------------------------------------------
-|
-|  DESIGNS 🔍 [Suche]
-|  [▯]     [▯]     [▯]     [▯]   →
-|  French  Glitter Muster  Ombré
 */
 
 .design-panel {
+
+    --bordeaux: #7d1024;
 
     display: grid;
 
@@ -271,7 +464,7 @@ const gefilterteDesigns = computed(() => {
 
     margin: 0;
 
-    color: #7d1024;
+    color: var(--bordeaux);
 
     font-family: Georgia, serif;
 
@@ -288,10 +481,11 @@ const gefilterteDesigns = computed(() => {
 
 /*
 |--------------------------------------------------------------------------
-| LUPE (gleiches Icon wie im Color-Panel)
+| ICON-BUTTONS (Zurück + Lupe)
 |--------------------------------------------------------------------------
 */
 
+.back-button,
 .search-toggle {
 
     display: flex;
@@ -320,6 +514,7 @@ const gefilterteDesigns = computed(() => {
 
 }
 
+.back-button::before,
 .search-toggle::before {
 
     content: "";
@@ -328,13 +523,31 @@ const gefilterteDesigns = computed(() => {
 
     height: 1rem;
 
-    background: #7d1024;
+    background: var(--bordeaux);
+
+}
+
+.back-button::before {
+
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center / contain no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 5l-7 7 7 7'/%3E%3C/svg%3E") center / contain no-repeat;
+
+}
+
+.search-toggle::before {
 
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") center / contain no-repeat;
             mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") center / contain no-repeat;
 
 }
 
+.back-button {
+
+    margin-left: -0.5rem;
+
+}
+
+.back-button:hover,
 .search-toggle:hover,
 .search-toggle.is-open {
 
@@ -342,9 +555,10 @@ const gefilterteDesigns = computed(() => {
 
 }
 
+.back-button:focus-visible,
 .search-toggle:focus-visible {
 
-    outline: 2px solid #7d1024;
+    outline: 2px solid var(--bordeaux);
 
     outline-offset: 1px;
 
@@ -353,7 +567,7 @@ const gefilterteDesigns = computed(() => {
 
 /*
 |--------------------------------------------------------------------------
-| SUCHFELD (in derselben Zeile)
+| SUCHFELD
 |--------------------------------------------------------------------------
 */
 
@@ -361,7 +575,7 @@ const gefilterteDesigns = computed(() => {
 
     position: relative;
 
-    flex: 0 1 12rem;
+    flex: 0 1 13rem;
 
     min-width: 6rem;
 
@@ -409,7 +623,7 @@ const gefilterteDesigns = computed(() => {
 
     background: #ffffff;
 
-    border-color: #7d1024;
+    border-color: var(--bordeaux);
 
 }
 
@@ -445,14 +659,14 @@ const gefilterteDesigns = computed(() => {
 
 .design-search__clear:hover {
 
-    color: #7d1024;
+    color: var(--bordeaux);
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| DESIGN-LISTE (WAAGERECHT)
+| LISTE (WAAGERECHT)
 |--------------------------------------------------------------------------
 */
 
@@ -490,12 +704,6 @@ const gefilterteDesigns = computed(() => {
 
 }
 
-.design-list::-webkit-scrollbar-track {
-
-    background: transparent;
-
-}
-
 .design-list::-webkit-scrollbar-thumb {
 
     background: #d8bcc2;
@@ -504,16 +712,10 @@ const gefilterteDesigns = computed(() => {
 
 }
 
-.design-list::-webkit-scrollbar-thumb:hover {
-
-    background: #7d1024;
-
-}
-
 
 /*
 |--------------------------------------------------------------------------
-| EINZELNES DESIGN: Icon oben, Name darunter
+| KACHEL (Kategorie oder Design)
 |--------------------------------------------------------------------------
 */
 
@@ -525,13 +727,13 @@ const gefilterteDesigns = computed(() => {
 
     align-items: center;
 
-    gap: 0.35rem;
+    gap: 0.4rem;
 
     flex-shrink: 0;
 
     width: clamp(3.8rem, 4.6vw, 4.8rem);
 
-    padding: 0.35rem 0.2rem;
+    padding: 0.4rem 0.2rem;
 
     border: none;
 
@@ -555,7 +757,7 @@ const gefilterteDesigns = computed(() => {
 
     background: #f8f0f2;
 
-    color: #7d1024;
+    color: var(--bordeaux);
 
 }
 
@@ -567,7 +769,7 @@ const gefilterteDesigns = computed(() => {
 
 .design-item:focus-visible {
 
-    outline: 2px solid #7d1024;
+    outline: 2px solid var(--bordeaux);
 
     outline-offset: 1px;
 
@@ -579,37 +781,13 @@ const gefilterteDesigns = computed(() => {
 
     background: #f8f0f2;
 
-    color: #7d1024;
+    color: var(--bordeaux);
 
-    box-shadow: inset 0 0 0 1px #7d1024;
-
-}
-
-
-/* Icon (hochkant 48 × 64) */
-.design-item img {
-
-    width: clamp(2rem, 2.4vw, 2.6rem);
-
-    height: clamp(2.7rem, 3.2vw, 3.5rem);
-
-    flex-shrink: 0;
-
-    object-fit: contain;
-
-    transition: transform 0.2s ease;
+    box-shadow: inset 0 0 0 1px var(--bordeaux);
 
 }
 
-.design-item:hover img {
-
-    transform: scale(1.06);
-
-}
-
-
-/* Name */
-.design-item span {
+.label {
 
     max-width: 100%;
 
@@ -630,11 +808,94 @@ const gefilterteDesigns = computed(() => {
 
 /*
 |--------------------------------------------------------------------------
-| KEINE ERGEBNISSE
+| PRESS-ON-VORSCHAU
+|--------------------------------------------------------------------------
+| Das Musterbild wird live mit einer Mandel-Maske zugeschnitten.
+| Darüber: Volumen (Rand dunkler) und Glanzlicht.
+| Der Schatten sitzt auf dem Wrapper, weil die Maske ihn sonst abschneidet.
+*/
+
+.press-on-wrap {
+
+    position: relative;
+
+    display: block;
+
+    width: clamp(2rem, 2.4vw, 2.6rem);
+
+    height: clamp(3rem, 3.6vw, 3.9rem);
+
+    filter: drop-shadow(0 2px 2.5px rgba(0, 0, 0, 0.2));
+
+    transition: transform 0.2s ease;
+
+}
+
+.design-item:hover .press-on-wrap {
+
+    transform: translateY(-2px) scale(1.04);
+
+}
+
+.press-on {
+
+    position: absolute;
+
+    inset: 0;
+
+    /* Nude als Grundfarbe für transparente PNG-Muster */
+    background-color: #f3dcd0;
+
+    background-size: cover;
+
+    background-position: center top;
+
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 160'%3E%3Cpath d='M50 2C66 6 92 36 92 74V136Q92 158 50 158Q8 158 8 136V74C8 36 34 6 50 2Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 160'%3E%3Cpath d='M50 2C66 6 92 36 92 74V136Q92 158 50 158Q8 158 8 136V74C8 36 34 6 50 2Z'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+
+}
+
+/* Volumen: Rand leicht abgedunkelt */
+.press-on::before {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    background: radial-gradient(
+        ellipse 70% 65% at 45% 42%,
+        transparent 55%,
+        rgba(0, 0, 0, 0.22) 100%
+    );
+
+}
+
+/* Glanzlicht */
+.press-on::after {
+
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+        radial-gradient(ellipse 6% 10% at 64% 16%, rgba(255, 255, 255, 0.85), transparent 100%),
+        linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.55) 28%, transparent 40%);
+
+}
+
+
+
+/*
+|--------------------------------------------------------------------------
+| STATUS (Laden, Fehler, keine Treffer)
 |--------------------------------------------------------------------------
 */
 
-.no-results {
+.status {
 
     align-self: center;
 
@@ -645,6 +906,26 @@ const gefilterteDesigns = computed(() => {
     font-size: clamp(0.7rem, 0.8vw, 0.85rem);
 
     text-align: center;
+
+}
+
+.retry {
+
+    margin-left: 0.4rem;
+
+    padding: 0;
+
+    border: none;
+
+    background: none;
+
+    color: var(--bordeaux);
+
+    font: inherit;
+
+    text-decoration: underline;
+
+    cursor: pointer;
 
 }
 
@@ -677,14 +958,15 @@ const gefilterteDesigns = computed(() => {
 @media (prefers-reduced-motion: reduce) {
 
     .design-item,
-    .design-item img,
+    .press-on-wrap,
+    .back-button,
     .search-toggle {
 
         transition: none;
 
     }
 
-    .design-item:hover img {
+    .design-item:hover .press-on-wrap {
 
         transform: none;
 
