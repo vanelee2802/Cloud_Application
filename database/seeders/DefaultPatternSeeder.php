@@ -31,10 +31,11 @@ class DefaultPatternSeeder extends Seeder
                     'name'           => $data['name'],
                     'nail_studio_id' => null,
                 ],
-                [
+                              [
                     'category'       => $data['category'],
                     'price_per_nail' => $data['price_per_nail'],
-                    'image_path'     => $data['image'],
+                    'image_path'     => $data['image'] ?? null,    // deckendes Muster
+                    'layers'         => $data['layers'] ?? null,   // umfärbbares Muster
                     'is_active'      => true,
                 ]
             );

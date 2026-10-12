@@ -67,6 +67,37 @@
         "category": "Muster",
         "price_per_nail": 3.00,
         "image": "/images/nail-editor/designs/patterns/marmor-braun.svg",
-        "tags": ["marmor", "marble", "braun", "creme", "gold", "herbst"]
+               "tags": ["marmor", "marble", "braun", "creme", "gold", "herbst"]
+    },
+    {
+        "name": "French Tip",
+        "category": "French",
+        "price_per_nail": 2.00,
+        "layers": [
+            { "name": "Spitze", "mask": "/images/nail-editor/designs/layers/french-spitze.svg", "color": "#FFFFFF" }
+        ],
+        "tags": ["french", "spitze", "tip", "klassisch", "einfärbbar"]
+    },
+    {
+        "name": "Tartan",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "layers": [
+            { "name": "Streifen", "mask": "/images/nail-editor/designs/layers/karo-streifen.svg", "color": "#8E3B1D" },
+            { "name": "Linien",   "mask": "/images/nail-editor/designs/layers/karo-linien.svg",   "color": "#3B2216" },
+            { "name": "Akzent",   "mask": "/images/nail-editor/designs/layers/karo-akzent.svg",   "color": "#C48A3F" }
+        ],
+        "tags": ["karo", "plaid", "tartan", "kariert", "einfärbbar"]
+    },
+    {
+        "name": "Linien-Art",
+        "category": "Nail Art",
+        "price_per_nail": 2.50,
+        "layers": [
+            { "name": "Hauptlinie", "mask": "/images/nail-editor/designs/layers/linien-haupt.svg",  "color": "#D6AB45" },
+            { "name": "Akzent",     "mask": "/images/nail-editor/designs/layers/linien-akzent.svg", "color": "#FFFFFF" }
+        ],
+        "tags": ["linien", "lines", "minimal", "elegant", "einfärbbar"]
     }
+
 ]
