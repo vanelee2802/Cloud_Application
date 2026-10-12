@@ -33,23 +33,28 @@
                     class="nail-base"
                 />
 
-                <template v-if="pattern">
+                               <!-- 2. Farbe, mit dem Nagel als Maske zugeschnitten -->
+                <span
+                    v-if="color"
+                    class="nail-layer"
+                    :style="colorStyle(finger.key)"
+                ></span>
 
-                    <!-- 2. Muster, mit dem Nagel als Maske zugeschnitten -->
-                    <span
-                        class="nail-pattern"
-                        :style="patternStyle(finger.key)"
-                    ></span>
+                <!-- 3. Muster, mit dem Nagel als Maske zugeschnitten -->
+                <span
+                    v-if="pattern"
+                    class="nail-layer nail-pattern"
+                    :style="patternStyle(finger.key)"
+                ></span>
 
-                    <!-- 3. Glanz und Wölbung vom Original-Nagel -->
-                    <img
-                        :src="nailSrc(finger.key)"
-                        alt=""
-                        aria-hidden="true"
-                        class="nail-shine"
-                    />
-
-                </template>
+                <!-- 4. Glanz und Wölbung vom Original-Nagel -->
+                <img
+                    v-if="color || pattern"
+                    :src="nailSrc(finger.key)"
+                    alt=""
+                    aria-hidden="true"
+                    class="nail-shine"
+                />
 
             </span>
 
@@ -67,7 +72,8 @@ import { computed } from 'vue'
 const props = defineProps({
     shape:   { type: String, default: 'almond' },
     length:  { type: String, default: 'medium' },
-    pattern: { type: String, default: null },
+    color:   { type: String, default: null },   // Hex-Code, z. B. "#B01C2E"
+    pattern: { type: String, default: null },   // Bildpfad des Musters
 })
 
 // Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge)
@@ -101,19 +107,37 @@ function nailSrc(finger) {
 
 }
 
-// Muster-Ebene: Muster als Hintergrund, Nagelbild als Maske
-function patternStyle(finger) {
+// Maske: das Nagelbild selbst schneidet jede Schicht zu
+function maskStyle(finger) {
 
     const mask = `url("${nailSrc(finger)}")`
 
     return {
-        backgroundImage: `url("${props.pattern}")`,
         WebkitMaskImage: mask,
         maskImage:       mask,
     }
 
 }
 
+// Farb-Schicht
+function colorStyle(finger) {
+
+    return {
+        ...maskStyle(finger),
+        backgroundColor: props.color,
+    }
+
+}
+
+// Muster-Schicht
+function patternStyle(finger) {
+
+    return {
+        ...maskStyle(finger),
+        backgroundImage: `url("${props.pattern}")`,
+    }
+
+}
 // Lange Nägel / Stiletto haben eine höhere Leinwand (1080 x 1556)
 const isTall = computed(() =>
     props.length === 'long' || props.shape === 'stiletto'
@@ -176,19 +200,21 @@ const fingers = [
     height: auto;
 }
 
-/* 2. Muster: exakt auf den Nagel zugeschnitten */
-.nail-pattern {
+/* 2. + 3. Farbe und Muster: exakt auf den Nagel zugeschnitten */
+.nail-layer {
     position: absolute;
     inset: 0;
-
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
 
     -webkit-mask-size: 100% 100%;
             mask-size: 100% 100%;
     -webkit-mask-repeat: no-repeat;
             mask-repeat: no-repeat;
+}
+
+.nail-pattern {
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
 }
 
 /* 3. Glanz + Wölbung: graue Kopie des Nagels, weich eingeblendet */

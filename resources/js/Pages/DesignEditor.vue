@@ -123,9 +123,12 @@ function selectCategory(category) {
 // AUSWAHL-EVENTS
 // =========================================
 
+// Gewählte Farbe (ganzes Objekt, Farbwert in hex_code)
+const selectedColor = ref(null)
+
 function selectColor(color) {
 
-    console.log('Ausgewählte Farbe:', color)
+    selectedColor.value = color
 
 }
 
@@ -240,10 +243,10 @@ function toggleCart() {
                 <section class="nail-canvas area-canvas">
 
                     <div class="nail-canvas-inner">
-
-                        <NailHand
+<NailHand
     :shape="shape"
     :length="length"
+    :color="selectedColor?.hex_code"
     :pattern="selectedDesign?.image_path"
 />
 
