@@ -226,33 +226,9 @@ function isActive(color) {
 
 }
 
+
 // Der Editor entscheidet, was mit der Farbe passiert
 function selectColor(color) {
-
-    emit('color-selected', color)
-
-}
-
-function colorKey(color) {
-
-    return color.id ?? color.name
-
-}
-
-function selectColor(color) {
-
-    // Zweiter Klick auf dieselbe Farbe: Auswahl aufheben
-    if (selectedKey.value === colorKey(color)) {
-
-        selectedKey.value = null
-
-        emit('color-selected', null)
-
-        return
-
-    }
-
-    selectedKey.value = colorKey(color)
 
     emit('color-selected', color)
 
