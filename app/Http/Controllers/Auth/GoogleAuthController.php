@@ -13,15 +13,25 @@ class GoogleAuthController extends Controller
     // Schritt 1: Leitet den Nutzer zu Google weiter
     public function redirect()
     {
-        return Socialite::driver('google')->redirect();
+        return Socialite::driver('google')->stateless()->redirect();
     }
 
     // Schritt 2: Google schickt den Nutzer hierher zurück
     public function callback()
     {
-        $googleUser = Socialite::driver('google')->user();
+        try {
 
-        $user = User::firstOrCreate(
+            $googleUser = Socialite::driver('google')->stateless()->user();
+
+        } catch (\Throwable $e) {
+
+            // Fehler ins Log schreiben, Nutzer bekommt eine verständliche Meldung
+            report($e);
+
+            return redirect('/')
+                ->with('error', 'Die Anmeldung mit Google hat nicht geklappt. Bitte versuche es erneut.');
+
+        }        $user = User::firstOrCreate(
             ['email' => $googleUser->getEmail()],
             [
                 'name' => $googleUser->getName(),
