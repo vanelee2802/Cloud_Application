@@ -16,8 +16,7 @@ class DesignController extends Controller
         ->with('nails.nailShape', 'nails.color', 'nails.designElements');
 
     if ($request->filled('search')) {
-        $query->where('name', 'like', '%' . $request->input('search') . '%');
-    }
+$query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: false);    }
 
     if ($request->filled('status')) {
         $query->where('status', $request->input('status'));

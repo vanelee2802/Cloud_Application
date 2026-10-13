@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Stripe\StripeClient;
+use App\Services\StripeCheckoutService;
 
 class PaymentController extends Controller
 {
@@ -56,35 +57,31 @@ class PaymentController extends Controller
 
         return response()->json(['message' => 'Zahlung gelöscht']);
     }
-
     // Erstellt eine Stripe-Checkout-Session für eine bestehende Zahlung
-    public function checkout(Request $request, string $id)
+    public function checkout(Request $request, string $id, StripeCheckoutService $checkout)
     {
         $payment = Payment::with('appointment')->findOrFail($id);
+        $appointment = $payment->appointment;
 
-        $stripe = new StripeClient(config('services.stripe.secret'));
+        // Nur die Kundin, der der Termin gehört, darf bezahlen
+        abort_unless((int) $appointment->user_id === (int) $request->user()->id, 403);
 
-        $session = $stripe->checkout->sessions->create([
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'eur',
-                    'product_data' => [
-                        'name' => 'Nagelstudio-Termin #' . $payment->appointment_id,
-                    ],
-                    'unit_amount' => (int) round($payment->amount * 100),
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => 'payment',
-            'success_url' => config('app.url') . '/payments/success?payment_id=' . $payment->id,
-            'cancel_url' => config('app.url') . '/payments/cancel',
+        // Kann der Termin noch bezahlt werden?
+        $canPay = $payment->status === 'pending'
+            && $appointment->status === 'awaiting_payment'
+            && $appointment->payment_expires_at
+            && $appointment->payment_expires_at->isFuture();
+
+        if (! $canPay) {
+            return response()->json([
+                'message' => 'Dieser Termin kann nicht mehr bezahlt werden. Bitte buche neu.',
+            ], 409);
+        }
+
+        return response()->json([
+            'checkout_url' => $checkout->createCheckoutUrl($payment),
         ]);
-
-        $payment->update(['stripe_payment_id' => $session->id]);
-
-        return response()->json(['checkout_url' => $session->url]);
-    }
+    } 
 
     // Wird von Stripe automatisch aufgerufen, wenn sich eine Zahlung ändert
 public function webhook(Request $request)

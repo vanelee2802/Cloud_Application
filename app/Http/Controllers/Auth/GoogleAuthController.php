@@ -11,10 +11,12 @@ use Laravel\Socialite\Facades\Socialite;
 class GoogleAuthController extends Controller
 {
     // Schritt 1: Leitet den Nutzer zu Google weiter
-    public function redirect()
-    {
-        return Socialite::driver('google')->stateless()->redirect();
-    }
+  public function redirect()
+{
+    return Socialite::driver('google')
+        ->with(['prompt' => 'select_account'])
+        ->redirect();
+}
 
     // Schritt 2: Google schickt den Nutzer hierher zurück
     public function callback()
@@ -41,8 +43,40 @@ class GoogleAuthController extends Controller
             ]
         );
 
+        // Standardrolle für neue Benutzer
+        $role = 'customer';
+
+        // Rolle anhand der hinterlegten Google-E-Mail bestimmen
+        if ($googleUser->getEmail() === env('GOOGLE_ADMIN_EMAIL')) {
+            $role = 'admin';
+        } elseif ($googleUser->getEmail() === env('GOOGLE_EMPLOYEE_EMAIL')) {
+            $role = 'employee';
+        }
+
+        // Wenn die E-Mail noch nicht existiert,
+        // neuen Benutzer mit der passenden Rolle erstellen
+        if (!$user) {
+            $user = User::create([
+                'name' => $googleUser->getName(),
+                'email' => $googleUser->getEmail(),
+                'password' => Str::random(24),
+                'role' => $role,
+                'email_verified_at' => now(),
+            ]);
+        }
+
+        // Vorhandenen oder neu erstellten Benutzer einloggen
         Auth::login($user);
 
-        return redirect('/dashboard');
+        // Je nach gespeicherter Rolle weiterleiten
+        if ($user->role === 'admin') {
+            return redirect('/Studioverwaltung');
+        }
+
+        if ($user->role === 'employee') {
+            return redirect('/Studiodashboard');
+        }
+
+        return redirect('/DesignEditor');
     }
 }

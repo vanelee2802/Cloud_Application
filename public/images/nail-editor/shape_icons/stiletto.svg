@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="200" viewBox="0 0 160 200">
+  <g fill="none" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M55 128 V94 C55 84 60 77 70 73"/>
+    <path d="M107 128 V94 C107 84 102 77 92 73"/>
+    <path d="M70 109 H92 M70 117 H92"/>
+    <path d="M64 88 V84 C64 62 73 46 81 28 C89 46 98 62 98 84 V88 C98 97 91 102 81 102 C71 102 64 97 64 88 Z" fill="#FBE0DF"/>
+  </g>
+  <text x="81" y="166" text-anchor="middle" font-family="Montserrat, Poppins, 'Helvetica Neue', Arial, sans-serif" font-size="14" fill="#4a4a4a">Stiletto</text>
+</svg>

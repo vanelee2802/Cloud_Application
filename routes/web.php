@@ -16,6 +16,9 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\EmployeeController;
+use App\Models\NailStudio;
+use App\Models\User;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -34,6 +37,15 @@ Route::get('/payment/cancel', function () {
 Route::get('/payment/success', function () {
     return 'Zahlung erfolgreich!';
 });
+
+// Rückkehr von Stripe – auch für Gäste erreichbar
+Route::get('/buchung/erfolg', function () {
+    return Inertia::render('BookingResult', ['success' => true]);
+})->name('booking.success');
+
+Route::get('/buchung/abgebrochen', function () {
+    return Inertia::render('BookingResult', ['success' => false]);
+})->name('booking.cancelled');
 #Route::get('/design-editor', [DesignEditorController::class, 'index']);
 #})->name('welcome');
 
@@ -45,11 +57,33 @@ Route::get('/checkout', function () {
     return Inertia::render('Checkout');
 })->name('checkout');
 
+// Termin buchen – auch ohne Kundenkonto möglich
+Route::get('/appointments/availability', [AppointmentController::class, 'availability']);
+Route::post('/appointments/hold', [AppointmentController::class, 'hold'])->middleware('throttle:20,1');
+Route::delete('/appointments/{appointment}/hold', [AppointmentController::class, 'releaseHold']);
+Route::post('/appointments/{appointment}/submit', [AppointmentController::class, 'submit'])->middleware('throttle:10,1');
+
+// NEU: Kundin wählt einen Ersatztermin (eingeloggt oder per signiertem Link)
+Route::post('/appointments/{appointment}/alternatives/{alternative}/accept', [AppointmentController::class, 'acceptAlternative'])
+    ->middleware('throttle:10,1')
+    ->name('appointments.alternatives.accept');
+// Bestätigten Termin bezahlen (eingeloggt oder per signiertem Link)
+Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'pay'])
+    ->middleware('throttle:10,1')
+    ->name('appointments.pay');
+    // Terminseite aus der E-Mail (eingeloggt oder per signiertem Link)
+Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
+    ->name('appointments.manage');
+
+// Muster-Katalog: für alle lesbar (auch ohne Login), damit der Design-Editor funktioniert.
+// Anlegen/Ändern/Löschen bleibt unten im geschützten Bereich.
+Route::get('/design-elements', [DesignElementController::class, 'index']);
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
    #studioDashboard für Admin und Employee
    # Route::get('/studio-dashboard', function () {
    # return Inertia::render('StudioDashboard');
@@ -59,10 +93,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{service}', [ServiceController::class, 'show']);
     Route::get('/nail-shapes', [NailShapeController::class, 'index']);
-    Route::get('/design-elements', [DesignElementController::class, 'index']);
 
     Route::apiResource('designs', DesignController::class);
-    Route::apiResource('appointments', AppointmentController::class)->only(['index', 'store', 'show']);
+    Route::apiResource('appointments', AppointmentController::class)->only(['index', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
     Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
@@ -77,8 +110,45 @@ Route::middleware('auth')->group(function () {
 
         Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
         Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
-
         Route::apiResource('payments', PaymentController::class);
+    });
+
+        // Studioleitung: Anfragen für heute bearbeiten
+    Route::middleware('role:admin')->prefix('admin/appointments')->group(function () {
+        Route::get('/requests', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'index']);
+        Route::get('/bookings', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'bookings']);
+        Route::post('/{appointment}/confirm', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'confirm']);
+        Route::post('/{appointment}/decline', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'decline']);
+        Route::post('/{appointment}/alternatives', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'offerAlternatives']);
+    });
+
+    // Studioverwaltung + Mitarbeiter verwalten: nur für eingeloggte Admins
+    Route::middleware('role:admin')->group(function () {
+
+        Route::get('/Studioverwaltung', function () {
+
+            // Studio des Admins, sonst das erste vorhandene
+            $studioId = auth()->user()->nail_studio_id
+                ?? NailStudio::query()->value('id');
+
+            // DATENBANKABFRAGE: alle Mitarbeiter dieses Studios
+            $employees = User::query()
+                ->where('role', 'employee')
+                ->where('nail_studio_id', $studioId)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+
+            return Inertia::render('Studioverwaltung', [
+                'employees' => $employees,
+            ]);
+
+        })->name('Studioverwaltung');
+
+        Route::post('/employees', [EmployeeController::class, 'store'])
+            ->name('employees.store');
+
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
+            ->name('employees.destroy');
     });
 });
 
@@ -93,11 +163,5 @@ Route::get('/StudioDashboard', function () {
     return Inertia::render('StudioDashboard');
 })->name('StudioDashboard');
 
-Route::get('/Employee', function () {
-    return Inertia::render('Employee');
-})->name('Employee');
-
-
 
 require __DIR__.'/auth.php';
-

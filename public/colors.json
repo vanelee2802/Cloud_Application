@@ -1,0 +1,61 @@
+[
+  { "id": 1,  "name": "Kirschrot",        "hex_code": "#B0182B", "category": "rot" },
+  { "id": 2,  "name": "Classic Red",      "hex_code": "#C8102E", "category": "rot" },
+  { "id": 3,  "name": "Bordeaux",         "hex_code": "#6D1A2B", "category": "rot" },
+  { "id": 4,  "name": "Weinrot Velvet",   "hex_code": "#7D1024", "category": "rot" },
+  { "id": 5,  "name": "Mohnblüte",        "hex_code": "#E0313B", "category": "rot" },
+
+  { "id": 6,  "name": "Nachtblau",        "hex_code": "#1B2A4A", "category": "blau" },
+  { "id": 7,  "name": "Babyblau",         "hex_code": "#A7C7E7", "category": "blau" },
+  { "id": 8,  "name": "Kobalt",           "hex_code": "#1F4FB4", "category": "blau" },
+  { "id": 9,  "name": "Eisblau Shimmer",  "hex_code": "#CFE6F2", "category": "blau" },
+  { "id": 10, "name": "Petrol",           "hex_code": "#1E5F6B", "category": "blau" },
+
+  { "id": 11, "name": "Salbei",           "hex_code": "#9CAF88", "category": "grün" },
+  { "id": 12, "name": "Smaragd",          "hex_code": "#0F7B5A", "category": "grün" },
+  { "id": 13, "name": "Mint Sorbet",      "hex_code": "#BDE8D4", "category": "grün" },
+  { "id": 14, "name": "Olive",            "hex_code": "#6B6B2E", "category": "grün" },
+  { "id": 15, "name": "Tannengrün",       "hex_code": "#1F3D2B", "category": "grün" },
+
+  { "id": 16, "name": "Zitronensorbet",   "hex_code": "#F7E58A", "category": "gelb" },
+  { "id": 17, "name": "Sonnengelb",       "hex_code": "#F5C518", "category": "gelb" },
+  { "id": 18, "name": "Senf",             "hex_code": "#C9A227", "category": "gelb" },
+  { "id": 19, "name": "Vanille",          "hex_code": "#F3E5AB", "category": "gelb" },
+  { "id": 20, "name": "Gold Glitter",     "hex_code": "#D4AF37", "category": "gelb" },
+
+  { "id": 21, "name": "Tiefschwarz",      "hex_code": "#0A0A0A", "category": "schwarz" },
+  { "id": 22, "name": "Onyx",             "hex_code": "#1C1C1E", "category": "schwarz" },
+  { "id": 23, "name": "Graphit",          "hex_code": "#3A3A3C", "category": "schwarz" },
+  { "id": 24, "name": "Black Glitter",    "hex_code": "#22202A", "category": "schwarz" },
+  { "id": 25, "name": "Anthrazit Matt",   "hex_code": "#2E3033", "category": "schwarz" },
+
+  { "id": 26, "name": "Schneeweiß",       "hex_code": "#FFFFFF", "category": "weiß" },
+  { "id": 27, "name": "Milky White",      "hex_code": "#F4F1EC", "category": "weiß" },
+  { "id": 28, "name": "French White",     "hex_code": "#FAFAFA", "category": "weiß" },
+  { "id": 29, "name": "Perlmutt",         "hex_code": "#EEE8E2", "category": "weiß" },
+  { "id": 30, "name": "Elfenbein",        "hex_code": "#FFFFF0", "category": "weiß" },
+
+  { "id": 31, "name": "Rosenquarz",       "hex_code": "#F4C2C2", "category": "rosa" },
+  { "id": 32, "name": "Nude Rosé",        "hex_code": "#E8B4A8", "category": "rosa" },
+  { "id": 33, "name": "Bubblegum",        "hex_code": "#FF8FB1", "category": "rosa" },
+  { "id": 34, "name": "Altrosa",          "hex_code": "#C08081", "category": "rosa" },
+  { "id": 35, "name": "Pink Neon",        "hex_code": "#FF3E96", "category": "rosa" },
+
+  { "id": 36, "name": "Lavendel",         "hex_code": "#B9A3D9", "category": "lila" },
+  { "id": 37, "name": "Flieder",          "hex_code": "#C8A2C8", "category": "lila" },
+  { "id": 38, "name": "Aubergine",        "hex_code": "#4B2142", "category": "lila" },
+  { "id": 39, "name": "Violett Cat Eye",  "hex_code": "#6A3FA0", "category": "lila" },
+  { "id": 40, "name": "Pflaume",          "hex_code": "#7A3B69", "category": "lila" },
+
+  { "id": 41, "name": "Pfirsich",         "hex_code": "#FFB38A", "category": "orange" },
+  { "id": 42, "name": "Mandarine",        "hex_code": "#F58025", "category": "orange" },
+  { "id": 43, "name": "Koralle",          "hex_code": "#FF6F61", "category": "orange" },
+  { "id": 44, "name": "Apricot",          "hex_code": "#FBCEB1", "category": "orange" },
+  { "id": 45, "name": "Terrakotta",       "hex_code": "#C65D3B", "category": "orange" },
+
+  { "id": 46, "name": "Mokka",            "hex_code": "#6F4E37", "category": "braun" },
+  { "id": 47, "name": "Karamell",         "hex_code": "#AF6E4D", "category": "braun" },
+  { "id": 48, "name": "Haselnuss",        "hex_code": "#8E6B4F", "category": "braun" },
+  { "id": 49, "name": "Zimt",             "hex_code": "#9C5B3A", "category": "braun" },
+  { "id": 50, "name": "Espresso",         "hex_code": "#3C2A21", "category": "braun" }
+]

@@ -16,8 +16,7 @@ class DesignElementController extends Controller
     }
 
     if ($request->filled('search')) {
-        $query->where('name', 'like', '%' . $request->input('search') . '%');
-    }
+$query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: false);    }
 
     if ($request->filled('min_price')) {
         $query->where('price_per_nail', '>=', $request->input('min_price'));
