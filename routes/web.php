@@ -99,6 +99,8 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
     Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
+            Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
+
 
     Route::middleware('role:employee,admin')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
@@ -106,7 +108,6 @@ Route::middleware('auth')->group(function () {
 
         Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
         Route::apiResource('nail-shapes', NailShapeController::class)->except(['index', 'show']);
-        Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
 
         Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
         Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
@@ -154,6 +155,8 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+
+    Route::get('/design-elements', [DesignElementController::class, 'index']);
 
 Route::get('/DesignEditor', function () {
     return Inertia::render('DesignEditor');

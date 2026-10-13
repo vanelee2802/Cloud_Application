@@ -1,0 +1,143 @@
+[
+  {
+    "slug": "schildpatt-karamell",
+    "name": "Schildpatt Karamell",
+    "preview": "/images/nail-editor/designs/previews/schildpatt-karamell.svg",
+    "pattern": "/images/nail-editor/designs/patterns/schildpatt-karamell.svg",
+    "tags": [
+      "schildpatt",
+      "tortoise",
+      "karamell",
+      "braun",
+      "animal",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "zopfstrick-creme",
+    "name": "Zopfstrick Creme",
+    "preview": "/images/nail-editor/designs/previews/zopfstrick-creme.svg",
+    "pattern": "/images/nail-editor/designs/patterns/zopfstrick-creme.svg",
+    "tags": [
+      "strick",
+      "zopf",
+      "pullover",
+      "creme",
+      "matt",
+      "herbst",
+      "winter"
+    ]
+  },
+  {
+    "slug": "rost-ombre",
+    "name": "Rost Ombré",
+    "preview": "/images/nail-editor/designs/previews/rost-ombre.svg",
+    "pattern": "/images/nail-editor/designs/patterns/rost-ombre.svg",
+    "tags": [
+      "ombre",
+      "verlauf",
+      "gradient",
+      "rost",
+      "orange",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "karo-herbst",
+    "name": "Karo",
+    "preview": "/images/nail-editor/designs/previews/karo-herbst.svg",
+    "pattern": "/images/nail-editor/designs/patterns/karo-herbst.svg",
+    "tags": [
+      "karo",
+      "plaid",
+      "tartan",
+      "kariert",
+      "muster",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "karamell-french",
+    "name": "Karamell French",
+    "preview": "/images/nail-editor/designs/previews/karamell-french.svg",
+    "pattern": "/images/nail-editor/designs/patterns/karamell-french.svg",
+    "tags": [
+      "french",
+      "spitze",
+      "tip",
+      "karamell",
+      "klassisch",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "goldfolie",
+    "name": "Goldfolie",
+    "preview": "/images/nail-editor/designs/previews/goldfolie.svg",
+    "pattern": "/images/nail-editor/designs/patterns/goldfolie.svg",
+    "tags": [
+      "gold",
+      "folie",
+      "flakes",
+      "nude",
+      "glamour",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "herbstblaetter",
+    "name": "Herbstblätter",
+    "preview": "/images/nail-editor/designs/previews/herbstblaetter.svg",
+    "pattern": "/images/nail-editor/designs/patterns/herbstblaetter.svg",
+    "tags": [
+      "blätter",
+      "laub",
+      "ahorn",
+      "nail art",
+      "nude",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "burgund-goldlinie",
+    "name": "Burgund & Goldlinie",
+    "preview": "/images/nail-editor/designs/previews/burgund-goldlinie.svg",
+    "pattern": "/images/nail-editor/designs/patterns/burgund-goldlinie.svg",
+    "tags": [
+      "burgund",
+      "bordeaux",
+      "gold",
+      "linie",
+      "elegant",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "rost-glitzer",
+    "name": "Rost Glitzer",
+    "preview": "/images/nail-editor/designs/previews/rost-glitzer.svg",
+    "pattern": "/images/nail-editor/designs/patterns/rost-glitzer.svg",
+    "tags": [
+      "glitzer",
+      "glitter",
+      "rost",
+      "kupfer",
+      "funkeln",
+      "herbst"
+    ]
+  },
+  {
+    "slug": "marmor-braun",
+    "name": "Brauner Marmor",
+    "preview": "/images/nail-editor/designs/previews/marmor-braun.svg",
+    "pattern": "/images/nail-editor/designs/patterns/marmor-braun.svg",
+    "tags": [
+      "marmor",
+      "marble",
+      "braun",
+      "creme",
+      "gold",
+      "herbst"
+    ]
+  }
+]

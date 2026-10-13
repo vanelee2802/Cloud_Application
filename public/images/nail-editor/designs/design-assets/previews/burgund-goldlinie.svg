@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 190" width="120" height="190">
+<defs><linearGradient id="burg-b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a1626"/><stop offset="1" stop-color="#4a0b16"/></linearGradient>
+<linearGradient id="burg-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe39a"/><stop offset=".5" stop-color="#cfa040"/><stop offset="1" stop-color="#f1d07a"/></linearGradient>
+<clipPath id="burg-clip"><path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z"/></clipPath>
+<filter id="burg-sh" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+<radialGradient id="burg-vol" cx=".45" cy=".42" r=".7"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient>
+<linearGradient id="burg-hl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+</defs>
+<ellipse cx="62" cy="176" rx="34" ry="7" fill="#000" opacity=".22" filter="url(#burg-sh)"/>
+<g clip-path="url(#burg-clip)">
+  <g transform="translate(4.67 6) scale(0.5533)"><rect width="200" height="300" fill="url(#burg-b)"/><path d="M-10 60 C60 90 40 170 110 190 S170 260 215 300" stroke="url(#burg-g)" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M30 -10 C70 60 140 70 150 140 S120 230 170 310" stroke="url(#burg-g)" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M-10 200 C40 210 60 260 90 310" stroke="url(#burg-g)" stroke-width="1.2" fill="none" stroke-linecap="round"/></g>
+  <path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z" fill="url(#burg-vol)"/>
+  <path d="M38 140 C36 100 40 55 52 26" stroke="url(#burg-hl)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <ellipse cx="71" cy="34" rx="3" ry="6" fill="#fff" opacity="0.60" transform="rotate(20 71 34)"/>
+</g>
+<path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="1.2"/>
+</svg>

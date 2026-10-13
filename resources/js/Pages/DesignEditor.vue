@@ -123,15 +123,77 @@ function selectCategory(category) {
 // AUSWAHL-EVENTS
 // =========================================
 
+// =========================================
+// FARBE
+// Ziel der Farbauswahl:
+//   colorTarget = null  → Grundfarbe des Nagels
+//   colorTarget = 0, 1… → Farbschicht des Musters (z. B. Spitze)
+// =========================================
+
+const selectedColor = ref(null)
+
+const colorTarget = ref(null)
+
+const designPanel = ref(null)
+
+
 function selectColor(color) {
 
-    console.log('Ausgewählte Farbe:', color)
+    // Ziel ist eine Schicht: Farbe an das DesignPanel geben
+    if (colorTarget.value !== null) {
+
+        designPanel.value?.setLayerColor(colorTarget.value, color.hex_code)
+
+        return
+
+    }
+
+    // Ziel ist die Grundfarbe: zweiter Klick auf dieselbe Farbe hebt sie auf
+    const sameColor =
+        selectedColor.value?.hex_code?.toLowerCase() === color.hex_code?.toLowerCase()
+
+    selectedColor.value = sameColor ? null : color
 
 }
 
+
+// Klick auf "● Spitze" im DesignPanel
+function onLayerTarget(index) {
+
+    colorTarget.value = index
+
+    // Farbauswahl automatisch einblenden, damit man direkt färben kann
+    if (index !== null && !selectedCategories.value.includes('Farbe')) {
+        selectedCategories.value.push('Farbe')
+    }
+
+}
+
+
+// Welche Farbe im ColorPanel markiert ist
+const activeHex = computed(() => {
+
+    if (colorTarget.value !== null) {
+        return selectedDesign.value?.layers?.[colorTarget.value]?.color ?? null
+    }
+
+    return selectedColor.value?.hex_code ?? null
+
+})
+
+// Hinweis im ColorPanel, z. B. "FARBE · Spitze"
+const targetLabel = computed(() =>
+    colorTarget.value !== null
+        ? selectedDesign.value?.layers?.[colorTarget.value]?.name ?? ''
+        : ''
+)
+
+// Gewähltes Design (ganzes Objekt aus der Datenbank)
+const selectedDesign = ref(null)
+
 function selectDesign(design) {
 
-    console.log('Ausgewähltes Design:', design)
+    selectedDesign.value = design
 
 }
 
@@ -237,11 +299,13 @@ function toggleCart() {
                 <section class="nail-canvas area-canvas">
 
                     <div class="nail-canvas-inner">
-
-                        <NailHand
-                            :shape="shape"
-                            :length="length"
-                        />
+<NailHand
+    :shape="shape"
+    :length="length"
+    :color="selectedColor?.hex_code"
+    :pattern="selectedDesign?.image_path"
+    :layers="selectedDesign?.layers ?? []"
+/>
 
                     </div>
 
@@ -289,8 +353,10 @@ function toggleCart() {
                     >
 
                         <ColorPanel
-                            @color-selected="selectColor"
-                        />
+    :active-hex="activeHex"
+    :target-label="targetLabel"
+    @color-selected="selectColor"
+/>
 
                     </div>
 
@@ -301,10 +367,12 @@ function toggleCart() {
                         class="design-section"
                     >
 
-                        <DesignPanel
-                            @design-selected="selectDesign"
-                        />
-
+                       <DesignPanel
+    ref="designPanel"
+    :active-layer="colorTarget"
+    @layer-target="onLayerTarget"
+    @design-selected="selectDesign"
+/>
                     </div>
 
                 </div>
