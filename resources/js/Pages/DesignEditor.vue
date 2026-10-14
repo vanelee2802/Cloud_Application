@@ -17,6 +17,16 @@ import CharmPanel from '@/Components/NailEditor/CharmPanel.vue'
 import { useCart } from '@/Stores/cart.js'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 
+const props = defineProps({
+    nailShapes: {
+        type: Array,
+        default: () => [],
+    },
+    colors: {
+        type: Array,
+        default: () => [],
+    },
+})
 
 // =========================================
 // KATEGORIEN
@@ -289,6 +299,7 @@ function toggleCart() {
                     >
 
                         <ColorPanel
+                            :colors="props.colors"
                             @color-selected="selectColor"
                         />
 

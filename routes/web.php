@@ -18,6 +18,8 @@ use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\DesignEditorController;
+
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -131,9 +133,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
-Route::get('/DesignEditor', function () {
-    return Inertia::render('DesignEditor');
-})->name('DesignEditor');
+
+Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
+    ->name('DesignEditor');
 #StudioDashboard zugang ohne Admin rechte
 Route::get('/StudioDashboard', function () {
     return Inertia::render('StudioDashboard');
