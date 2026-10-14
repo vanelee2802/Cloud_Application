@@ -17,6 +17,7 @@ use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\UserManagementController;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -73,6 +74,16 @@ Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'p
 Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
     ->name('appointments.manage');
 Route::middleware('auth')->group(function () {
+    
+    // Benutzerverwaltung – nur für Admins
+    Route::get('/admin/users', [UserManagementController::class, 'index'])
+        ->middleware('role:admin')
+        ->name('admin.users.index');
+
+    Route::patch('/admin/users/{user}', [UserManagementController::class, 'update'])
+        ->middleware('role:admin')
+        ->name('admin.users.update');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
