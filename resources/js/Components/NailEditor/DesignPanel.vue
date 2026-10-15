@@ -107,11 +107,18 @@ const emit = defineEmits([
 const ausgewaehlt = ref(null)
 
 function selectDesign(design) {
-
     ausgewaehlt.value = design
 
-    emit('design-selected', design)
+    const mapping = {
+        'French': 'Klassisch French',
+        'Glitter': 'Silber-Glitzer',
+        'Ombré': 'Ombre Verlauf',
+    }
 
+    emit('design-selected', {
+        name: design,
+        elementName: mapping[design] ?? null,
+    })
 }
 
 

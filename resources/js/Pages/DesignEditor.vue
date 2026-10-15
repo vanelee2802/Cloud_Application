@@ -18,14 +18,9 @@ import { useCart } from '@/Stores/cart.js'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 
 const props = defineProps({
-    nailShapes: {
-        type: Array,
-        default: () => [],
-    },
-    colors: {
-        type: Array,
-        default: () => [],
-    },
+    nailShapes: { type: Array, default: () => [] },
+    colors: { type: Array, default: () => [] },
+    designElements: { type: Array, default: () => [] },
 })
 
 // =========================================
@@ -33,6 +28,32 @@ const props = defineProps({
 // =========================================
 
 const selectedCategories = ref([])
+
+const selectedFingers = ref([])
+
+const nailDesigns = ref({})
+
+function selectDesign(design) {
+    // Ohne ausgewählte Nägel nichts verändern
+    if (selectedFingers.value.length === 0) {
+        return
+    }
+
+    // Design nur den ausgewählten Nägeln zuweisen
+    selectedFingers.value.forEach(finger => {
+        nailDesigns.value[finger] = design
+    })
+}
+
+function toggleFinger(fingerKey) {
+    if (selectedFingers.value.includes(fingerKey)) {
+        selectedFingers.value = selectedFingers.value.filter(
+            finger => finger !== fingerKey
+        )
+    } else {
+        selectedFingers.value.push(fingerKey)
+    }
+}
 
 
 // =========================================
@@ -139,11 +160,23 @@ function selectColor(color) {
 
 }
 
-function selectDesign(design) {
+    selectedFingers.value.forEach(finger => {
+        nailDesigns.value[finger] = design
+    })
 
-    console.log('Ausgewähltes Design:', design)
+const totalDesignPrice = computed(() => {
+    return Object.values(nailDesigns.value).reduce((total, design) => {
+        if (!design?.elementName) {
+            return total
+        }
 
-}
+        const element = props.designElements.find(
+            item => item.name === design.elementName
+        )
+
+        return total + Number(element?.price_per_nail ?? 0)
+    }, 0)
+})
 
 function selectEffekt(effekt) {
 
@@ -251,6 +284,8 @@ function toggleCart() {
                         <NailHand
                             :shape="shape"
                             :length="length"
+                            :selected-fingers="selectedFingers"
+                            @toggle-finger="toggleFinger"
                         />
 
                     </div>
@@ -380,6 +415,10 @@ function toggleCart() {
 
         </main>
 
+        <div class="design-price">
+            <p>Ausgewählte Nägel: {{ Object.keys(nailDesigns).length }}</p>
+            <p>Gesamtpreis: {{ totalDesignPrice.toFixed(2) }} €</p>
+        </div>
 
         <!-- ========================================= -->
         <!-- CHECKOUT -->
