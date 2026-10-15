@@ -218,7 +218,19 @@
 <script setup>
 
 import { ref, computed, nextTick, onMounted } from 'vue'
+import { buildLayers } from './patternGenerators'
 
+
+// Farbschichten eines Musters, egal ob fest gespeichert oder generiert
+function baseLayers(design) {
+
+    if (design?.generator) {
+        return buildLayers(design.generator, design.params ?? {})
+    }
+
+    return design?.layers ?? []
+
+}
 const emit = defineEmits([
     'design-selected',
     'layer-target',      // welche Schicht gerade gefärbt wird (Index oder null)
@@ -441,7 +453,7 @@ const selectedDesign = computed(() =>
 
 // Schichten des gewählten Musters MIT den eingestellten Farben
 const selectedLayers = computed(() =>
-    (selectedDesign.value?.layers ?? []).map((layer, index) => ({
+    baseLayers(selectedDesign.value).map((layer, index) => ({
         ...layer,
         color: layerColors.value[index] ?? layer.color,
     }))
@@ -455,8 +467,7 @@ function selectDesign(design) {
 
         ausgewaehltId.value = null
 
-        layerColors.value = []
-
+    layerColors.value = baseLayers(design).map((layer) => layer.color)
         emit('design-selected', null)
 
         return
@@ -518,14 +529,11 @@ function pressOnStyle(design) {
 
 }
 
-// Umfärbbares Muster: Schichten (beim gewählten mit eigenen Farben)
 function layersOf(design) {
 
-    if (!design?.layers) return []
-
-    return design.id === ausgewaehltId.value
+    return design?.id === ausgewaehltId.value
         ? selectedLayers.value
-        : design.layers
+        : baseLayers(design)
 
 }
 
