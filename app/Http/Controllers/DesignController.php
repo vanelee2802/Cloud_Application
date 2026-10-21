@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\DB;
 
 class DesignController extends Controller
 {
+    
+private function findUserDesign(Request $request, string $id): Design
+{
+    return Design::where('user_id', $request->user()->id)
+        ->with('nails.nailShape', 'nails.color', 'nails.designElements')
+        ->findOrFail($id);
+}
+
     // Zeigt alle Designs des eingeloggten Nutzers
     public function index(Request $request)
 {
@@ -31,12 +39,13 @@ $query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'nails' => 'required|array|min:1',
-            'nails.*.nail_position' => 'required|integer|min:1|max:10',
+            'nails.*.nail_position' => 'required|integer|min:1|max:10|distinct',
             'nails.*.nail_shape_id' => 'required|exists:nail_shapes,id',
             'nails.*.color_id' => 'required|exists:colors,id',
             'nails.*.element_ids' => 'array',
             'nails.*.element_ids.*' => 'exists:design_elements,id',
         ]);
+
 
         $design = DB::transaction(function () use ($validated, $request) {
             $design = Design::create([
@@ -73,13 +82,14 @@ $query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: 
     }
 
     // Zeigt ein einzelnes Design mit allen Details
-    public function show(string $id)
+    
+    public function show(Request $request, string $id)
     {
-        $design = Design::with('nails.nailShape', 'nails.color', 'nails.designElements')
-            ->findOrFail($id);
+        $design = $this->findUserDesign($request, $id);
 
         return response()->json($design);
     }
+
 
     // Ändert nur den Status (z. B. Mitarbeiter nimmt an/lehnt ab)
     public function update(Request $request, string $id)
@@ -112,10 +122,13 @@ $query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: 
     return response()->json($design);
 }
 
-    public function destroy(string $id)
+    
+    public function destroy(Request $request, string $id)
     {
-        Design::findOrFail($id)->delete();
+        $design = $this->findUserDesign($request, $id);
+        $design->delete();
 
         return response()->json(['message' => 'Design gelöscht']);
     }
+
 }
