@@ -31,12 +31,13 @@ $query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'nails' => 'required|array|min:1',
-            'nails.*.nail_position' => 'required|integer|min:1|max:10',
+            'nails.*.nail_position' => 'required|integer|min:1|max:10|distinct',
             'nails.*.nail_shape_id' => 'required|exists:nail_shapes,id',
             'nails.*.color_id' => 'required|exists:colors,id',
             'nails.*.element_ids' => 'array',
             'nails.*.element_ids.*' => 'exists:design_elements,id',
         ]);
+
 
         $design = DB::transaction(function () use ($validated, $request) {
             $design = Design::create([
