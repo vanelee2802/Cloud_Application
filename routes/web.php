@@ -76,6 +76,12 @@ Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'p
 Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
     ->name('appointments.manage');
 Route::middleware('auth')->group(function () {
+
+
+    // Übersicht der gespeicherten Nageldesigns
+    Route::get('/meine-designs', function () {
+        return Inertia::render('Designs/Index');
+    })->name('designs.page');
     
     // Benutzerverwaltung – nur für Admins
     Route::get('/admin/users', [UserManagementController::class, 'index'])

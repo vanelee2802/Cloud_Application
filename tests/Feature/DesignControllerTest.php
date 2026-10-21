@@ -58,4 +58,50 @@ class DesignControllerTest extends TestCase
 
         $this->assertDatabaseCount('designs', 0);
     }
+
+    public function test_customer_cannot_view_another_users_design(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $designId = DB::table('designs')->insertGetId([
+            'user_id' => $owner->id,
+            'name' => 'Privates Design',
+            'status' => 'pending',
+            'total_price' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($otherUser)
+            ->getJson('/designs/' . $designId);
+
+        $response->assertNotFound();
+    }
+
+    public function test_customer_cannot_delete_another_users_design(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $designId = DB::table('designs')->insertGetId([
+            'user_id' => $owner->id,
+            'name' => 'Privates Design',
+            'status' => 'pending',
+            'total_price' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->actingAs($otherUser)
+            ->deleteJson('/designs/' . $designId);
+
+        $response->assertNotFound();
+
+        $this->assertDatabaseHas('designs', [
+            'id' => $designId,
+            'user_id' => $owner->id,
+        ]);
+    }
+
 }
