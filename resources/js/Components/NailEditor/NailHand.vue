@@ -22,7 +22,10 @@
                 :key="finger.key"
                 :src="`${basePath}/${finger.key}.png`"
                 :alt="finger.alt"
-                :class="['nail', `nail-${finger.key}`]"
+                :class="['nail', `nail-${finger.key}`, {
+                    'nail-selected': selectedFingers.includes(finger.key)
+                }]"
+                @click="$emit('toggle-finger', finger.key)"
             />
 
         </div>
@@ -33,12 +36,13 @@
 <script setup>
 import { computed } from 'vue'
 
-// shape:  almond | square | oval | coffin | squoval | stiletto
-// length: short | medium | long
 const props = defineProps({
-    shape:  { type: String, default: 'almond' },
+    shape: { type: String, default: 'almond' },
     length: { type: String, default: 'medium' },
+    selectedFingers: { type: Array, default: () => [] },
 })
+
+defineEmits(['toggle-finger'])
 
 // Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge).
 // Stiletto gibt es nur lang -> Ordner "stiletto-right hand"
@@ -118,6 +122,14 @@ const fingers = [
 
 .nail {
     position: absolute;
+}
+
+.nail {
+    cursor: pointer;
+}
+
+.nail-selected {
+    filter: drop-shadow(0 0 5px #e75480);
 }
 
 /* Daumen */

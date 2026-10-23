@@ -34,6 +34,25 @@ const selectedCategories = ref([])
 const shape  = ref('almond')
 const length = ref('medium')
 
+const selectedFingers = ref([])
+const nailDesigns = ref({
+    thumb:  { form: null, color: null, design: null, effekt: null },
+    index:  { form: null, color: null, design: null, effekt: null },
+    middle: { form: null, color: null, design: null, effekt: null },
+    ring:   { form: null, color: null, design: null, effekt: null },
+    pinky:  { form: null, color: null, design: null, effekt: null },
+})
+
+function toggleFinger(fingerKey) {
+    if (selectedFingers.value.includes(fingerKey)) {
+        selectedFingers.value = selectedFingers.value.filter(
+            finger => finger !== fingerKey
+        )
+    } else {
+        selectedFingers.value.push(fingerKey)
+    }
+}
+
 
 // Alle Nagelbilder vorladen, damit beim Umschalten nichts flackert
 const FOLDERS = [
@@ -124,15 +143,29 @@ function selectCategory(category) {
 // =========================================
 
 function selectColor(color) {
+    if (selectedFingers.value.length === 0) {
+        alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
+        return
+    }
 
-    console.log('Ausgewählte Farbe:', color)
+    selectedFingers.value.forEach(finger => {
+        nailDesigns.value[finger].color = color
+    })
 
+    console.log('Farbe zugewiesen:', color)
 }
 
 function selectDesign(design) {
+    if (selectedFingers.value.length === 0) {
+        alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
+        return
+    }
 
-    console.log('Ausgewähltes Design:', design)
+    selectedFingers.value.forEach(finger => {
+        nailDesigns.value[finger].design = design
+    })
 
+    console.log('Design zugewiesen:', design)
 }
 
 function selectEffekt(effekt) {
@@ -235,16 +268,14 @@ function toggleCart() {
                 <!-- ========================================= -->
 
                 <section class="nail-canvas area-canvas">
-
                     <div class="nail-canvas-inner">
-
                         <NailHand
                             :shape="shape"
                             :length="length"
+                            :selected-fingers="selectedFingers"
+                            @toggle-finger="toggleFinger"
                         />
-
                     </div>
-
                 </section>
 
 
