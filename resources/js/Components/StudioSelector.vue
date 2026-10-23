@@ -41,6 +41,7 @@ const filteredStudios = computed(() => {
 
 <template>
     <section class="studio-selector">
+
         <div class="studio-container">
 
             <h2>Wähle dein Nagelstudio</h2>
