@@ -72,8 +72,25 @@ Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'p
     // Terminseite aus der E-Mail (eingeloggt oder per signiertem Link)
 Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
     ->name('appointments.manage');
+
 Route::middleware('auth')->group(function () {
+
+    // Übersicht der gespeicherten Nageldesigns
+    Route::get('/meine-designs', function () {
+        return Inertia::render('Designs/Index');
+    })->name('designs.page');
+
+    // Benutzerverwaltung – nur für Admins
+    Route::get('/admin/users', [UserManagementController::class, 'index'])
+        ->middleware('role:admin')
+        ->name('admin.users.index');
+
+    Route::patch('/admin/users/{user}', [UserManagementController::class, 'update'])
+        ->middleware('role:admin')
+        ->name('admin.users.update');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 

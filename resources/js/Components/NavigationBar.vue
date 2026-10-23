@@ -36,6 +36,18 @@ const roleName = {
                 </NavLink>
             </li>
 
+            
+            <!-- Meine Designs: für eingeloggte Benutzer -->
+            <li v-if="page.props.auth?.user">
+                <NavLink
+                    href="/meine-designs"
+                    :active="route().current('designs.page')"
+                >
+                    Meine Designs
+                </NavLink>
+            </li>
+
+
             <!-- Studio Dashboard: für Admin -->
             <li v-if="page.props.auth?.user?.role === 'admin'">
                 <NavLink
