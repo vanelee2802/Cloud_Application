@@ -60,68 +60,15 @@ function selectVerziehrung(verziehrung) {
 
 }
 
+const ICON_PATH = '/images/nail-editor/icon/CharmPanel'
 
 const verziehrungen = [
 
-    {
-        name: 'Strasssteine',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Perlen',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Glitzersteine',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Sticker',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Metallic',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Herzen',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Sterne',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Blumen',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Schleifen',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Perlmutt',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Gold',
-        icon: '/images/icons/verziehrung.svg'
-    },
-
-    {
-        name: 'Silber',
-        icon: '/images/icons/verziehrung.svg'
-    }
+    { name: 'Strasssteine',  icon: `${ICON_PATH}/strasssteine.svg` },
+    { name: 'Perlen',        icon: `${ICON_PATH}/perlen.svg` },
+    { name: 'Glitzersteine', icon: `${ICON_PATH}/glitzersteine.svg` },
+    { name: 'Sticker',       icon: `${ICON_PATH}/sticker.svg` },
+    { name: 'Herzen',        icon: `${ICON_PATH}/herzen.svg` }
 
 ]
 

@@ -89,60 +89,75 @@ const emit = defineEmits([
 ])
 
 
-// id      = Ordnername unter /images/nail-editor/
-//           short  -> "<id>-short-right hand"
-//           medium -> "<id>-right hand"
-//           long   -> "<id>-long-right hand"
-//           (Stiletto: immer "stiletto-right hand")
-// lengths = in welchen Längen es Nagelbilder für diese Form gibt
+/*
+|--------------------------------------------------------------------------
+| PFADE
+|--------------------------------------------------------------------------
+|
+| Icons der Formen (Auswahl-Buttons):
+|   public/images/nail-editor/icon/FormPanel/
+|
+| Nagelbilder für die Hand (werden in NailHand.vue geladen, nicht hier):
+|   public/images/nail-editor/FormPanel/forms_right hand/<Ordner>/<finger>.png
+|
+|   id      = Ordnername
+|             short  -> "<id>-short-right hand"
+|             medium -> "<id>-right hand"
+|             long   -> "<id>-long-right hand"
+|             (Stiletto: immer "stiletto-right hand")
+|   lengths = in welchen Längen es Nagelbilder für diese Form gibt
+*/
+
+const ICON_PATH = '/images/nail-editor/icon/FormPanel'
+
 const forms = [
 
     {
         id: 'almond',
         name: 'Almond',
-        icon: '/images/nail-editor/shape_icons/mandel.svg',
+        icon: `${ICON_PATH}/mandel.svg`,
         lengths: ['short', 'medium', 'long']
     },
 
     {
         id: 'square',
         name: 'Square',
-        icon: '/images/nail-editor/shape_icons/quadratisch.svg',
+        icon: `${ICON_PATH}/quadratisch.svg`,
         lengths: ['short', 'medium', 'long']
     },
 
     {
         id: 'oval',
         name: 'Round',
-        icon: '/images/nail-editor/shape_icons/oval.svg',
+        icon: `${ICON_PATH}/oval.svg`,
         lengths: ['short', 'medium', 'long']
     },
 
     {
         id: 'coffin',
         name: 'Coffin',
-        icon: '/images/nail-editor/shape_icons/coffin.svg',
+        icon: `${ICON_PATH}/coffin.svg`,
         lengths: ['medium', 'long']
     },
 
     {
         id: 'ballerina',
         name: 'Ballerina',
-        icon: '/images/nail-editor/shape_icons/ballerina.svg',
+        icon: `${ICON_PATH}/ballerina.svg`,
         lengths: ['medium', 'long']
     },
 
     {
         id: 'squoval',
         name: 'Squoval',
-        icon: '/images/nail-editor/shape_icons/squoval.svg',
+        icon: `${ICON_PATH}/squoval.svg`,
         lengths: ['medium']
     },
 
     {
         id: 'stiletto',
         name: 'Stiletto',
-        icon: '/images/nail-editor/shape_icons/stiletto.svg',
+        icon: `${ICON_PATH}/stiletto.svg`,
         lengths: ['long']
     }
 

@@ -108,7 +108,7 @@ function normalisieren(text) {
 }
 
 
-const ICON_PATH = '/images/nail-editor/effects_icon'
+const ICON_PATH = '/images/nail-editor/icon/EffectPanel'
 
 /*
 | tags = zusätzliche Suchbegriffe, die nicht im Namen stehen

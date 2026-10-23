@@ -174,14 +174,14 @@ function normalisieren(text) {
 // tags = zusätzliche Suchbegriffe
 // =========================================
 
-const ICON_PATH = '/images/nail-editor/designs_icon'
+const ICON_PATH = '/images/nail-editor/icon/DesignPanel'
 
 const designs = [
 
-    { name: 'French',  icon: `${ICON_PATH}/french.svg`,  tags: ['klassisch', 'spitze', 'weiß', 'tip'] },
-    { name: 'Glitter', icon: `${ICON_PATH}/glitter.svg`, tags: ['glitzer', 'funkeln', 'sparkle'] },
-    { name: 'Muster',  icon: `${ICON_PATH}/muster.svg`,  tags: ['streifen', 'pattern', 'linien'] },
-    { name: 'Ombré',   icon: `${ICON_PATH}/ombre.svg`,   tags: ['verlauf', 'gradient', 'babyboomer'] },
+    { name: 'French',  icon: `${ICON_PATH}/kategorie-french.svg`,  tags: ['klassisch', 'spitze', 'weiß', 'tip'] },
+    { name: 'Muster',  icon: `${ICON_PATH}/kategorie-motive.svg`,  tags: ['streifen', 'pattern', 'linien'] },
+    { name: 'Motive',  icon: `${ICON_PATH}/kategorie-muster.svg`,  tags: ['streifen', 'pattern', 'linien'] },
+
 
 ]
 
