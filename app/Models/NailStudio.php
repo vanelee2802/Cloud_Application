@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class NailStudio extends Model
 {
-    protected $fillable = ['name', 'address', 'opening_hours'];
+    protected $fillable = ['name', 'address', 'owner_id', 'opening_hours'];
 
     public function services()
     {

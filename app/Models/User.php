@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'email', 'password', 'role', 'nail_studio_id'])]
 #[Hidden(['password', 'remember_token'])]
@@ -64,5 +66,40 @@ class User extends Authenticatable
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+        public const ROLE_OWNER    = 'owner';
+    public const ROLE_ADMIN    = 'admin';
+    public const ROLE_EMPLOYEE = 'employee';
+    public const ROLE_CUSTOMER = 'customer';
+
+ 
+
+    public function ownedStudios(): HasMany
+    {
+        return $this->hasMany(\App\Models\NailStudio::class, 'owner_id');
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->role === self::ROLE_OWNER;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function manageableStudioIds(): array
+    {
+        if ($this->isOwner()) {
+            return $this->ownedStudios()->pluck('id')->all();
+        }
+
+        if ($this->isAdmin() && $this->nail_studio_id) {
+            return [$this->nail_studio_id];
+        }
+
+        return [];
     }
 }
