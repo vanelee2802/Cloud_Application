@@ -97,7 +97,40 @@
             { "name": "Hauptlinie", "mask": "/images/nail-editor/designs/layers/linien-haupt.svg",  "color": "#D6AB45" },
             { "name": "Akzent",     "mask": "/images/nail-editor/designs/layers/linien-akzent.svg", "color": "#FFFFFF" }
         ],
-        "tags": ["linien", "lines", "minimal", "elegant", "einfärbbar"]
+                "tags": ["linien", "lines", "minimal", "elegant", "einfärbbar"]
+    },
+    {
+        "name": "French Individuell",
+        "category": "French",
+        "price_per_nail": 2.50,
+        "generator": "french",
+        "params": { "tiefe": 26, "bogen": 13, "schraeg": 0 },
+        "tags": ["french", "spitze", "tip", "anpassbar", "einfärbbar"]
+    },
+    {
+        "name": "Streifen",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "generator": "streifen",
+        "params": { "breite": 8, "abstand": 18, "winkel": 0 },
+        "tags": ["streifen", "stripes", "linien", "anpassbar", "einfärbbar"]
+    },
+    {
+        "name": "Punkte",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "generator": "punkte",
+        "params": { "groesse": 7, "abstand": 28, "versatz": 50 },
+        "tags": ["punkte", "dots", "polka", "anpassbar", "einfärbbar"]
+    },
+    {
+        "name": "Karo Individuell",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "generator": "karo",
+        "params": { "raster": 80, "breite": 26, "linien": 2, "staerke": 2.5, "winkel": 0 },
+        "tags": ["karo", "plaid", "kariert", "anpassbar", "einfärbbar"]
     }
-
 ]
+    
+

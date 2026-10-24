@@ -35,7 +35,9 @@ class DefaultPatternSeeder extends Seeder
                     'category'       => $data['category'],
                     'price_per_nail' => $data['price_per_nail'],
                     'image_path'     => $data['image'] ?? null,    // deckendes Muster
-                    'layers'         => $data['layers'] ?? null,   // umfärbbares Muster
+                    'layers'         => $data['layers'] ?? null,
+                    'generator'      => $data['generator'] ?? null,  // generiertes Muster
+                    'params'         => $data['params'] ?? null,     // Startwerte der Regler   // umfärbbares Muster
                     'is_active'      => true,
                 ]
             );

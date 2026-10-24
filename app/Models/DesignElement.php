@@ -9,20 +9,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DesignElement extends Model
 {
-        protected $fillable = [
+            protected $fillable = [
         'nail_studio_id',
         'category',
         'name',
         'price_per_nail',
         'image_path',
         'layers',
+        'generator',
+        'params',
         'is_active',
     ];
-       protected $casts = [
-           'price_per_nail' => 'decimal:2',
-           'is_active'      => 'boolean',
-           'layers'         => 'array',
-       ];
+         protected $casts = [
+        'price_per_nail' => 'decimal:2',
+        'is_active'      => 'boolean',
+        'layers'         => 'array',
+        'params'         => 'array',
+    ];
 
 
     // ---------------------------------------------
@@ -52,12 +55,13 @@ class DesignElement extends Model
     // ABFRAGE-HELFER
     // ---------------------------------------------
 
-       // Nur Muster: mit Bild ODER mit Farbschichten
+     // Nur Muster: mit Bild, mit Farbschichten ODER generiert
     public function scopePatterns(Builder $query): Builder
     {
         return $query->where(function ($q) {
             $q->whereNotNull('image_path')
-              ->orWhereNotNull('layers');
+              ->orWhereNotNull('layers')
+              ->orWhereNotNull('generator');
         });
     }
 
