@@ -19,8 +19,7 @@ const currentUser = computed(() => {
 })
 
 const isAdmin = computed(() => {
-    return currentUser.value?.role === 'admin'
-})
+    return ['admin', 'owner'].includes(currentUser.value?.role)})
 
 /*
 |--------------------------------------------------------------------------
