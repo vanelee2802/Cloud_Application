@@ -190,10 +190,28 @@
 
 <script setup>
 
-import { ref, computed, onMounted } from 'vue'
-
+import { ref, computed } from 'vue'
+   
 
 const emit = defineEmits(['color-selected'])
+
+
+const props = defineProps({
+    colors: {
+        type: Array,
+        default: () => [],
+    },
+    activeHex: {
+        type: String,
+        default: null,
+    },
+    targetLabel: {
+        type: String,
+        default: '',
+    },
+})
+
+
 
 
 /*
@@ -202,22 +220,13 @@ const emit = defineEmits(['color-selected'])
 |--------------------------------------------------------------------------
 */
 
-const colors = ref([])
+const colors = computed(() => props.colors)
 
 const searchTerm = ref('')
 
 const selectedFilter = ref(null)
 
 const showSearch = ref(false)
-
-
-/// Vom Editor gesteuert:
-// activeHex   = welche Farbe markiert ist
-// targetLabel = wofür gerade gefärbt wird (z. B. "Spitze"), leer = Grundfarbe
-const props = defineProps({
-    activeHex:   { type: String, default: null },
-    targetLabel: { type: String, default: '' },
-})
 
 function isActive(color) {
 
@@ -346,35 +355,6 @@ const filteredColors = computed(() => {
 | Farben laden (Mockup: aus public/colors.json)
 |--------------------------------------------------------------------------
 */
-
-onMounted(async () => {
-
-    try {
-
-        const response = await fetch('/colors.json')
-
-
-        if (!response.ok) {
-
-            throw new Error(
-                'Farben konnten nicht geladen werden.'
-            )
-
-        }
-
-
-        colors.value = await response.json()
-
-    } catch (error) {
-
-        console.error(
-            'Fehler beim Laden der Farben:',
-            error
-        )
-
-    }
-
-})
 
 </script>
 

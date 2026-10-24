@@ -17,9 +17,10 @@ use App\Http\Controllers\CartItemController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\DesignEditorController;
 use App\Models\NailStudio;
 use App\Models\User;
-use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ReceiptController;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
@@ -86,7 +87,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/meine-designs', function () {
         return Inertia::render('Designs/Index');
     })->name('designs.page');
-
     // Benutzerverwaltung – nur für die Inhaberin
     Route::get('/admin/users', [UserManagementController::class, 'index'])
         ->middleware('role:owner')
@@ -188,9 +188,8 @@ Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('aut
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
 
-Route::get('/DesignEditor', function () {
-    return Inertia::render('DesignEditor');
-})->name('DesignEditor');
+Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
+    ->name('DesignEditor');
 #StudioDashboard zugang ohne Admin rechte
 Route::get('/StudioDashboard', function () {
     return Inertia::render('StudioDashboard');
