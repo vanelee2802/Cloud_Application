@@ -25,7 +25,12 @@
                 :class="['nail', `nail-${finger.key}`, {
                     'nail-selected': selectedFingers.includes(finger.key)
                 }]"
-                @click="$emit('toggle-finger', finger.key)"
+                role="button"
+                tabindex="0"
+                :aria-pressed="selectedFingers.includes(finger.key)"
+                @click="toggleFinger(finger.key)"
+                @keydown.enter.prevent="toggleFinger(finger.key)"
+                @keydown.space.prevent="toggleFinger(finger.key)"
             />
 
         </div>
@@ -42,7 +47,11 @@ const props = defineProps({
     selectedFingers: { type: Array, default: () => [] },
 })
 
-defineEmits(['toggle-finger'])
+const emit = defineEmits(['toggle-finger'])
+
+function toggleFinger(fingerKey) {
+    emit('toggle-finger', fingerKey)
+}
 
 // Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge).
 // Stiletto gibt es nur lang -> Ordner "stiletto-right hand"
@@ -126,10 +135,16 @@ const fingers = [
 
 .nail {
     cursor: pointer;
+.nail {
+    cursor: pointer;
+    transition: filter 0.2s ease, outline 0.2s ease;
 }
 
 .nail-selected {
-    filter: drop-shadow(0 0 5px #e75480);
+    filter: drop-shadow(0 0 6px #d63384);
+    outline: 2px solid #d63384;
+    outline-offset: 2px;
+}
 }
 
 /* Daumen */

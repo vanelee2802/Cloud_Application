@@ -26,6 +26,7 @@ class DesignControllerTest extends TestCase
         $colorId = DB::table('colors')->insertGetId([
             'name' => 'Bordeaux',
             'hex_code' => '#6D1A2B',
+            'category' => 'rot', feature/Daniel-integration
             'created_at' => $now,
             'updated_at' => $now,
         ]);
