@@ -2,8 +2,10 @@
 
 namespace Database\Seeders;
 
+use App\Models\NailStudio;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class DemoUsersSeeder extends Seeder
 {
@@ -20,6 +22,7 @@ class DemoUsersSeeder extends Seeder
             ['Demo Kunde', 'kunde@example.com', 'customer', null],
             ['Demo Mitarbeiter', 'mitarbeiter@example.com', 'employee', 1],
             ['Demo Admin', 'admin@example.com', 'admin', 1],
+            ['Demo Owner', 'owner@example.com', 'owner', null],
         ];
 
         foreach ($accounts as [$name, $email, $role, $studio]) {
@@ -28,6 +31,11 @@ class DemoUsersSeeder extends Seeder
                 ['name' => $name, 'password' => $password, 'role' => $role, 'nail_studio_id' => $studio]
             );
             $user->forceFill(['email_verified_at' => now()])->save();
+        }
+
+        if (Schema::hasColumn('nail_studios', 'owner_id')) {
+            $owner = User::where('email', 'owner@example.com')->first();
+            NailStudio::where('id', 1)->update(['owner_id' => $owner->id]);
         }
     }
 }

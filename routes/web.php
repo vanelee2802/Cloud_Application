@@ -53,7 +53,17 @@ Route::get('/buchung/abgebrochen', function () {
 #})->name('welcome');
 
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    $role = auth()->user()->role;
+
+    if ($role === 'owner') {
+        return redirect('/Studioverwaltung');
+    }
+
+    if (in_array($role, ['admin', 'employee'])) {
+        return redirect('/StudioDashboard');
+    }
+
+    return redirect('/DesignEditor');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/checkout', function () {
