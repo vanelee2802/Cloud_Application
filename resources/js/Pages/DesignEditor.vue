@@ -13,6 +13,7 @@ import EffektPanel from '@/Components/NailEditor/EffektPanel.vue'
 import CartPanel from '@/Components/NailEditor/CartPanel.vue'
 import Checkout from '@/Pages/Checkout.vue'
 import CharmPanel from '@/Components/NailEditor/CharmPanel.vue'
+import DesignSavePanel from '@/Components/NailEditor/DesignSavePanel.vue'
 
 import { useCart } from '@/Stores/cart.js'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
@@ -26,6 +27,8 @@ const props = defineProps({
 // =========================================
 // KATEGORIEN UND NAGELAUSWAHL
 // =========================================
+
+const FINGERS = ['thumb', 'index', 'middle', 'ring', 'pinky']
 
 const selectedCategories = ref([])
 const selectedFingers = ref([])
@@ -46,6 +49,21 @@ function toggleFinger(fingerKey) {
     } else {
         selectedFingers.value.push(fingerKey)
     }
+}
+
+/**
+ * Auf welche Nägel wirkt eine Auswahl?
+ * - Nägel ausgewählt → nur diese
+ * - keiner ausgewählt → alle
+ */
+function targetFingers() {
+    return selectedFingers.value.length > 0
+        ? [...selectedFingers.value]
+        : [...FINGERS]
+}
+
+function sameHex(a, b) {
+    return Boolean(a && b) && a.toLowerCase() === b.toLowerCase()
 }
 
 
@@ -88,16 +106,9 @@ const fingerPositionMap = {
     pinky: 5,
 }
 
-function getElementId(design) {
-    if (!design?.elementName) {
-        return null
-    }
-
-    const element = props.designElements.find(
-        item => item.name === design.elementName
-    )
-
-    return element?.id ?? null
+// ID des Musters auf einem Nagel (für das Speichern)
+function getElementId(nailData) {
+    return nailData?.design?.id ?? null
 }
 
 
@@ -109,8 +120,6 @@ const FOLDERS = [
     ...['almond', 'square', 'coffin', 'ballerina', 'oval'].map(s => `${s}-long-right hand`),
     'stiletto-right hand'
 ]
-
-const FINGERS = ['thumb', 'index', 'middle', 'ring', 'pinky']
 
 onMounted(() => {
 
@@ -146,9 +155,14 @@ const {
 } = useCart()
 
 
+// Artikel im Warenkorb + aktuelles Design (zählt als 1)
 const cartItemCount = computed(() => {
 
-    return cartItems.value.length
+    const hasDesign = Object.values(nailDesigns.value).some(
+        nail => nail.color || nail.design
+    )
+
+    return cartItems.value.length + (hasDesign ? 1 : 0)
 
 })
 
@@ -186,10 +200,6 @@ function selectCategory(category) {
 
 
 // =========================================
-// AUSWAHL-EVENTS
-// =========================================
-
-// =========================================
 // FARBE
 // Ziel der Farbauswahl:
 //   colorTarget = null  → Grundfarbe des Nagels
@@ -204,10 +214,6 @@ const designPanel = ref(null)
 
 
 function selectColor(color) {
-    if (selectedFingers.value.length === 0) {
-        alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
-        return
-    }
 
     // Ziel ist eine Schicht: Farbe an das DesignPanel geben
     if (colorTarget.value !== null) {
@@ -215,17 +221,20 @@ function selectColor(color) {
         return
     }
 
-    // Ziel ist die Grundfarbe: zweiter Klick auf dieselbe Farbe hebt sie auf
-    const sameColor =
-        selectedColor.value?.hex_code?.toLowerCase() === color.hex_code?.toLowerCase()
+    const fingers = targetFingers()
 
-    selectedColor.value = sameColor ? null : color
+    // Haben alle Ziel-Nägel schon diese Farbe? → Zweiter Klick hebt sie auf
+    const allHaveIt = fingers.every(finger =>
+        sameHex(nailDesigns.value[finger].color?.hex_code, color.hex_code)
+    )
 
-    // Grundfarbe allen ausgewählten Nägeln zuweisen
-    selectedFingers.value.forEach(finger => {
-        nailDesigns.value[finger].color = selectedColor.value
+    const newColor = allHaveIt ? null : color
+
+    fingers.forEach(finger => {
+        nailDesigns.value[finger].color = newColor
     })
-    console.log('Farbe zugewiesen:', color)
+
+    selectedColor.value = newColor
 }
 
 
@@ -249,6 +258,13 @@ const activeHex = computed(() => {
         return selectedDesign.value?.layers?.[colorTarget.value]?.color ?? null
     }
 
+    // Farbe des ersten ausgewählten Nagels, sonst die zuletzt gewählte
+    const firstFinger = selectedFingers.value[0]
+
+    if (firstFinger) {
+        return nailDesigns.value[firstFinger].color?.hex_code ?? null
+    }
+
     return selectedColor.value?.hex_code ?? null
 
 })
@@ -260,35 +276,33 @@ const targetLabel = computed(() =>
         : ''
 )
 
-// Gewähltes Design (ganzes Objekt aus der Datenbank)
+
+// =========================================
+// DESIGN / MUSTER
+// =========================================
+
+// Zuletzt gewähltes Design (ganzes Objekt aus der Datenbank)
 const selectedDesign = ref(null)
 
+/**
+ * Das DesignPanel schickt:
+ * - ein Muster      → beim Auswählen und beim Umfärben einer Schicht
+ * - null            → beim Abwählen (zweiter Klick)
+ * Das Ergebnis geht auf die ausgewählten Nägel, sonst auf alle.
+ */
 function selectDesign(design) {
-    if (selectedFingers.value.length === 0) {
-        alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
-        return
-    }
 
-    selectedDesign.value = design
-
-    selectedFingers.value.forEach(finger => {
+    targetFingers().forEach(finger => {
         nailDesigns.value[finger].design = design
     })
 
-    console.log('Design zugewiesen:', design)
+    selectedDesign.value = design
 }
 
+// Preis: Summe der Muster-Preise aller Nägel
 const totalDesignPrice = computed(() => {
-    return Object.values(nailDesigns.value).reduce((total, design) => {
-        if (!design?.elementName) {
-            return total
-        }
-
-        const element = props.designElements.find(
-            item => item.name === design.elementName
-        )
-
-        return total + Number(element?.price_per_nail ?? 0)
+    return Object.values(nailDesigns.value).reduce((total, nail) => {
+        return total + Number(nail.design?.price_per_nail ?? 0)
     }, 0)
 })
 
@@ -413,8 +427,6 @@ async function saveDesign() {
     }
 }
 
-
-
 </script>
 
 
@@ -497,6 +509,7 @@ async function saveDesign() {
                     :shape="shape"
                     :length="length"
                     :selected-fingers="selectedFingers"
+                    :nail-designs="nailDesigns"
                     :color="selectedColor?.hex_code"
                     :pattern="selectedDesign?.image_path"
                     :layers="selectedDesign?.layers ?? []"
@@ -510,19 +523,21 @@ async function saveDesign() {
                 <!-- SPALTE 4: VERZIERUNG -->
                 <!-- ========================================= -->
 
-                <div
-                    v-if="
-                        selectedCategories.includes('Verzierung')
-                    "
-                    class="design-area area-deko"
-                >
+                            <div class="design-area area-deko">
 
                     <CharmPanel
-                        @verziehrung-selected="
-                            selectVerziehrung
-                        "
+                        v-if="selectedCategories.includes('Verzierung')"
+                        @verziehrung-selected="selectVerziehrung"
                     />
 
+                    <DesignSavePanel
+                        v-model="designName"
+                        :nail-count="selectedFingers.length"
+                        :price="totalDesignPrice"
+                        :saving="isSaving"
+                        :message="saveMessage"
+                        @save="saveDesign"
+                    />
 
                 </div>
 
@@ -584,7 +599,9 @@ async function saveDesign() {
                         class="cart-dropdown area-cartpanel"
                     >
 
-                        <CartPanel
+                                               <CartPanel
+                            :nail-designs="nailDesigns"
+                            :design-price="totalDesignPrice"
                             @checkout="showCheckout = true"
                         />
 
@@ -632,7 +649,7 @@ async function saveDesign() {
         </main>
 
             <div class="design-price">
-                <p>Ausgewählte Nägel: {{ selectedFingers.length }}</p>
+                <p>Ausgewählte Nägel: {{ selectedFingers.length || 'alle' }}</p>
                 <p>Gesamtpreis: {{ totalDesignPrice.toFixed(2) }} €</p>
 
                 <input

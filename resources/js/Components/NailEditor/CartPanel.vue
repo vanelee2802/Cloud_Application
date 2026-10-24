@@ -11,7 +11,7 @@
             <h3>WARENKORB</h3>
 
             <span class="cart-count">
-                {{ cartItems.length }}
+                {{ itemCount }}
             </span>
 
         </div>
@@ -26,14 +26,67 @@
             <!-- Warenkorb leer -->
 
             <p
-                v-if="cartItems.length === 0"
+                v-if="isEmpty"
                 class="empty-cart"
             >
                 Dein Warenkorb ist leer.
             </p>
 
 
-            <!-- Artikel -->
+            <!-- ===================================== -->
+            <!-- AKTUELLES NAGELDESIGN AUS DEM EDITOR  -->
+            <!-- ===================================== -->
+
+            <div
+                v-if="designedNails.length"
+                class="design-block"
+            >
+
+                <span class="block-title">
+                    Dein Nageldesign
+                </span>
+
+                <div
+                    v-for="nail in designedNails"
+                    :key="nail.key"
+                    class="cart-item nail-item"
+                >
+
+                    <!-- Farbpunkt -->
+                    <span
+                        class="nail-dot"
+                        :style="{ backgroundColor: nail.hex || '#f3dcd0' }"
+                    ></span>
+
+                    <!-- Informationen -->
+                    <div class="cart-item-info">
+
+                        <span class="cart-item-name">
+                            {{ nail.label }}
+                        </span>
+
+                        <span class="nail-details">
+                            {{ nail.details }}
+                        </span>
+
+                    </div>
+
+                    <!-- Preis pro Nagel (Muster) -->
+                    <span
+                        v-if="nail.price > 0"
+                        class="cart-item-price"
+                    >
+                        {{ euro(nail.price) }}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- ===================================== -->
+            <!-- WEITERE ARTIKEL                       -->
+            <!-- ===================================== -->
 
             <div
                 v-for="(item, index) in cartItems"
@@ -66,7 +119,7 @@
                     </span>
 
                     <span class="cart-item-price">
-                        {{ item.price.toFixed(2) }} €
+                        {{ euro(item.price) }}
                     </span>
 
                 </div>
@@ -99,7 +152,7 @@
             </span>
 
             <span class="total-price">
-                {{ total.toFixed(2) }} €
+                {{ euro(grandTotal) }}
             </span>
 
         </div>
@@ -112,6 +165,7 @@
         <button
             type="button"
             class="checkout-button"
+            :disabled="isEmpty"
             @click="emit('checkout')"
         >
             Termin buchen
@@ -125,10 +179,20 @@
 
 <script setup>
 
+import { computed, unref } from 'vue'
 import { useCart } from '@/Stores/cart.js'
 
 
 const emit = defineEmits(['checkout'])
+
+
+const props = defineProps({
+    // Farbe + Muster pro Nagel aus dem DesignEditor
+    nailDesigns: { type: Object, default: null },
+
+    // Preis der Muster aller Nägel (aus dem DesignEditor)
+    designPrice: { type: Number, default: 0 },
+})
 
 
 const {
@@ -136,6 +200,75 @@ const {
     total,
     removeFromCart
 } = useCart()
+
+
+// =========================================
+// NÄGEL AUS DEM EDITOR
+// =========================================
+
+const FINGER_LABELS = {
+    thumb:  'Daumen',
+    index:  'Zeigefinger',
+    middle: 'Mittelfinger',
+    ring:   'Ringfinger',
+    pinky:  'Kleiner Finger',
+}
+
+// Nur Nägel, die eine Farbe oder ein Muster haben
+const designedNails = computed(() => {
+
+    if (!props.nailDesigns) {
+        return []
+    }
+
+    return Object.keys(FINGER_LABELS)
+        .map((key) => {
+
+            const nail = props.nailDesigns[key] ?? {}
+
+            const teile = [
+                nail.color?.name,
+                nail.design?.name,
+            ].filter(Boolean)
+
+            return {
+                key,
+                label:   FINGER_LABELS[key],
+                hex:     nail.color?.hex_code ?? null,
+                details: teile.join(' · '),
+                price:   Number(nail.design?.price_per_nail ?? 0),
+            }
+
+        })
+        .filter((nail) => nail.details)
+
+})
+
+
+// =========================================
+// SUMMEN
+// =========================================
+
+// Artikel im Warenkorb + das aktuelle Design (zählt als 1)
+const itemCount = computed(() =>
+    cartItems.value.length + (designedNails.value.length ? 1 : 0)
+)
+
+const isEmpty = computed(() => itemCount.value === 0)
+
+// Warenkorb-Summe + Preis des aktuellen Designs
+const grandTotal = computed(() =>
+    Number(unref(total) ?? 0) + Number(props.designPrice ?? 0)
+)
+
+function euro(value) {
+
+    return Number(value ?? 0).toLocaleString('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+    })
+
+}
 
 </script>
 
@@ -283,6 +416,74 @@ const {
     line-height: 1.5;
 
     text-align: center;
+
+}
+
+
+/* ========================================= */
+/* AKTUELLES NAGELDESIGN */
+/* ========================================= */
+
+.design-block {
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+.block-title {
+
+    margin-bottom: 0.2rem;
+
+    color: #8a7a80;
+
+    font-size: 0.68rem;
+
+    letter-spacing: 0.06em;
+
+    text-transform: uppercase;
+
+}
+
+.nail-dot {
+
+    width: 1.1rem;
+
+    height: 1.6rem;
+
+    flex-shrink: 0;
+
+    /* Mandelform wie ein kleiner Nagel */
+    border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+
+    border: 1px solid rgba(0, 0, 0, 0.12);
+
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+}
+
+.nail-details {
+
+    overflow: hidden;
+
+    color: #8a7a80;
+
+    font-size: clamp(
+        0.62rem,
+        0.7vw,
+        0.78rem
+    );
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+
+}
+
+.nail-item .cart-item-price {
+
+    flex-shrink: 0;
 
 }
 
@@ -554,6 +755,18 @@ const {
     box-shadow:
         0 0.3vw 0.8vw
         rgba(125, 16, 36, 0.18);
+
+}
+
+.checkout-button:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+
+    transform: none;
+
+    box-shadow: none;
 
 }
 

@@ -13,13 +13,8 @@
         "image": "/images/nail-editor/designs/patterns/zopfstrick-creme.svg",
         "tags": ["strick", "zopf", "pullover", "creme", "matt", "herbst", "winter"]
     },
-    {
-        "name": "Rost Ombré",
-        "category": "Ombre",
-        "price_per_nail": 2.50,
-        "image": "/images/nail-editor/designs/patterns/rost-ombre.svg",
-        "tags": ["ombre", "verlauf", "gradient", "rost", "orange", "herbst"]
-    },
+    
+   
     {
         "name": "Karo",
         "category": "Muster",
@@ -55,13 +50,7 @@
         "image": "/images/nail-editor/designs/patterns/burgund-goldlinie.svg",
         "tags": ["burgund", "bordeaux", "gold", "linie", "elegant", "herbst"]
     },
-    {
-        "name": "Rost Glitzer",
-        "category": "Glitzer",
-        "price_per_nail": 1.00,
-        "image": "/images/nail-editor/designs/patterns/rost-glitzer.svg",
-        "tags": ["glitzer", "glitter", "rost", "kupfer", "funkeln", "herbst"]
-    },
+   
     {
         "name": "Brauner Marmor",
         "category": "Muster",
