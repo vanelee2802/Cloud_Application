@@ -23,31 +23,39 @@
             <span
                 v-for="finger in fingers"
                 :key="finger.key"
-                :class="['nail', `nail-${finger.key}`]"
+                :class="['nail', `nail-${finger.key}`, {
+                    'nail-selected': selectedFingers.includes(finger.key)
+                }]"
+                role="button"
+                tabindex="0"
+                :aria-pressed="selectedFingers.includes(finger.key)"
+                @click="toggleFinger(finger.key)"
+                @keydown.enter.prevent="toggleFinger(finger.key)"
+                @keydown.space.prevent="toggleFinger(finger.key)"
             >
 
-                <!-- 1. Nagel (bestimmt die Größe) -->
+                <!-- 1. Nagelbild als Basis -->
                 <img
                     :src="nailSrc(finger.key)"
                     :alt="finger.alt"
                     class="nail-base"
                 />
 
-                               <!-- 2. Farbe, mit dem Nagel als Maske zugeschnitten -->
+                <!-- 2. Grundfarbe -->
                 <span
                     v-if="color"
                     class="nail-layer"
                     :style="colorStyle(finger.key)"
                 ></span>
 
-                <!-- 3. Muster, mit dem Nagel als Maske zugeschnitten -->
+                <!-- 3. Muster -->
                 <span
                     v-if="pattern"
                     class="nail-layer nail-pattern"
                     :style="patternStyle(finger.key)"
                 ></span>
 
-                                <!-- 3b. Umfärbbare Farbschichten (z. B. French-Spitze, Karo-Linien) -->
+                <!-- 4. Umfärbbare Farbschichten -->
                 <span
                     v-for="(layer, index) in layers"
                     :key="`${finger.key}-layer-${index}`"
@@ -55,16 +63,16 @@
                     :style="layerStyle(finger.key, layer)"
                 ></span>
 
-                            <!-- 4. Wölbung vom Original-Nagel -->
+                <!-- 5. Wölbung -->
                 <img
-                 v-if="hasPaint"
+                    v-if="hasPaint"
                     :src="nailSrc(finger.key)"
                     alt=""
                     aria-hidden="true"
                     class="nail-shine"
                 />
 
-                <!-- 5. Glanz (Standard-Finish, später durch Effekte ersetzbar) -->
+                <!-- 6. Glanz -->
                 <span
                     v-if="hasPaint"
                     class="nail-layer nail-gloss"
@@ -80,23 +88,28 @@
 <script setup>
 import { computed } from 'vue'
 
-// shape:   almond | square | oval | coffin | squoval | stiletto
-// length:  short | medium | long
-// pattern: Bildpfad des gewählten Musters (oder null)
 const props = defineProps({
-    shape:   { type: String, default: 'almond' },
-    length:  { type: String, default: 'medium' },
-    color:   { type: String, default: null },        // Hex-Code, z. B. "#B01C2E"
-    pattern: { type: String, default: null },        // Bildpfad eines deckenden Musters
-    layers:  { type: Array,  default: () => [] },    // [{ mask, color }, …] umfärbbares Muster
+    shape: { type: String, default: 'almond' },
+    length: { type: String, default: 'medium' },
+    selectedFingers: { type: Array, default: () => [] },
+    color: { type: String, default: null },
+    pattern: { type: String, default: null },
+    layers: { type: Array, default: () => [] },
 })
+
+const emit = defineEmits(['toggle-finger'])
+
+function toggleFinger(fingerKey) {
+    emit('toggle-finger', fingerKey)
+}
 
 // Ist überhaupt etwas auf dem Nagel? Dann Wölbung + Glanz zeigen
 const hasPaint = computed(() =>
     Boolean(props.color || props.pattern || props.layers.length)
 )
 
-// Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge)
+// Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge).
+// Stiletto gibt es nur lang -> Ordner "stiletto-right hand"
 const SINGLE_SET = ['stiletto']
 
 // Ordnernamen:
@@ -238,6 +251,17 @@ const fingers = [
     display: block;
 }
 
+.nail {
+    cursor: pointer;
+    transition: filter 0.2s ease, outline 0.2s ease;
+}
+
+.nail-selected {
+    filter: drop-shadow(0 0 6px #d63384);
+    outline: 2px solid #d63384;
+    outline-offset: 2px;
+}
+
 /* 1. Nagel: gibt dem Wrapper seine Höhe */
 .nail-base {
     display: block;
@@ -249,74 +273,7 @@ const fingers = [
 .nail-layer {
     position: absolute;
     inset: 0;
-
-    -webkit-mask-size: 100% 100%;
-            mask-size: 100% 100%;
-    -webkit-mask-repeat: no-repeat;
-            mask-repeat: no-repeat;
 }
-
-.nail-pattern {
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
-}
-
-/* 3. Glanz + Wölbung: graue Kopie des Nagels, weich eingeblendet */
-.nail-shine {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-
-    filter: grayscale(1) contrast(1.5);
-    mix-blend-mode: soft-light;
-    opacity: 0.9;
-
-    pointer-events: none;
-}
-
-/* 5. Glanz: wie echter Lack, schmal, scharf, seitlich versetzt */
-.nail-gloss {
-    mix-blend-mode: screen;
-    pointer-events: none;
-}
-
-/* Lichtstreifen: läuft oben und unten weich aus */
-.nail-gloss::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-
-    background: linear-gradient(
-        90deg,
-        transparent 22%,
-        rgba(255, 255, 255, 0.08) 26%,
-        rgba(255, 255, 255, 0.55) 31%,
-        rgba(255, 255, 255, 0.60) 35%,
-        rgba(255, 255, 255, 0.12) 40%,
-        transparent 46%
-    );
-
-    -webkit-mask-image: linear-gradient(180deg, transparent 4%, #000 18%, #000 55%, transparent 88%);
-            mask-image: linear-gradient(180deg, transparent 4%, #000 18%, #000 55%, transparent 88%);
-}
-
-/* Glanzpunkt an der Spitze + Randreflex rechts + Schimmer am Nagelbett */
-.nail-gloss::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-
-    background:
-        radial-gradient(ellipse 6% 5% at 66% 12%, rgba(255, 255, 255, 0.9), transparent),
-        linear-gradient(90deg, transparent 84%, rgba(255, 255, 255, 0.22) 90%, transparent 96%),
-        radial-gradient(ellipse 40% 7% at 50% 96%, rgba(255, 255, 255, 0.25), transparent);
-}
-/* =========================================
-   POSITIONEN
-   ========================================= */
-
 /* Daumen */
 .nail-thumb {
     width: 21.05%;

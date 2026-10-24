@@ -1,15 +1,23 @@
 <script setup>
 import NavLink from '@/Components/NavLink.vue'
 import { usePage, router } from '@inertiajs/vue3'
+import { computed } from 'vue'
 
 const page = usePage()
 
 const roleName = {
     customer: 'Kunde',
     employee: 'Mitarbeiter',
-    admin: 'Admin',
-    owner: 'Studioinhaber'
+    admin: 'Schichtleitung',
+    owner: 'Studioinhaberin'
 }
+
+const user = computed(() => page.props.auth?.user ?? null)
+const role = computed(() => user.value?.role)
+
+const isOwner = computed(() => role.value === 'owner')
+const isLead = computed(() => ['admin', 'owner'].includes(role.value))
+const isStaff = computed(() => ['employee', 'admin', 'owner'].includes(role.value))
 </script>
 
 <template>
@@ -37,9 +45,8 @@ const roleName = {
                 </NavLink>
             </li>
 
-            
             <!-- Meine Designs: für eingeloggte Benutzer -->
-            <li v-if="page.props.auth?.user">
+            <li v-if="user">
                 <NavLink
                     href="/meine-designs"
                     :active="route().current('designs.page')"
@@ -48,9 +55,19 @@ const roleName = {
                 </NavLink>
             </li>
 
+            <!-- Meine Rechnungen: für eingeloggte Benutzer -->
+            <li v-if="user">
+                <NavLink
+                    href="/rechnungen"
+                    :active="route().current('receipts.index')"
+                >
+                    Meine Rechnungen
+                </NavLink>
+            </li>
 
-            <!-- Studio Dashboard: für Admin -->
-<li v-if="['admin', 'owner'].includes(page.props.auth?.user?.role)">                <NavLink
+            <!-- Studio Dashboard: für Schichtleitung und Inhaberin -->
+            <li v-if="isLead">
+                <NavLink
                     href="/StudioDashboard"
                     :active="route().current('StudioDashboard')"
                 >
@@ -58,17 +75,8 @@ const roleName = {
                 </NavLink>
             </li>
 
-            <!-- Employee: für Employee und Admin -->
-            <li
-                v-if="
-                    page.props.auth?.user &&
-                    (
-                        page.props.auth.user.role === 'employee' ||
-                        page.props.auth.user.role === 'admin' ||
-                        page.props.auth.user.role === 'owner'
-                    )
-                "
-            >
+            <!-- Studioverwaltung: für Mitarbeiter, Schichtleitung und Inhaberin -->
+            <li v-if="isStaff">
                 <NavLink
                     href="/Studioverwaltung"
                     :active="route().current('Studioverwaltung')"
@@ -77,28 +85,48 @@ const roleName = {
                 </NavLink>
             </li>
 
+            <!-- Rechnungen des Studios: für Schichtleitung und Inhaberin -->
+            <li v-if="isLead">
+                <NavLink
+                    href="/studio/rechnungen"
+                    :active="route().current('receipts.studio')"
+                >
+                    Rechnungen
+                </NavLink>
+            </li>
+
+            <!-- Benutzerverwaltung: nur Inhaberin -->
+            <li v-if="isOwner">
+                <NavLink
+                    href="/admin/users"
+                    :active="route().current('admin.users.index')"
+                >
+                    Benutzerverwaltung
+                </NavLink>
+            </li>
+
             <!-- Benutzerbereich -->
             <li
-                v-if="page.props.auth?.user"
+                v-if="user"
                 class="user-area"
             >
 
                 <!-- Google Profilbild -->
                 <img
-                    v-if="page.props.auth.user.avatar"
-                    :src="page.props.auth.user.avatar"
-                    :alt="page.props.auth.user.name"
+                    v-if="user.avatar"
+                    :src="user.avatar"
+                    :alt="user.name"
                     class="profile-image"
                 >
 
                 <!-- Name + Rolle -->
                 <div class="user-info">
                     <span class="user-name">
-                        {{ page.props.auth.user.name }}
+                        {{ user.name }}
                     </span>
 
                     <span class="user-role">
-                        {{ roleName[page.props.auth.user.role] }}
+                        {{ roleName[user.role] }}
                     </span>
                 </div>
 
@@ -155,6 +183,7 @@ const roleName = {
     display: flex;
     align-items: center;
     justify-content: left;
+    flex-wrap: wrap;
     gap: 0.5rem;
 
     margin-left: 1rem;
