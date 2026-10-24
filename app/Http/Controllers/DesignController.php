@@ -46,6 +46,7 @@ $query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: 
             'nails.*.element_ids.*' => 'exists:design_elements,id',
         ]);
 
+
         $design = DB::transaction(function () use ($validated, $request) {
             $design = Design::create([
                 'user_id' => $request->user()->id,

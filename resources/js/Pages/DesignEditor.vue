@@ -17,12 +17,36 @@ import CharmPanel from '@/Components/NailEditor/CharmPanel.vue'
 import { useCart } from '@/Stores/cart.js'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
 
+const props = defineProps({
+    nailShapes: { type: Array, default: () => [] },
+    colors: { type: Array, default: () => [] },
+    designElements: { type: Array, default: () => [] },
+})
 
 // =========================================
-// KATEGORIEN
+// KATEGORIEN UND NAGELAUSWAHL
 // =========================================
 
 const selectedCategories = ref([])
+const selectedFingers = ref([])
+
+const nailDesigns = ref({
+    thumb:  { form: null, color: null, design: null, effekt: null },
+    index:  { form: null, color: null, design: null, effekt: null },
+    middle: { form: null, color: null, design: null, effekt: null },
+    ring:   { form: null, color: null, design: null, effekt: null },
+    pinky:  { form: null, color: null, design: null, effekt: null },
+})
+
+function toggleFinger(fingerKey) {
+    if (selectedFingers.value.includes(fingerKey)) {
+        selectedFingers.value = selectedFingers.value.filter(
+            finger => finger !== fingerKey
+        )
+    } else {
+        selectedFingers.value.push(fingerKey)
+    }
+}
 
 
 // =========================================
@@ -33,6 +57,49 @@ const selectedCategories = ref([])
 // length = Länge: short | medium | long
 const shape  = ref('almond')
 const length = ref('medium')
+
+const shapeNameMap = {
+    almond: 'Almond',
+    square: 'Square',
+    oval: 'Round',
+    coffin: 'Coffin',
+    stiletto: 'Stiletto',
+}
+
+function getShapeId() {
+    const shapeName = shapeNameMap[shape.value]
+
+    if (!shapeName) {
+        return null
+    }
+
+    const nailShape = props.nailShapes.find(
+        item => item.name === shapeName
+    )
+
+    return nailShape?.id ?? null
+}
+
+const fingerPositionMap = {
+    thumb: 1,
+    index: 2,
+    middle: 3,
+    ring: 4,
+    pinky: 5,
+}
+
+function getElementId(design) {
+    if (!design?.elementName) {
+        return null
+    }
+
+    const element = props.designElements.find(
+        item => item.name === design.elementName
+    )
+
+    return element?.id ?? null
+}
+
 
 
 // Alle Nagelbilder vorladen, damit beim Umschalten nichts flackert
@@ -137,14 +204,15 @@ const designPanel = ref(null)
 
 
 function selectColor(color) {
+    if (selectedFingers.value.length === 0) {
+        alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
+        return
+    }
 
     // Ziel ist eine Schicht: Farbe an das DesignPanel geben
     if (colorTarget.value !== null) {
-
         designPanel.value?.setLayerColor(colorTarget.value, color.hex_code)
-
         return
-
     }
 
     // Ziel ist die Grundfarbe: zweiter Klick auf dieselbe Farbe hebt sie auf
@@ -153,6 +221,11 @@ function selectColor(color) {
 
     selectedColor.value = sameColor ? null : color
 
+    // Grundfarbe allen ausgewählten Nägeln zuweisen
+    selectedFingers.value.forEach(finger => {
+        nailDesigns.value[finger].color = selectedColor.value
+    })
+    console.log('Farbe zugewiesen:', color)
 }
 
 
@@ -191,10 +264,33 @@ const targetLabel = computed(() =>
 const selectedDesign = ref(null)
 
 function selectDesign(design) {
+    if (selectedFingers.value.length === 0) {
+        alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
+        return
+    }
 
     selectedDesign.value = design
 
+    selectedFingers.value.forEach(finger => {
+        nailDesigns.value[finger].design = design
+    })
+
+    console.log('Design zugewiesen:', design)
 }
+
+const totalDesignPrice = computed(() => {
+    return Object.values(nailDesigns.value).reduce((total, design) => {
+        if (!design?.elementName) {
+            return total
+        }
+
+        const element = props.designElements.find(
+            item => item.name === design.elementName
+        )
+
+        return total + Number(element?.price_per_nail ?? 0)
+    }, 0)
+})
 
 function selectEffekt(effekt) {
 
@@ -218,6 +314,106 @@ function toggleCart() {
     showCart.value = !showCart.value
 
 }
+
+
+const designName = ref('Mein Nageldesign')
+const isSaving = ref(false)
+const saveMessage = ref('')
+
+
+async function saveDesign() {
+    saveMessage.value = ''
+
+    // Alle gestalteten Nägel berücksichtigen, nicht nur ausgewählte.
+    const designedFingers = Object.keys(nailDesigns.value).filter(
+        finger => nailDesigns.value[finger]?.color?.id
+    )
+
+    if (designedFingers.length === 0) {
+        saveMessage.value = 'Bitte gestalte mindestens einen Nagel mit einer Farbe.'
+        return
+    }
+
+    const nailShapeId = getShapeId()
+
+    if (!nailShapeId) {
+        saveMessage.value =
+            'Diese Nagelform ist noch nicht in der Datenbank vorhanden.'
+        return
+    }
+
+    const nails = []
+
+    for (const finger of designedFingers) {
+        const nailData = nailDesigns.value[finger]
+        const position = fingerPositionMap[finger]
+
+        if (!position) {
+            saveMessage.value = `Die Nagelposition "${finger}" ist ungültig.`
+            return
+        }
+
+        const elementId = getElementId(nailData)
+
+        nails.push({
+            nail_position: position,
+            nail_shape_id: nailShapeId,
+            color_id: nailData.color.id,
+            element_ids: elementId ? [elementId] : [],
+        })
+    }
+
+    isSaving.value = true
+
+    try {
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content')
+
+        const response = await fetch('/designs', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+            },
+            body: JSON.stringify({
+                name: designName.value,
+                nails,
+            }),
+        })
+
+        const result = await response.json()
+
+        if (!response.ok) {
+            if (response.status === 422 && result.errors) {
+                saveMessage.value = Object.values(result.errors)
+                    .flat()
+                    .join(' ')
+            } else if (response.status === 401 || response.status === 403) {
+                saveMessage.value =
+                    'Bitte melde dich an, um dein Design zu speichern.'
+            } else {
+                saveMessage.value =
+                    result.message || 'Das Design konnte nicht gespeichert werden.'
+            }
+
+            return
+        }
+
+        saveMessage.value =
+            `Design erfolgreich gespeichert! (ID: ${result.id})`
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error)
+        saveMessage.value =
+            'Server nicht erreichbar. Bitte versuche es erneut.'
+    } finally {
+        isSaving.value = false
+    }
+}
+
+
 
 </script>
 
@@ -296,18 +492,17 @@ function toggleCart() {
                 <!-- ========================================= -->
 
                 <section class="nail-canvas area-canvas">
-
                     <div class="nail-canvas-inner">
-<NailHand
-    :shape="shape"
-    :length="length"
-    :color="selectedColor?.hex_code"
-    :pattern="selectedDesign?.image_path"
-    :layers="selectedDesign?.layers ?? []"
-/>
-
+                <NailHand
+                    :shape="shape"
+                    :length="length"
+                    :selected-fingers="selectedFingers"
+                    :color="selectedColor?.hex_code"
+                    :pattern="selectedDesign?.image_path"
+                    :layers="selectedDesign?.layers ?? []"
+                    @toggle-finger="toggleFinger"
+                />
                     </div>
-
                 </section>
 
 
@@ -352,11 +547,11 @@ function toggleCart() {
                     >
 
                         <ColorPanel
-    :active-hex="activeHex"
-    :target-label="targetLabel"
-    @color-selected="selectColor"
-/>
-
+                            :colors="props.colors"
+                            :active-hex="activeHex"
+                            :target-label="targetLabel"
+                            @color-selected="selectColor"
+                        />
                     </div>
 
                     <div
@@ -436,6 +631,30 @@ function toggleCart() {
 
         </main>
 
+            <div class="design-price">
+                <p>Ausgewählte Nägel: {{ selectedFingers.length }}</p>
+                <p>Gesamtpreis: {{ totalDesignPrice.toFixed(2) }} €</p>
+
+                <input
+                    v-model="designName"
+                    type="text"
+                    maxlength="255"
+                    placeholder="Name des Designs"
+                    aria-label="Name des Designs"
+                />
+
+                <button
+                    type="button"
+                    :disabled="isSaving"
+                    @click="saveDesign"
+                >
+                    {{ isSaving ? 'Speichert...' : 'Design speichern' }}
+                </button>
+
+                <p v-if="saveMessage" role="status">
+                    {{ saveMessage }}
+                </p>
+            </div>
 
         <!-- ========================================= -->
         <!-- CHECKOUT -->

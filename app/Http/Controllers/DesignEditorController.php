@@ -10,12 +10,14 @@ class DesignEditorController extends Controller
 {
     public function index()
     {
-        $nailShapes = NailShape::all();
-        $colors = Color::all();
+    $nailShapes = NailShape::all();
+    $colors = Color::all();
+    $designElements = \App\Models\DesignElement::all();
 
-        return Inertia::render('DesignEditor', [
-            'nailShapes' => $nailShapes,
-            'colors' => $colors,
-        ]);
+    return Inertia::render('DesignEditor', [
+        'nailShapes' => $nailShapes,
+        'colors' => $colors,
+        'designElements' => $designElements,
+    ]);
     }
 }
