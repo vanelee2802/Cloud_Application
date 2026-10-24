@@ -14,12 +14,27 @@ const employees = computed(() => {
     return page.props.employees ?? []
 })
 
+// Nur die Inhaberin bekommt eine Studio-Liste (bei Admins ist sie leer)
+const studios = computed(() => {
+    return page.props.studios ?? []
+})
+
 const currentUser = computed(() => {
     return page.props.auth?.user ?? null
 })
 
 const isAdmin = computed(() => {
-    return ['admin', 'owner'].includes(currentUser.value?.role)})
+    return ['admin', 'owner'].includes(currentUser.value?.role)
+})
+
+const isOwner = computed(() => {
+    return currentUser.value?.role === 'owner'
+})
+
+// Studio-Auswahl nur für die Inhaberin anzeigen
+const showStudioSelect = computed(() => {
+    return isOwner.value && studios.value.length > 0
+})
 
 /*
 |--------------------------------------------------------------------------
@@ -29,22 +44,23 @@ const isAdmin = computed(() => {
 
 const showEmployeeModal = ref(false)
 
-const newEmployee = ref({
-    name: '',
-    email: '',
-})
+function emptyEmployee() {
+    return {
+        name: '',
+        email: '',
+        // Hat die Inhaberin nur ein Studio, ist es direkt vorausgewählt
+        studio_id: studios.value.length === 1 ? studios.value[0].id : '',
+    }
+}
+
+const newEmployee = ref(emptyEmployee())
 
 const employeeError = ref('')
 const employeeLoading = ref(false)
 
 function openEmployeeModal() {
     employeeError.value = ''
-
-    newEmployee.value = {
-        name: '',
-        email: '',
-    }
-
+    newEmployee.value = emptyEmployee()
     showEmployeeModal.value = true
 }
 
@@ -69,38 +85,43 @@ function addEmployee() {
         return
     }
 
+    if (showStudioSelect.value && !newEmployee.value.studio_id) {
+        employeeError.value = 'Bitte wähle ein Studio aus.'
+        return
+    }
+
     employeeLoading.value = true
 
-    router.post(
-        '/employees',
-        {
-            name: newEmployee.value.name,
-            email: newEmployee.value.email,
+    const payload = {
+        name: newEmployee.value.name,
+        email: newEmployee.value.email,
+    }
+
+    // Admins schicken kein Studio mit – sie bekommen automatisch ihr eigenes
+    if (showStudioSelect.value) {
+        payload.studio_id = newEmployee.value.studio_id
+    }
+
+    router.post('/employees', payload, {
+        preserveScroll: true,
+
+        onSuccess: () => {
+            showEmployeeModal.value = false
+            newEmployee.value = emptyEmployee()
         },
-        {
-            preserveScroll: true,
 
-            onSuccess: () => {
-                showEmployeeModal.value = false
+        onError: (errors) => {
+            employeeError.value =
+                errors.email ||
+                errors.name ||
+                errors.studio_id ||
+                'Der Mitarbeiter konnte nicht hinzugefügt werden.'
+        },
 
-                newEmployee.value = {
-                    name: '',
-                    email: '',
-                }
-            },
-
-            onError: (errors) => {
-                employeeError.value =
-                    errors.email ||
-                    errors.name ||
-                    'Der Mitarbeiter konnte nicht hinzugefügt werden.'
-            },
-
-            onFinish: () => {
-                employeeLoading.value = false
-            },
-        }
-    )
+        onFinish: () => {
+            employeeLoading.value = false
+        },
+    })
 }
 
 /*
@@ -174,7 +195,12 @@ function getStatusClass(status) {
             <div>
                 <h2>Mitarbeiter verwalten</h2>
 
-                <p>
+                <p v-if="isOwner">
+                    Mitarbeiter deiner Studios hinzufügen oder
+                    entfernen.
+                </p>
+
+                <p v-else>
                     Mitarbeiter deines Studios hinzufügen oder
                     entfernen.
                 </p>
@@ -237,6 +263,14 @@ function getStatusClass(status) {
 
                     <p class="employee-role">
                         Nageldesigner/in
+                    </p>
+
+                    <!-- Bei mehreren Studios sieht die Inhaberin, wo die Person arbeitet -->
+                    <p
+                        v-if="isOwner && employee.nail_studio?.name"
+                        class="employee-studio"
+                    >
+                        {{ employee.nail_studio.name }}
                     </p>
 
                     <p class="employee-email">
@@ -302,8 +336,9 @@ function getStatusClass(status) {
                     </h2>
 
                     <p>
-                        Füge einen neuen Mitarbeiter zu deinem
-                        Studio hinzu.
+                        Füge einen neuen Mitarbeiter zu
+                        {{ isOwner ? 'einem deiner Studios' : 'deinem Studio' }}
+                        hinzu.
                     </p>
                 </div>
 
@@ -352,6 +387,35 @@ function getStatusClass(status) {
                         placeholder="z. B. anna@example.de"
                         :disabled="employeeLoading"
                     >
+
+                </div>
+
+                <div
+                    v-if="showStudioSelect"
+                    class="form-group"
+                >
+
+                    <label for="employee-studio">
+                        Studio
+                    </label>
+
+                    <select
+                        id="employee-studio"
+                        v-model="newEmployee.studio_id"
+                        :disabled="employeeLoading"
+                    >
+                        <option value="" disabled>
+                            Studio auswählen
+                        </option>
+
+                        <option
+                            v-for="studio in studios"
+                            :key="studio.id"
+                            :value="studio.id"
+                        >
+                            {{ studio.name }}
+                        </option>
+                    </select>
 
                 </div>
 
@@ -552,6 +616,17 @@ function getStatusClass(status) {
     font-weight: 600;
 }
 
+.employee-studio {
+    display: inline-block;
+    margin: 0.45rem 0 0;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background-color: #f5e7eb;
+    color: #754354;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
 .employee-email {
     margin: 0.35rem 0 0;
     color: #8a7a80;
@@ -712,7 +787,8 @@ function getStatusClass(status) {
     font-weight: 600;
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
     width: 100%;
     box-sizing: border-box;
     padding: 0.7rem 0.8rem;
@@ -728,7 +804,12 @@ function getStatusClass(status) {
         box-shadow 0.2s ease;
 }
 
-.form-group input:focus {
+.form-group select {
+    cursor: pointer;
+}
+
+.form-group input:focus,
+.form-group select:focus {
     border-color: #8f5364;
     box-shadow: 0 0 0 3px rgba(143, 83, 100, 0.08);
 }
@@ -737,7 +818,8 @@ function getStatusClass(status) {
     color: #b0a2a7;
 }
 
-.form-group input:disabled {
+.form-group input:disabled,
+.form-group select:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
