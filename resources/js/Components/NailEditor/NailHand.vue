@@ -19,6 +19,8 @@
             | Pro Finger ein Wrapper. Position, Größe und Drehung
             | sitzen auf dem Wrapper, alle Schichten darin liegen
             | deckungsgleich übereinander.
+            | Klick auf einen Nagel = auswählen / abwählen.
+            | Jeder Nagel hat seine EIGENE Farbe und sein EIGENES Muster.
             -->
             <span
                 v-for="finger in fingers"
@@ -28,53 +30,54 @@
                 }]"
                 role="button"
                 tabindex="0"
+                :aria-label="finger.alt"
                 :aria-pressed="selectedFingers.includes(finger.key)"
                 @click="toggleFinger(finger.key)"
                 @keydown.enter.prevent="toggleFinger(finger.key)"
                 @keydown.space.prevent="toggleFinger(finger.key)"
             >
 
-                <!-- 1. Nagelbild als Basis -->
+                <!-- 1. Nagel (bestimmt die Größe) -->
                 <img
                     :src="nailSrc(finger.key)"
                     :alt="finger.alt"
                     class="nail-base"
                 />
 
-                <!-- 2. Grundfarbe -->
+                <!-- 2. Farbe, mit dem Nagel als Maske zugeschnitten -->
                 <span
-                    v-if="color"
+                    v-if="fingerColor(finger.key)"
                     class="nail-layer"
                     :style="colorStyle(finger.key)"
                 ></span>
 
-                <!-- 3. Muster -->
+                <!-- 3. Muster, mit dem Nagel als Maske zugeschnitten -->
                 <span
-                    v-if="pattern"
+                    v-if="fingerPattern(finger.key)"
                     class="nail-layer nail-pattern"
                     :style="patternStyle(finger.key)"
                 ></span>
 
-                <!-- 4. Umfärbbare Farbschichten -->
+                <!-- 3b. Umfärbbare Farbschichten (z. B. French-Spitze, Karo-Linien) -->
                 <span
-                    v-for="(layer, index) in layers"
+                    v-for="(layer, index) in fingerLayers(finger.key)"
                     :key="`${finger.key}-layer-${index}`"
                     class="nail-layer"
                     :style="layerStyle(finger.key, layer)"
                 ></span>
 
-                <!-- 5. Wölbung -->
+                <!-- 4. Wölbung vom Original-Nagel -->
                 <img
-                    v-if="hasPaint"
+                    v-if="hasPaint(finger.key)"
                     :src="nailSrc(finger.key)"
                     alt=""
                     aria-hidden="true"
                     class="nail-shine"
                 />
 
-                <!-- 6. Glanz -->
+                <!-- 5. Glanz (Standard-Finish, später durch Effekte ersetzbar) -->
                 <span
-                    v-if="hasPaint"
+                    v-if="hasPaint(finger.key)"
                     class="nail-layer nail-gloss"
                     :style="maskStyle(finger.key)"
                 ></span>
@@ -88,13 +91,26 @@
 <script setup>
 import { computed } from 'vue'
 
+// shape:   almond | square | oval | coffin | squoval | stiletto
+// length:  short | medium | long
 const props = defineProps({
-    shape: { type: String, default: 'almond' },
-    length: { type: String, default: 'medium' },
+    shape:   { type: String, default: 'almond' },
+    length:  { type: String, default: 'medium' },
+
+    // Nagelauswahl (Daniel): welche Nägel gerade ausgewählt sind
     selectedFingers: { type: Array, default: () => [] },
-    color: { type: String, default: null },
-    pattern: { type: String, default: null },
-    layers: { type: Array, default: () => [] },
+
+    /*
+    | Farbe + Muster PRO NAGEL, z. B.
+    | { thumb: { color: {...}, design: {...} }, index: {...}, ... }
+    */
+    nailDesigns: { type: Object, default: null },
+
+    // Eine Farbe / ein Muster für alle Nägel –
+    // wird nur genutzt, wenn nailDesigns nicht übergeben wird
+    color:   { type: String, default: null },        // Hex-Code, z. B. "#B01C2E"
+    pattern: { type: String, default: null },        // Bildpfad eines deckenden Musters
+    layers:  { type: Array,  default: () => [] },    // [{ mask, color }, …] umfärbbares Muster
 })
 
 const emit = defineEmits(['toggle-finger'])
@@ -103,13 +119,54 @@ function toggleFinger(fingerKey) {
     emit('toggle-finger', fingerKey)
 }
 
-// Ist überhaupt etwas auf dem Nagel? Dann Wölbung + Glanz zeigen
-const hasPaint = computed(() =>
-    Boolean(props.color || props.pattern || props.layers.length)
-)
 
-// Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge).
-// Stiletto gibt es nur lang -> Ordner "stiletto-right hand"
+// =========================================
+// WAS LIEGT AUF WELCHEM NAGEL?
+// =========================================
+
+const perNail = computed(() => Boolean(props.nailDesigns))
+
+function fingerColor(finger) {
+
+    return perNail.value
+        ? props.nailDesigns[finger]?.color?.hex_code ?? null
+        : props.color
+
+}
+
+function fingerPattern(finger) {
+
+    return perNail.value
+        ? props.nailDesigns[finger]?.design?.image_path ?? null
+        : props.pattern
+
+}
+
+function fingerLayers(finger) {
+
+    return perNail.value
+        ? props.nailDesigns[finger]?.design?.layers ?? []
+        : props.layers
+
+}
+
+// Ist auf DIESEM Nagel etwas? Dann Wölbung + Glanz zeigen
+function hasPaint(finger) {
+
+    return Boolean(
+        fingerColor(finger) ||
+        fingerPattern(finger) ||
+        fingerLayers(finger).length
+    )
+
+}
+
+
+// =========================================
+// BILDPFADE
+// =========================================
+
+// Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge)
 const SINGLE_SET = ['stiletto']
 
 // Ordnernamen:
@@ -139,6 +196,11 @@ function nailSrc(finger) {
 
 }
 
+
+// =========================================
+// MASKING (unverändert aus der funktionierenden Version)
+// =========================================
+
 // Maske: das Nagelbild selbst schneidet jede Schicht zu
 function maskStyle(finger) {
 
@@ -156,7 +218,7 @@ function colorStyle(finger) {
 
     return {
         ...maskStyle(finger),
-        backgroundColor: props.color,
+        backgroundColor: fingerColor(finger),
     }
 
 }
@@ -166,10 +228,11 @@ function patternStyle(finger) {
 
     return {
         ...maskStyle(finger),
-        backgroundImage: `url("${props.pattern}")`,
+        backgroundImage: `url("${fingerPattern(finger)}")`,
     }
 
 }
+
 // Farbschicht: Form aus der Schicht-Maske UND Nagelform, Farbe frei wählbar
 function layerStyle(finger, layer) {
 
@@ -196,6 +259,7 @@ function layerStyle(finger, layer) {
     }
 
 }
+
 // Lange Nägel / Stiletto haben eine höhere Leinwand (1080 x 1556)
 const isTall = computed(() =>
     props.length === 'long' || props.shape === 'stiletto'
@@ -251,9 +315,23 @@ const fingers = [
     display: block;
 }
 
+
+/* =========================================
+   NAGELAUSWAHL (Daniel)
+   ========================================= */
+
 .nail {
     cursor: pointer;
     transition: filter 0.2s ease, outline 0.2s ease;
+}
+
+.nail:focus {
+    outline: none;
+}
+
+.nail:focus-visible {
+    outline: 2px solid #d63384;
+    outline-offset: 2px;
 }
 
 .nail-selected {
@@ -261,6 +339,7 @@ const fingers = [
     outline: 2px solid #d63384;
     outline-offset: 2px;
 }
+
 
 /* 1. Nagel: gibt dem Wrapper seine Höhe */
 .nail-base {
@@ -273,7 +352,76 @@ const fingers = [
 .nail-layer {
     position: absolute;
     inset: 0;
+
+    -webkit-mask-size: 100% 100%;
+            mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
 }
+
+.nail-pattern {
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+}
+
+/* 3. Glanz + Wölbung: graue Kopie des Nagels, weich eingeblendet */
+.nail-shine {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+
+    filter: grayscale(1) contrast(1.5);
+    mix-blend-mode: soft-light;
+    opacity: 0.9;
+
+    pointer-events: none;
+}
+
+/* 5. Glanz: wie echter Lack, schmal, scharf, seitlich versetzt */
+.nail-gloss {
+    mix-blend-mode: screen;
+    pointer-events: none;
+}
+
+/* Lichtstreifen: läuft oben und unten weich aus */
+.nail-gloss::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background: linear-gradient(
+        90deg,
+        transparent 22%,
+        rgba(255, 255, 255, 0.08) 26%,
+        rgba(255, 255, 255, 0.55) 31%,
+        rgba(255, 255, 255, 0.60) 35%,
+        rgba(255, 255, 255, 0.12) 40%,
+        transparent 46%
+    );
+
+    -webkit-mask-image: linear-gradient(180deg, transparent 4%, #000 18%, #000 55%, transparent 88%);
+            mask-image: linear-gradient(180deg, transparent 4%, #000 18%, #000 55%, transparent 88%);
+}
+
+/* Glanzpunkt an der Spitze + Randreflex rechts + Schimmer am Nagelbett */
+.nail-gloss::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background:
+        radial-gradient(ellipse 6% 5% at 66% 12%, rgba(255, 255, 255, 0.9), transparent),
+        linear-gradient(90deg, transparent 84%, rgba(255, 255, 255, 0.22) 90%, transparent 96%),
+        radial-gradient(ellipse 40% 7% at 50% 96%, rgba(255, 255, 255, 0.25), transparent);
+}
+
+
+/* =========================================
+   POSITIONEN
+   ========================================= */
+
 /* Daumen */
 .nail-thumb {
     width: 21.05%;

@@ -258,6 +258,118 @@ const designs = ref([])
 const laden   = ref(true)
 const fehler  = ref(false)
 
+
+async function ladeDesigns() {
+
+    laden.value  = true
+    fehler.value = false
+
+    try {
+
+        const response = await fetch('/design-elements?patterns=1', {
+            headers: { Accept: 'application/json' },
+        })
+
+        if (!response.ok) {
+            throw new Error(response.status)
+        }
+
+        designs.value = await response.json()
+
+    } catch (error) {
+
+        console.error('Designs laden fehlgeschlagen:', error)
+
+        fehler.value = true
+
+    } finally {
+
+        laden.value = false
+
+    }
+
+}
+
+onMounted(ladeDesigns)
+
+
+// =========================================
+// KATEGORIEN (Ebene 1)
+// =========================================
+
+// Feste Reihenfolge für bekannte Kategorien, neue kommen alphabetisch dahinter
+const REIHENFOLGE = ['French', 'Muster', 'Motive', 'Nail Art', 'Ombre', 'Glitzer']
+
+// Icons für die Kategorie-Kacheln (ohne Icon → Press-on-Vorschau)
+const ICON_PATH = '/images/nail-editor/icon/DesignPanel'
+
+const CATEGORY_ICONS = {
+    'French':   `${ICON_PATH}/kategorie-french.svg`,
+    'Muster':   `${ICON_PATH}/kategorie-muster.svg`,
+    'Motive':   `${ICON_PATH}/kategorie-motive.svg`,
+    'Nail Art': `${ICON_PATH}/kategorie-motive.svg`,
+}
+
+const kategorien = computed(() => {
+
+    const gruppen = {}
+
+    for (const design of designs.value) {
+
+        if (!gruppen[design.category]) {
+            gruppen[design.category] = []
+        }
+
+        gruppen[design.category].push(design)
+
+    }
+
+    return Object.entries(gruppen)
+        .map(([name, liste]) => ({
+            name,
+            anzahl:   liste.length,
+            vorschau: liste[0],  
+            icon:     CATEGORY_ICONS[name] ?? null,  // eigenes Icon, falls vorhanden
+        }))
+        .sort((a, b) => {
+
+            const ia = REIHENFOLGE.indexOf(a.name)
+            const ib = REIHENFOLGE.indexOf(b.name)
+
+            if (ia !== -1 && ib !== -1) return ia - ib
+            if (ia !== -1) return -1
+            if (ib !== -1) return 1
+
+            return a.name.localeCompare(b.name, 'de')
+
+        })
+
+})
+
+
+// =========================================
+// NAVIGATION ZWISCHEN DEN EBENEN
+// =========================================
+
+const aktiveKategorie = ref(null)
+
+function oeffneKategorie(name) {
+
+    aktiveKategorie.value = name
+
+    suche.value = ''
+
+}
+
+function zurueck() {
+
+    aktiveKategorie.value = null
+
+    suche.value = ''
+
+}
+
+
 // =========================================
 // SUCHE
 // Ebene 1: über ALLE Designs
