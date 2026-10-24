@@ -21,10 +21,27 @@ class GoogleAuthController extends Controller
     // Schritt 2: Google schickt den Nutzer hierher zurück
     public function callback()
     {
-        $googleUser = Socialite::driver('google')->user();
+        try {
 
-        // Prüfen, ob die Google-E-Mail bereits existiert
-        $user = User::where('email', $googleUser->getEmail())->first();
+            $googleUser = Socialite::driver('google')->stateless()->user();
+
+        } catch (\Throwable $e) {
+
+            // Fehler ins Log schreiben, Nutzer bekommt eine verständliche Meldung
+            report($e);
+
+            return redirect('/')
+                ->with('error', 'Die Anmeldung mit Google hat nicht geklappt. Bitte versuche es erneut.');
+
+        }        $user = User::firstOrCreate(
+            ['email' => $googleUser->getEmail()],
+            [
+                'name' => $googleUser->getName(),
+                'password' => Str::random(24), // zufälliges Passwort, da Login über Google läuft
+                'role' => 'customer',
+                'email_verified_at' => now(),
+            ]
+        );
 
         // Standardrolle für neue Benutzer
         $role = 'customer';

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 190" width="120" height="190">
+<defs><linearGradient id="kara-n" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3d8c9"/><stop offset="1" stop-color="#ecc9b6"/></linearGradient>
+<linearGradient id="kara-t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a95a24"/><stop offset="1" stop-color="#c98444"/></linearGradient>
+<clipPath id="kara-clip"><path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z"/></clipPath>
+<filter id="kara-sh" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+<radialGradient id="kara-vol" cx=".45" cy=".42" r=".7"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient>
+<linearGradient id="kara-hl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+</defs>
+<ellipse cx="62" cy="176" rx="34" ry="7" fill="#000" opacity=".22" filter="url(#kara-sh)"/>
+<g clip-path="url(#kara-clip)">
+  <g transform="translate(4.67 6) scale(0.5533)"><rect width="200" height="300" fill="url(#kara-n)"/><path d="M0 0 H200 V78 C150 118 50 118 0 78 Z" fill="url(#kara-t)"/><path d="M0 78 C50 118 150 118 200 78" stroke="#e2bd78" stroke-width="2.2" fill="none"/></g>
+  <path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z" fill="url(#kara-vol)"/>
+  <path d="M38 140 C36 100 40 55 52 26" stroke="url(#kara-hl)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <ellipse cx="71" cy="34" rx="3" ry="6" fill="#fff" opacity="0.60" transform="rotate(20 71 34)"/>
+</g>
+<path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="1.2"/>
+</svg>
