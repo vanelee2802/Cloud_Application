@@ -53,8 +53,7 @@ onMounted(() => {
 
             const img = new Image()
 
-            img.src = `/images/nail-editor/${folder}/${finger}.png`
-
+            img.src = `/images/nail-editor/FormPanel/forms_right hand/${folder}/${finger}.png`
         }
 
     }

@@ -10,7 +10,7 @@
         >
 
             <img
-                src="/images/nail-editor/Hand.png"
+                src="/images/nail-editor/nail-editor/Hand.png"
                 alt="Hand"
                 class="hand-image"
             />

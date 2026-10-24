@@ -133,8 +133,6 @@
 
                 <span class="press-on-wrap">
 
-                                 <span class="press-on-wrap">
-
                     <img
                         v-if="kategorie.icon"
                         :src="kategorie.icon"
