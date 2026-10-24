@@ -11,12 +11,12 @@ const company = {
 const legalLinks = [
   { label: 'Impressum', href: '/impressum' },
   { label: 'Datenschutz', href: '/datenschutz' },
-  { label: 'AGB', href: '/agb' },
+  { label: 'AGB', href: '/AGB' },
 ]
 
 const navigationLinks = [
   { label: 'Startseite', href: '/' },
-  { label: 'Leistungen', href: '/leistungen' },
+  { label: 'Leistungen', href: 'Leistungen' },
   { label: 'Kontakt', href: '/kontakt' },
 ]
 </script>

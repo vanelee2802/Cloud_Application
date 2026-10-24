@@ -1,11 +1,11 @@
 <script setup>
 import pagesLayout from '@/Layouts/pagesLayout.vue' 
-import StudioSelector from '@/Components/StudioSelector.vue'
+import about from '@/Components/Leistungen/about.vue';
 </script> 
 
 <template>
     <pagesLayout> 
+      <about/>
       
-        <StudioSelector />
     </pagesLayout>
 </template>
