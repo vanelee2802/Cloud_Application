@@ -12,11 +12,11 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_view_user_management(): void
     {
-        $admin = User::factory()->create([
-            'role' => 'admin',
+        $owner = User::factory()->create([
+            'role' => 'owner',
         ]);
 
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($owner)
             ->get('/admin/users');
 
         $response->assertOk();
@@ -48,8 +48,8 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_update_user(): void
     {
-        $admin = User::factory()->create([
-            'role' => 'admin',
+        $owner = User::factory()->create([
+            'role' => 'owner',
         ]);
 
         $user = User::factory()->create([
@@ -58,7 +58,7 @@ class UserManagementTest extends TestCase
             'role' => 'customer',
         ]);
 
-        $response = $this->actingAs($admin)
+        $response = $this->actingAs($owner)
             ->patch("/admin/users/{$user->id}", [
                 'name' => 'Neuer Name',
                 'email' => 'neu@example.com',

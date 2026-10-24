@@ -86,14 +86,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/meine-designs', function () {
         return Inertia::render('Designs/Index');
     })->name('designs.page');
-    
-    // Benutzerverwaltung – nur für Admins
+    // Benutzerverwaltung – nur für die Inhaberin
     Route::get('/admin/users', [UserManagementController::class, 'index'])
-        ->middleware('role:admin')
+        ->middleware('role:owner')
         ->name('admin.users.index');
 
     Route::patch('/admin/users/{user}', [UserManagementController::class, 'update'])
-        ->middleware('role:admin')
+        ->middleware('role:owner')
         ->name('admin.users.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -140,24 +139,28 @@ Route::middleware('auth')->group(function () {
         Route::post('/{appointment}/alternatives', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'offerAlternatives']);
     });
 
-    // Studioverwaltung + Mitarbeiter verwalten: nur für eingeloggte Admins
-    Route::middleware('role:admin')->group(function () {
+    // Studioverwaltung + Mitarbeiter verwalten: Inhaberin und Schichtleitung
+    Route::middleware('role:owner,admin')->group(function () {
 
         Route::get('/Studioverwaltung', function () {
 
-            // Studio des Admins, sonst das erste vorhandene
-            $studioId = auth()->user()->nail_studio_id
-                ?? NailStudio::query()->value('id');
+            $user      = auth()->user();
+            $studioIds = $user->manageableStudioIds();
 
-            // DATENBANKABFRAGE: alle Mitarbeiter dieses Studios
+            // Mitarbeiterinnen aller Studios, die diese Person verwalten darf
             $employees = User::query()
-                ->where('role', 'employee')
-                ->where('nail_studio_id', $studioId)
+                ->where('role', User::ROLE_EMPLOYEE)
+                ->whereIn('nail_studio_id', $studioIds)
+                ->with('nailStudio:id,name')
                 ->orderBy('name')
-                ->get(['id', 'name', 'email']);
+                ->get(['id', 'name', 'email', 'nail_studio_id']);
 
             return Inertia::render('Studioverwaltung', [
                 'employees' => $employees,
+                // Nur die Inhaberin bekommt eine Studio-Auswahl
+                'studios'   => $user->isOwner()
+                    ? $user->ownedStudios()->orderBy('name')->get(['id', 'name'])
+                    : [],
             ]);
 
         })->name('Studioverwaltung');

@@ -8,6 +8,7 @@ const roleName = {
     customer: 'Kunde',
     employee: 'Mitarbeiter',
     admin: 'Admin',
+    owner: 'Studioinhaber'
 }
 </script>
 
@@ -49,8 +50,7 @@ const roleName = {
 
 
             <!-- Studio Dashboard: für Admin -->
-            <li v-if="page.props.auth?.user?.role === 'admin'">
-                <NavLink
+<li v-if="['admin', 'owner'].includes(page.props.auth?.user?.role)">                <NavLink
                     href="/StudioDashboard"
                     :active="route().current('StudioDashboard')"
                 >
@@ -64,7 +64,8 @@ const roleName = {
                     page.props.auth?.user &&
                     (
                         page.props.auth.user.role === 'employee' ||
-                        page.props.auth.user.role === 'admin'
+                        page.props.auth.user.role === 'admin' ||
+                        page.props.auth.user.role === 'owner'
                     )
                 "
             >
