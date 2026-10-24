@@ -70,4 +70,10 @@ class DesignElement extends Model
     {
         return $query->where('is_active', true);
     }
+
+        /** Abweichende Preise einzelner Studios */
+    public function studioPrices(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(StudioPrice::class, 'priceable');
+    }
 }

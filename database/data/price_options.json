@@ -1,0 +1,49 @@
+{
+    "effekt": {
+        "einheit": "pauschal",
+        "eintraege": [
+            { "key": "glaenzend",  "name": "Glänzend",   "preis": 0.00 },
+            { "key": "matt",       "name": "Matt",       "preis": 3.00 },
+            { "key": "satin",      "name": "Satin",      "preis": 3.00 },
+            { "key": "metallic",   "name": "Metallic",   "preis": 5.00 },
+            { "key": "chrome",     "name": "Chrome",     "preis": 8.00 },
+            { "key": "cat-eye",    "name": "Cat-Eye",    "preis": 8.00 },
+            { "key": "chamaeleon", "name": "Chamäleon",  "preis": 8.00 },
+            { "key": "holo",       "name": "Holo",       "preis": 8.00 },
+            { "key": "jelly",      "name": "Jelly",      "preis": 5.00 },
+            { "key": "neon",       "name": "Neon",       "preis": 4.00 },
+            { "key": "perlmutt",   "name": "Perlmutt",   "preis": 6.00 },
+            { "key": "shimmer",    "name": "Shimmer",    "preis": 4.00 },
+            { "key": "sugar",      "name": "Sugar",      "preis": 6.00 },
+            { "key": "velvet",     "name": "Velvet",     "preis": 8.00 }
+        ]
+    },
+    "verzierung": {
+        "einheit": "nagel",
+        "eintraege": [
+            { "key": "strasssteine",  "name": "Strasssteine",  "preis": 1.50 },
+            { "key": "perlen",        "name": "Perlen",        "preis": 1.50 },
+            { "key": "glitzersteine", "name": "Glitzersteine", "preis": 1.00 },
+            { "key": "sticker",       "name": "Sticker",       "preis": 0.50 },
+            { "key": "herzen",        "name": "Herzen",        "preis": 1.00 }
+        ]
+    },
+    "laenge": {
+        "einheit": "pauschal",
+        "eintraege": [
+            { "key": "short",  "name": "Kurz",   "preis": 0.00 },
+            { "key": "medium", "name": "Mittel", "preis": 5.00 },
+            { "key": "long",   "name": "Lang",   "preis": 10.00 }
+        ]
+    },
+    "material": {
+        "einheit": "pauschal",
+        "eintraege": [
+            { "key": "naturnagel", "name": "Naturnagel (Lack)", "preis": 0.00 },
+            { "key": "shellac",    "name": "Shellac",           "preis": 10.00 },
+            { "key": "gel",        "name": "Gel",               "preis": 20.00 },
+            { "key": "polygel",    "name": "Polygel",           "preis": 25.00 },
+            { "key": "acryl",      "name": "Acryl",             "preis": 25.00 }
+        ]
+    }
+}

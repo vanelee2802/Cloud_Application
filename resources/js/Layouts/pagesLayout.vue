@@ -1,20 +1,31 @@
+
 <script setup>
-import NavigationBar from '@/Components/NavigationBar.vue';
-
+import NavigationBar from '@/Components/NavigationBar.vue'
+import Footer from '@/Components/Footer.vue'
 </script>
+
 <template>
-    <header>
-        <NavigationBar/>
-    </header>
+    <div class="page-layout">
+        <header>
+            <NavigationBar />
+        </header>
 
-    <main>
-        <slot /> 
-    </main>
+        <main class="page-content">
+            <slot />
+        </main>
 
-    <footer>
-        <p class="text-center text-gray-500 text-xs">
-            &copy;2024 MixMatch. All rights reserved.
-        </p>
-    </footer>
+        <Footer />
+    </div>
 </template>
 
+<style scoped>
+.page-layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-content {
+    flex: 1;
+}
+</style>

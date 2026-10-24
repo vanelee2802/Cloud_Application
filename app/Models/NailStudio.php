@@ -46,6 +46,11 @@ class NailStudio extends Model
         return $this->belongsTo(User::class, 'owner_id');
     }
 
+        /** Abweichende Preise dieses Studios */
+    public function studioPrices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(StudioPrice::class);
+    }
     /**
      * Sind die Steuerdaten vollständig genug für eine Rechnung?
      * Nach § 14 UStG braucht es Steuernummer ODER USt-IdNr.

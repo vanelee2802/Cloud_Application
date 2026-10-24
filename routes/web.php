@@ -22,6 +22,7 @@ use App\Http\Controllers\DesignEditorController;
 use App\Models\NailStudio;
 use App\Models\User;
 use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\StudioPriceController;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -192,6 +193,15 @@ Route::middleware('auth')->group(function () {
         Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
             ->name('employees.destroy');
     });
+
+        // Preise pro Studio – nur für die Inhaberin
+    Route::get('/admin/preise', [StudioPriceController::class, 'index'])
+        ->middleware('role:owner')
+        ->name('admin.prices.index');
+
+    Route::put('/admin/preise/{studio}', [StudioPriceController::class, 'update'])
+        ->middleware('role:owner')
+        ->name('admin.prices.update');
 });
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
