@@ -1,44 +1,47 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 const props = defineProps({
     users: {
         type: Array,
         default: () => [],
     },
+    // Studios der Inhaberin (für die Auswahl beim Bearbeiten)
+    studios: {
+        type: Array,
+        default: () => [],
+    },
 })
+
+/*
+|--------------------------------------------------------------------------
+| Rollen
+|--------------------------------------------------------------------------
+*/
+
+const roleLabels = {
+    owner: 'Inhaberin',
+    admin: 'Schichtleitung',
+    employee: 'Mitarbeiter',
+    customer: 'Kunde',
+}
+
+// Rollen, die die Inhaberin vergeben darf (owner nur durch IT)
+const assignableRoles = ['customer', 'employee', 'admin']
+
+function roleLabel(role) {
+    return roleLabels[role] ?? role
+}
+
+/*
+|--------------------------------------------------------------------------
+| Filter
+|--------------------------------------------------------------------------
+*/
 
 const selectedRole = ref('all')
-
-const editingUserId = ref(null)
-
-const editForm = useForm({
-    name: '',
-    email: '',
-})
-
-function startEditing(user) {
-    editingUserId.value = user.id
-    editForm.name = user.name
-    editForm.email = user.email
-    editForm.clearErrors()
-}
-
-function cancelEditing() {
-    editingUserId.value = null
-    editForm.reset()
-    editForm.clearErrors()
-}
-
-function saveUser() {
-    editForm.patch(`/admin/users/${editingUserId.value}`, {
-        onSuccess: () => {
-            cancelEditing()
-        },
-    })
-}
 
 const filteredUsers = computed(() => {
     if (selectedRole.value === 'all') {
@@ -49,6 +52,89 @@ const filteredUsers = computed(() => {
         (user) => user.role === selectedRole.value
     )
 })
+
+/*
+|--------------------------------------------------------------------------
+| Bearbeiten
+|--------------------------------------------------------------------------
+*/
+
+const editingUserId = ref(null)
+const editingIsOwner = ref(false)
+const editSection = ref(null)
+
+const editForm = useForm({
+    name: '',
+    email: '',
+    role: 'customer',
+    nail_studio_id: '',
+})
+
+// Studio-Auswahl nur für Mitarbeiter und Schichtleitung
+const needsStudio = computed(() => {
+    return ['employee', 'admin'].includes(editForm.role)
+})
+
+async function startEditing(user) {
+    editingUserId.value = user.id
+    editingIsOwner.value = user.role === 'owner'
+
+    editForm.name = user.name
+    editForm.email = user.email
+    editForm.role = user.role
+    editForm.nail_studio_id = user.nail_studio_id ?? ''
+    editForm.clearErrors()
+
+    // Formular steht unter der Tabelle – dorthin scrollen
+    await nextTick()
+    editSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function onRoleChange() {
+    if (!needsStudio.value) {
+        editForm.nail_studio_id = ''
+        return
+    }
+
+    // Nur ein Studio vorhanden: direkt vorauswählen
+    if (!editForm.nail_studio_id && props.studios.length === 1) {
+        editForm.nail_studio_id = props.studios[0].id
+    }
+}
+
+function cancelEditing() {
+    editingUserId.value = null
+    editingIsOwner.value = false
+    editForm.reset()
+    editForm.clearErrors()
+}
+
+function saveUser() {
+    editForm
+        .transform((data) => {
+            // Bei der Inhaberin selbst nur Name und E-Mail ändern
+            if (editingIsOwner.value) {
+                return { name: data.name, email: data.email }
+            }
+
+            return {
+                ...data,
+                nail_studio_id: needsStudio.value ? data.nail_studio_id : null,
+            }
+        })
+        .patch(`/admin/users/${editingUserId.value}`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                cancelEditing()
+            },
+        })
+}
+
+/*
+|--------------------------------------------------------------------------
+| Hilfsfunktionen
+|--------------------------------------------------------------------------
+*/
 
 function formatDate(date) {
     if (!date) {
@@ -89,7 +175,8 @@ function formatDate(date) {
                             <option value="all">Alle Rollen</option>
                             <option value="customer">Kunden</option>
                             <option value="employee">Mitarbeiter</option>
-                            <option value="admin">Admins</option>
+                            <option value="admin">Schichtleitung</option>
+                            <option value="owner">Inhaberin</option>
                         </select>
 
                         <p v-if="filteredUsers.length === 0">
@@ -103,7 +190,7 @@ function formatDate(date) {
                                         <th class="p-3">Name</th>
                                         <th class="p-3">E-Mail</th>
                                         <th class="p-3">Rolle</th>
-                                        <th class="p-3">Studio-ID</th>
+                                        <th class="p-3">Studio</th>
                                         <th class="p-3">Registriert am</th>
                                         <th class="p-3">Aktionen</th>
                                     </tr>
@@ -114,12 +201,13 @@ function formatDate(date) {
                                         v-for="user in filteredUsers"
                                         :key="user.id"
                                         class="border-b"
+                                        :class="{ 'bg-indigo-50': user.id === editingUserId }"
                                     >
                                         <td class="p-3">{{ user.name }}</td>
                                         <td class="p-3">{{ user.email }}</td>
-                                        <td class="p-3">{{ user.role }}</td>
+                                        <td class="p-3">{{ roleLabel(user.role) }}</td>
                                         <td class="p-3">
-                                            {{ user.nail_studio_id ?? '—' }}
+                                            {{ user.nail_studio?.name ?? '—' }}
                                         </td>
                                         <td class="p-3">
                                             {{ formatDate(user.created_at) }}
@@ -141,8 +229,10 @@ function formatDate(date) {
                         <p class="mt-4 text-sm text-gray-600">
                             Angezeigte Benutzer: {{ filteredUsers.length }}
                         </p>
-                                                <div
+
+                        <div
                             v-if="editingUserId !== null"
+                            ref="editSection"
                             class="mt-8 rounded-lg border p-6"
                         >
                             <h3 class="mb-4 text-lg font-semibold">
@@ -179,6 +269,60 @@ function formatDate(date) {
                                     />
                                     <p v-if="editForm.errors.email" class="mt-1 text-sm text-red-600">
                                         {{ editForm.errors.email }}
+                                    </p>
+                                </div>
+
+                                <!-- Rolle: bei der Inhaberin nicht änderbar -->
+                                <div v-if="!editingIsOwner">
+                                    <label for="edit-role" class="mb-1 block font-medium">
+                                        Rolle
+                                    </label>
+                                    <select
+                                        id="edit-role"
+                                        v-model="editForm.role"
+                                        @change="onRoleChange"
+                                        class="w-full rounded border p-2"
+                                    >
+                                        <option
+                                            v-for="role in assignableRoles"
+                                            :key="role"
+                                            :value="role"
+                                        >
+                                            {{ roleLabel(role) }}
+                                        </option>
+                                    </select>
+                                    <p v-if="editForm.errors.role" class="mt-1 text-sm text-red-600">
+                                        {{ editForm.errors.role }}
+                                    </p>
+                                </div>
+
+                                <p v-else class="text-sm text-gray-600">
+                                    Die Rolle der Inhaberin kann nur von der IT geändert werden.
+                                </p>
+
+                                <!-- Studio: nur bei Mitarbeiter und Schichtleitung -->
+                                <div v-if="!editingIsOwner && needsStudio">
+                                    <label for="edit-studio" class="mb-1 block font-medium">
+                                        Studio
+                                    </label>
+                                    <select
+                                        id="edit-studio"
+                                        v-model="editForm.nail_studio_id"
+                                        class="w-full rounded border p-2"
+                                    >
+                                        <option value="" disabled>
+                                            Studio auswählen
+                                        </option>
+                                        <option
+                                            v-for="studio in studios"
+                                            :key="studio.id"
+                                            :value="studio.id"
+                                        >
+                                            {{ studio.name }}
+                                        </option>
+                                    </select>
+                                    <p v-if="editForm.errors.nail_studio_id" class="mt-1 text-sm text-red-600">
+                                        {{ editForm.errors.nail_studio_id }}
                                     </p>
                                 </div>
 
