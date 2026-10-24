@@ -215,5 +215,37 @@ Route::get('/StudioDashboard', function () {
     return Inertia::render('StudioDashboard');
 })->name('StudioDashboard');
 
+Route::get('/Leistungen', function () {
+    return Inertia::render('Leistungen');
+})->name('Leistungen');
+
+
+Route::get('/impressum', function () {
+    return Inertia::render('AppFooter/impressum');
+})->name('impressum');
+
+Route::get('/datenschutz', function () {
+    return Inertia::render('AppFooter/datenschutz');
+})->name('datenschutz');
+
+Route::get('/AGB', function () {
+    return Inertia::render('AppFooter/AGB');
+})->name('AGB');
+
+Route::get('/kontakt', function () {
+    return Inertia::render('AppFooter/kontakt');
+})->name('kontakt');
+
+Route::get('/Rezensionen', function () {
+    return Inertia::render('Rezension');
+})->name('Rezensionen');
+
+Route::get('/StudioSearch', function () {
+    return Inertia::render('StudioSearch');
+})->name('StudioSearch');
+
+
+
+
 
 require __DIR__.'/auth.php';
