@@ -133,7 +133,17 @@
 
                 <span class="press-on-wrap">
 
+                                 <span class="press-on-wrap">
+
+                    <img
+                        v-if="kategorie.icon"
+                        :src="kategorie.icon"
+                        alt=""
+                        class="category-icon"
+                    >
+
                     <span
+                        v-else
                         class="press-on"
                         :style="pressOnStyle(kategorie.vorschau)"
                     >
@@ -292,6 +302,16 @@ onMounted(ladeDesigns)
 // Feste Reihenfolge für bekannte Kategorien, neue kommen alphabetisch dahinter
 const REIHENFOLGE = ['French', 'Muster', 'Motive', 'Nail Art', 'Ombre', 'Glitzer']
 
+// Icons für die Kategorie-Kacheln (ohne Icon → Press-on-Vorschau)
+const ICON_PATH = '/images/nail-editor/icon/DesignPanel'
+
+const CATEGORY_ICONS = {
+    'French':   `${ICON_PATH}/kategorie-french.svg`,
+    'Muster':   `${ICON_PATH}/kategorie-muster.svg`,
+    'Motive':   `${ICON_PATH}/kategorie-motive.svg`,
+    'Nail Art': `${ICON_PATH}/kategorie-motive.svg`,
+}
+
 const kategorien = computed(() => {
 
     const gruppen = {}
@@ -310,7 +330,8 @@ const kategorien = computed(() => {
         .map(([name, liste]) => ({
             name,
             anzahl:   liste.length,
-            vorschau: liste[0],        // erstes Design als Vorschau
+            vorschau: liste[0],  
+            icon:     CATEGORY_ICONS[name] ?? null,  // eigenes Icon, falls vorhanden
         }))
         .sort((a, b) => {
 
@@ -1310,6 +1331,15 @@ function formatPreis(preis) {
 
     }
 
+}
+
+/* Kategorie-Icon statt Press-on */
+.category-icon {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 </style>

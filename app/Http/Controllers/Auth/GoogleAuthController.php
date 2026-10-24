@@ -74,8 +74,7 @@ class GoogleAuthController extends Controller
         }
 
         if ($user->role === 'employee') {
-            return redirect('/Studiodashboard');
-        }
+            return redirect('/StudioDashboard');        }
 
         return redirect('/DesignEditor');
     }

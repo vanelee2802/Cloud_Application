@@ -117,8 +117,7 @@ const basePath = computed(() => {
 
     }
 
-    return `/images/nail-editor/${folder}`
-
+    return `/images/nail-editor/FormPanel/forms_right hand/${folder}`
 })
 
 function nailSrc(finger) {

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 64" width="48" height="64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <defs><clipPath id="clip-karo"><path d="M16 33 V15 C16 9.5 19.5 6 24 6 C28.5 6 32 9.5 32 15 V33 C27 35 21 35 16 33 Z"/></clipPath></defs>
+  <path d="M12 62 V30 C12 25 13.5 22 16 21 M36 62 V30 C36 25 34.5 22 32 21" stroke="#2b2b2b" stroke-width="1.6"/>
+  <path d="M20 41 H28 M20 45 H28" stroke="#2b2b2b" stroke-width="1.4"/>
+  <path d="M16 33 V15 C16 9.5 19.5 6 24 6 C28.5 6 32 9.5 32 15 V33 C27 35 21 35 16 33 Z" fill="#f8d7d9"/>
+  <g clip-path="url(#clip-karo)"><rect x="12" y="0" width="40" height="40" fill="#f3e4d3"/><rect x="17" y="0" width="3.4" height="40" fill="#7a1c2e" opacity=".55"/><rect x="27" y="0" width="3.4" height="40" fill="#7a1c2e" opacity=".55"/><rect x="10" y="12" width="30" height="3.4" fill="#7a1c2e" opacity=".55"/><rect x="10" y="24" width="30" height="3.4" fill="#7a1c2e" opacity=".55"/><rect x="22" y="0" width=".9" height="40" fill="#2b2b2b"/><rect x="32" y="0" width=".9" height="40" fill="#2b2b2b"/><rect x="10" y="18" width="30" height=".9" fill="#2b2b2b"/><rect x="10" y="30" width="30" height=".9" fill="#2b2b2b"/></g>
+  <path d="M16 33 V15 C16 9.5 19.5 6 24 6 C28.5 6 32 9.5 32 15 V33 C27 35 21 35 16 33 Z" stroke="#2b2b2b" stroke-width="1.6"/>
+</svg>

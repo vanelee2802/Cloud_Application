@@ -1,0 +1,173 @@
+[
+    {
+        "name": "French Klassisch",
+        "category": "French",
+        "price_per_nail": 2.0,
+        "icon": "/images/nail-editor/designs/icons/french.svg",
+        "layers": [
+            {
+                "name": "Spitze",
+                "mask": "/images/nail-editor/designs/layers/french-spitze.svg",
+                "color": "#FFFFFF"
+            }
+        ],
+        "tags": [
+            "french",
+            "klassisch",
+            "spitze",
+            "tip",
+            "einfärbbar"
+        ]
+    },
+    {
+        "name": "French V",
+        "category": "French",
+        "price_per_nail": 2.5,
+        "icon": "/images/nail-editor/designs/icons/french-v.svg",
+        "layers": [
+            {
+                "name": "Spitze",
+                "mask": "/images/nail-editor/designs/layers/french-v-spitze.svg",
+                "color": "#FFFFFF"
+            }
+        ],
+        "tags": [
+            "french",
+            "v",
+            "chevron",
+            "spitze",
+            "einfärbbar"
+        ]
+    },
+    {
+        "name": "Schachbrett",
+        "category": "Muster",
+        "price_per_nail": 3.0,
+        "icon": "/images/nail-editor/designs/icons/schachbrett.svg",
+        "layers": [
+            {
+                "name": "Felder",
+                "mask": "/images/nail-editor/designs/layers/schachbrett-felder.svg",
+                "color": "#111111"
+            }
+        ],
+        "tags": [
+            "schachbrett",
+            "checkers",
+            "kariert",
+            "muster",
+            "einfärbbar"
+        ]
+    },
+    {
+        "name": "Streifen",
+        "category": "Muster",
+        "price_per_nail": 2.5,
+        "icon": "/images/nail-editor/designs/icons/streifen.svg",
+        "layers": [
+            {
+                "name": "Linien",
+                "mask": "/images/nail-editor/designs/layers/streifen-linien.svg",
+                "color": "#FFFFFF"
+            }
+        ],
+        "tags": [
+            "streifen",
+            "linien",
+            "stripes",
+            "muster",
+            "einfärbbar"
+        ]
+    },
+    {
+        "name": "Karo",
+        "category": "Muster",
+        "price_per_nail": 3.0,
+        "icon": "/images/nail-editor/designs/icons/karo.svg",
+        "layers": [
+            {
+                "name": "Streifen",
+                "mask": "/images/nail-editor/designs/layers/karo-streifen.svg",
+                "color": "#8E3B1D"
+            },
+            {
+                "name": "Linien",
+                "mask": "/images/nail-editor/designs/layers/karo-linien.svg",
+                "color": "#2B1A12"
+            }
+        ],
+        "tags": [
+            "karo",
+            "plaid",
+            "tartan",
+            "muster",
+            "einfärbbar"
+        ]
+    },
+    {
+        "name": "Herz",
+        "category": "Motive",
+        "price_per_nail": 3.0,
+        "icon": "/images/nail-editor/designs/icons/herz.svg",
+        "layers": [
+            {
+                "name": "Herz",
+                "mask": "/images/nail-editor/designs/layers/herz-motiv.svg",
+                "color": "#C8102E"
+            }
+        ],
+        "tags": [
+            "herz",
+            "liebe",
+            "valentinstag",
+            "motiv",
+            "einfärbbar"
+        ]
+    },
+    {
+        "name": "Herzchen",
+        "category": "Motive",
+        "price_per_nail": 3.0,
+        "icon": "/images/nail-editor/designs/icons/herzchen.svg",
+        "layers": [
+            {
+                "name": "Herzen",
+                "mask": "/images/nail-editor/designs/layers/herzchen-muster.svg",
+                "color": "#C8102E"
+            }
+        ],
+        "tags": [
+            "herz",
+            "herzchen",
+            "liebe",
+            "muster",
+            "motiv",
+            "einfärbbar"
+        ]
+    },
+    {
+        "name": "Schmetterling",
+        "category": "Motive",
+        "price_per_nail": 3.5,
+        "icon": "/images/nail-editor/designs/icons/schmetterling.svg",
+        "layers": [
+            {
+                "name": "Flügel",
+                "mask": "/images/nail-editor/designs/layers/schmetterling-fluegel.svg",
+                "color": "#D9768A"
+            },
+            {
+                "name": "Körper",
+                "mask": "/images/nail-editor/designs/layers/schmetterling-koerper.svg",
+                "color": "#111111"
+            }
+        ],
+        "tags": [
+            "schmetterling",
+            "butterfly",
+            "frühling",
+            "motiv",
+            "einfärbbar"
+        ]
+    }
+]

@@ -19,6 +19,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Models\NailStudio;
 use App\Models\User;
+use App\Http\Controllers\UserManagementController;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -78,9 +79,24 @@ Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
 // Muster-Katalog: für alle lesbar (auch ohne Login), damit der Design-Editor funktioniert.
 // Anlegen/Ändern/Löschen bleibt unten im geschützten Bereich.
 Route::get('/design-elements', [DesignElementController::class, 'index']);
-
 Route::middleware('auth')->group(function () {
+
+    // Übersicht der gespeicherten Nageldesigns
+    Route::get('/meine-designs', function () {
+        return Inertia::render('Designs/Index');
+    })->name('designs.page');
+
+    // Benutzerverwaltung – nur für Admins
+    Route::get('/admin/users', [UserManagementController::class, 'index'])
+        ->middleware('role:admin')
+        ->name('admin.users.index');
+
+    Route::patch('/admin/users/{user}', [UserManagementController::class, 'update'])
+        ->middleware('role:admin')
+        ->name('admin.users.update');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
@@ -156,7 +172,6 @@ Route::middleware('auth')->group(function () {
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
-    Route::get('/design-elements', [DesignElementController::class, 'index']);
 
 Route::get('/DesignEditor', function () {
     return Inertia::render('DesignEditor');
