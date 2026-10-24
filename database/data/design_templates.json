@@ -1,0 +1,52 @@
+[
+    {
+        "name": "Klassisch French",
+        "description": "Zarter Nude-Ton mit weißer Spitze",
+        "tags": ["french", "klassisch", "nude", "elegant", "hochzeit"],
+        "nails": {
+            "alle": { "color": "Vanille", "design": "French Tip" }
+        }
+    },
+    {
+        "name": "Smaragd Glamour",
+        "description": "Tiefes Grün mit Goldfolie als Akzent",
+        "tags": ["grün", "gold", "glamour", "abend", "akzent"],
+        "nails": {
+            "alle": { "color": "Smaragd" },
+            "ring": { "design": "Goldfolie" }
+        }
+    },
+    {
+        "name": "Herbst Mix",
+        "description": "Jeder Nagel ein anderes Herbst-Motiv",
+        "tags": ["herbst", "mix", "braun", "karamell", "muster"],
+        "nails": {
+            "alle":   { "color": "Vanille" },
+            "thumb":  { "design": "Brauner Marmor" },
+            "index":  { "design": "Schildpatt Karamell" },
+            "middle": { "color": "Senf" },
+            "ring":   { "design": "Herbstblätter" },
+            "pinky":  { "design": "Karo" }
+        }
+    },
+    {
+        "name": "Midnight Gold",
+        "description": "Schwarz mit feinen Goldlinien",
+        "tags": ["schwarz", "gold", "linien", "elegant", "abend"],
+        "nails": {
+            "alle":   { "color": "Tiefschwarz" },
+            "middle": { "design": "Linien-Art" },
+            "ring":   { "design": "Linien-Art" }
+        }
+    },
+    {
+        "name": "Sommerfrische",
+        "description": "Helle Pastelltöne",
+        "tags": ["sommer", "pastell", "mint", "blau", "gelb"],
+        "nails": {
+            "alle":  { "color": "Mint Sorbet" },
+            "index": { "color": "Babyblau" },
+            "ring":  { "color": "Zitronensorbet" }
+        }
+    }
+]
