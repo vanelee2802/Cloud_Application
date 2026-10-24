@@ -13,6 +13,7 @@ import EffektPanel from '@/Components/NailEditor/EffektPanel.vue'
 import CartPanel from '@/Components/NailEditor/CartPanel.vue'
 import Checkout from '@/Pages/Checkout.vue'
 import CharmPanel from '@/Components/NailEditor/CharmPanel.vue'
+import DesignSavePanel from '@/Components/NailEditor/DesignSavePanel.vue'
 
 import { useCart } from '@/Stores/cart.js'
 import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
@@ -154,9 +155,14 @@ const {
 } = useCart()
 
 
+// Artikel im Warenkorb + aktuelles Design (zählt als 1)
 const cartItemCount = computed(() => {
 
-    return cartItems.value.length
+    const hasDesign = Object.values(nailDesigns.value).some(
+        nail => nail.color || nail.design
+    )
+
+    return cartItems.value.length + (hasDesign ? 1 : 0)
 
 })
 
@@ -517,19 +523,21 @@ async function saveDesign() {
                 <!-- SPALTE 4: VERZIERUNG -->
                 <!-- ========================================= -->
 
-                <div
-                    v-if="
-                        selectedCategories.includes('Verzierung')
-                    "
-                    class="design-area area-deko"
-                >
+                            <div class="design-area area-deko">
 
                     <CharmPanel
-                        @verziehrung-selected="
-                            selectVerziehrung
-                        "
+                        v-if="selectedCategories.includes('Verzierung')"
+                        @verziehrung-selected="selectVerziehrung"
                     />
 
+                    <DesignSavePanel
+                        v-model="designName"
+                        :nail-count="selectedFingers.length"
+                        :price="totalDesignPrice"
+                        :saving="isSaving"
+                        :message="saveMessage"
+                        @save="saveDesign"
+                    />
 
                 </div>
 
@@ -591,7 +599,9 @@ async function saveDesign() {
                         class="cart-dropdown area-cartpanel"
                     >
 
-                        <CartPanel
+                                               <CartPanel
+                            :nail-designs="nailDesigns"
+                            :design-price="totalDesignPrice"
                             @checkout="showCheckout = true"
                         />
 
