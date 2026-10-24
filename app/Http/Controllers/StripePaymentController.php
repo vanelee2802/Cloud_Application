@@ -9,7 +9,7 @@ use Stripe\Stripe;
 
 class StripePaymentController extends Controller
 {
-    /*  Payment Checkout für Dynammische Daten, mit der Datenbank! 
+    Payment Checkout für Dynammische Daten, mit der Datenbank! 
 
     public function checkout(Request $request)
     {
@@ -55,9 +55,10 @@ class StripePaymentController extends Controller
         return response()->json([
             'checkout_url' => $session->url,
         ]);
-    } */
+    } 
         // Checkout test für statische Daten, ohne die Datenbank!
-        public function checkout(Request $request)
+        
+        /* public function checkout(Request $request)
 {
     Stripe::setApiKey(config('cashier.secret'));
 
@@ -87,5 +88,5 @@ class StripePaymentController extends Controller
     return response()->json([
         'checkout_url' => $session->url,
     ]);
-}
+} */
 } 

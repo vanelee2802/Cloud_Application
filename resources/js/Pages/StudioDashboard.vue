@@ -1,6 +1,7 @@
 <script setup>
 import pagesLayout from '@/Layouts/pagesLayout.vue'
 import { usePage, router } from '@inertiajs/vue3'
+import { usePage } from '@inertiajs/vue3'
 
 const page = usePage()
 
