@@ -1,52 +1,45 @@
 <template>
     <div class="save-panel">
 
-        <!-- ========================================= -->
-        <!-- ÜBERSCHRIFT                               -->
-        <!-- ========================================= -->
+        <!-- Kopf: Titel + Schließen -->
+        <div class="header-row">
 
-        <h3>MEIN DESIGN</h3>
+            <h3>DESIGN SPEICHERN</h3>
 
-
-        <!-- ========================================= -->
-        <!-- ÜBERSICHT                                 -->
-        <!-- ========================================= -->
-
-        <div class="summary">
-
-            <div class="summary-row">
-                <span class="summary-label">Ausgewählte Nägel</span>
-                <span class="summary-value">{{ nailCount || 'Alle' }}</span>
-            </div>
-
-            <div class="summary-row">
-                <span class="summary-label">Designpreis</span>
-                <span class="summary-value price">{{ euro(price) }}</span>
-            </div>
+            <button
+                type="button"
+                class="close-button"
+                aria-label="Schließen"
+                @click="emit('close')"
+            >
+                ×
+            </button>
 
         </div>
 
+        <!-- Übersicht -->
+        <div class="summary">
 
-        <!-- ========================================= -->
-        <!-- NAME + SPEICHERN                          -->
-        <!-- ========================================= -->
+            <span>
+                {{ nailCount ? `${nailCount} ${nailCount === 1 ? 'Nagel' : 'Nägel'} ausgewählt` : 'Alle Nägel' }}
+            </span>
 
-        <label
-            for="design-name"
-            class="field-label"
-        >
-            Name des Designs
-        </label>
+            <strong>{{ euro(price) }}</strong>
 
+        </div>
+
+        <!-- Name + Speichern -->
         <input
-            id="design-name"
+            ref="nameInput"
             :value="modelValue"
             type="text"
             maxlength="255"
             class="name-input"
-            placeholder="z. B. Herbst French"
+            placeholder="Name des Designs"
+            aria-label="Name des Designs"
             @input="emit('update:modelValue', $event.target.value)"
             @keydown.enter.prevent="emit('save')"
+            @keydown.esc="emit('close')"
         />
 
         <button
@@ -55,7 +48,7 @@
             :disabled="saving"
             @click="emit('save')"
         >
-            {{ saving ? 'Speichert …' : 'Design speichern' }}
+            {{ saving ? 'Speichert …' : 'Speichern' }}
         </button>
 
         <p
@@ -72,22 +65,17 @@
 
 <script setup>
 
+import { ref, onMounted } from 'vue'
+
 /*
 |--------------------------------------------------------------------------
 | DESIGN SPEICHERN
 |--------------------------------------------------------------------------
-| Zeigt Anzahl der Nägel + Preis und speichert das Design.
-| Die eigentliche Speicher-Logik liegt im DesignEditor (saveDesign).
+| Erscheint erst nach Klick auf "Design speichern" unter der Verzierung.
 |
-| Nutzung:
-|   <DesignSavePanel
-|       v-model="designName"
-|       :nail-count="selectedFingers.length"
-|       :price="totalDesignPrice"
-|       :saving="isSaving"
-|       :message="saveMessage"
-|       @save="saveDesign"
-|   />
+| Events:
+|   save   → Design speichern
+|   close  → Panel wieder schließen
 */
 
 defineProps({
@@ -98,7 +86,15 @@ defineProps({
     message:    { type: String,  default: '' },
 })
 
-const emit = defineEmits(['update:modelValue', 'save'])
+const emit = defineEmits(['update:modelValue', 'save', 'close'])
+
+const nameInput = ref(null)
+
+// Beim Öffnen direkt ins Namensfeld springen
+onMounted(() => {
+    nameInput.value?.focus()
+    nameInput.value?.select()
+})
 
 function euro(value) {
 
@@ -114,23 +110,17 @@ function euro(value) {
 
 <style scoped>
 
-/*
-|--------------------------------------------------------------------------
-| PANEL (gleicher Stil wie Farbe, Designs, Verzierung)
-|--------------------------------------------------------------------------
-*/
-
 .save-panel {
 
     display: flex;
 
     flex-direction: column;
 
-    gap: 0.55rem;
+    gap: 0.5rem;
 
     width: 100%;
 
-    padding: 0.9rem 1.2rem 1.1rem;
+    padding: 0.8rem 1rem 0.9rem;
 
     background: #ffffff;
 
@@ -144,15 +134,27 @@ function euro(value) {
 
 }
 
-.save-panel h3 {
+.header-row {
 
-    margin: 0 0 0.2rem;
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 0.5rem;
+
+}
+
+.header-row h3 {
+
+    margin: 0;
 
     color: #7d1024;
 
     font-family: Georgia, serif;
 
-    font-size: clamp(0.85rem, 1vw, 1.1rem);
+    font-size: clamp(0.8rem, 0.9vw, 1rem);
 
     font-weight: 400;
 
@@ -160,28 +162,53 @@ function euro(value) {
 
 }
 
-
-/*
-|--------------------------------------------------------------------------
-| ÜBERSICHT
-|--------------------------------------------------------------------------
-*/
-
-.summary {
+.close-button {
 
     display: flex;
 
-    flex-direction: column;
+    align-items: center;
 
-    gap: 0.3rem;
+    justify-content: center;
 
-    padding-bottom: 0.6rem;
+    width: 1.7rem;
 
-    border-bottom: 1px solid #f0e6e9;
+    height: 1.7rem;
+
+    flex-shrink: 0;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: #fdf9fa;
+
+    color: #7d1024;
+
+    font-size: 1.2rem;
+
+    line-height: 1;
+
+    cursor: pointer;
 
 }
 
-.summary-row {
+.close-button:hover {
+
+    background: #f3e5e8;
+
+}
+
+.close-button:focus-visible {
+
+    outline: 2px solid #7d1024;
+
+    outline-offset: 1px;
+
+}
+
+.summary {
 
     display: flex;
 
@@ -191,46 +218,17 @@ function euro(value) {
 
     gap: 0.5rem;
 
-}
-
-.summary-label {
-
     color: #8a7a80;
 
     font-size: clamp(0.68rem, 0.75vw, 0.8rem);
 
 }
 
-.summary-value {
-
-    color: #333333;
-
-    font-size: clamp(0.75rem, 0.85vw, 0.9rem);
-
-    font-weight: 600;
-
-}
-
-.summary-value.price {
+.summary strong {
 
     color: #7d1024;
 
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| NAME + BUTTON
-|--------------------------------------------------------------------------
-*/
-
-.field-label {
-
-    margin-top: 0.2rem;
-
-    color: #8a7a80;
-
-    font-size: clamp(0.68rem, 0.75vw, 0.8rem);
+    font-size: clamp(0.78rem, 0.88vw, 0.92rem);
 
 }
 
@@ -238,7 +236,7 @@ function euro(value) {
 
     width: 100%;
 
-    padding: 0.5em 0.8em;
+    padding: 0.45em 0.7em;
 
     border: 1px solid #e6dadd;
 
@@ -250,7 +248,7 @@ function euro(value) {
 
     font: inherit;
 
-    font-size: clamp(0.75rem, 0.85vw, 0.9rem);
+    font-size: clamp(0.72rem, 0.8vw, 0.85rem);
 
     outline: none;
 
@@ -276,11 +274,11 @@ function euro(value) {
 
     width: 100%;
 
-    padding: 0.6rem 1rem;
+    padding: 0.5rem 0.8rem;
 
     border: none;
 
-    border-radius: 0.6rem;
+    border-radius: 0.55rem;
 
     background: #7d1024;
 
@@ -288,25 +286,19 @@ function euro(value) {
 
     font: inherit;
 
-    font-size: clamp(0.75rem, 0.85vw, 0.9rem);
+    font-size: clamp(0.72rem, 0.8vw, 0.85rem);
 
     font-weight: 500;
 
-    letter-spacing: 0.03em;
-
     cursor: pointer;
 
-    transition:
-        background-color 0.2s ease,
-        transform 0.2s ease;
+    transition: background-color 0.2s ease;
 
 }
 
 .save-button:hover {
 
     background: #64101f;
-
-    transform: translateY(-0.1rem);
 
 }
 
@@ -324,8 +316,6 @@ function euro(value) {
 
     cursor: not-allowed;
 
-    transform: none;
-
 }
 
 .message {
@@ -334,30 +324,17 @@ function euro(value) {
 
     color: #555555;
 
-    font-size: clamp(0.68rem, 0.75vw, 0.8rem);
+    font-size: clamp(0.65rem, 0.72vw, 0.75rem);
 
-    line-height: 1.4;
+    line-height: 1.35;
 
 }
-
-
-/*
-|--------------------------------------------------------------------------
-| REDUCED MOTION
-|--------------------------------------------------------------------------
-*/
 
 @media (prefers-reduced-motion: reduce) {
 
     .save-button {
 
         transition: none;
-
-    }
-
-    .save-button:hover {
-
-        transform: none;
 
     }
 

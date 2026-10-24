@@ -1,6 +1,7 @@
 <script setup>
 
 import { ref, computed, onMounted } from 'vue'
+import { buildLayers } from '@/Components/NailEditor/patternGenerators'
 
 import pagesLayout from '@/Layouts/pagesLayout.vue'
 
@@ -14,14 +15,13 @@ import CartPanel from '@/Components/NailEditor/CartPanel.vue'
 import Checkout from '@/Pages/Checkout.vue'
 import CharmPanel from '@/Components/NailEditor/CharmPanel.vue'
 import DesignSavePanel from '@/Components/NailEditor/DesignSavePanel.vue'
-
-import { useCart } from '@/Stores/cart.js'
-import NailSelectionPanel from '@/Components/NailEditor/NailSelectionPanel.vue'
+import TemplateModal from '@/Components/NailEditor/TemplateModal.vue'
 
 const props = defineProps({
     nailShapes: { type: Array, default: () => [] },
     colors: { type: Array, default: () => [] },
     designElements: { type: Array, default: () => [] },
+    designTemplates: { type: Array, default: () => [] },
 })
 
 // =========================================
@@ -142,29 +142,6 @@ onMounted(() => {
 // =========================================
 
 const showCheckout = ref(false)
-
-
-// =========================================
-// WARENKORB
-// =========================================
-
-const showCart = ref(false)
-
-const {
-    cartItems
-} = useCart()
-
-
-// Artikel im Warenkorb + aktuelles Design (zählt als 1)
-const cartItemCount = computed(() => {
-
-    const hasDesign = Object.values(nailDesigns.value).some(
-        nail => nail.color || nail.design
-    )
-
-    return cartItems.value.length + (hasDesign ? 1 : 0)
-
-})
 
 
 // =========================================
@@ -320,15 +297,83 @@ function selectVerziehrung(verziehrung) {
 
 
 // =========================================
-// WARENKORB ÖFFNEN / SCHLIESSEN
+// VORLAGEN (vorgefertigte Designs)
 // =========================================
 
-function toggleCart() {
+const showTemplates    = ref(false)
+const showSavePanel    = ref(false)
+const activeTemplateId = ref(null)
 
-    showCart.value = !showCart.value
-
+function findColor(name) {
+    return props.colors.find(color => color.name === name) ?? null
 }
 
+// Muster aus der Datenbank; generierte Muster bekommen ihre Farbschichten
+function findDesign(name) {
+    const design = props.designElements.find(element => element.name === name)
+
+    if (!design) {
+        return null
+    }
+
+    return design.generator
+        ? { ...design, layers: buildLayers(design.generator, design.params ?? {}) }
+        : design
+}
+
+// Was liegt laut Vorlage auf diesem Nagel? ("alle" + Finger-Angabe)
+function templateNail(template, finger) {
+    return {
+        ...(template.nails?.alle ?? {}),
+        ...(template.nails?.[finger] ?? {}),
+    }
+}
+
+// Vorlagen mit Vorschau (Farbe / Musterbild je Nagel) und Preis fürs Pop-up
+const templateList = computed(() =>
+    props.designTemplates.map(template => {
+
+        const nails = FINGERS.map(finger => {
+            const spec   = templateNail(template, finger)
+            const design = spec.design ? findDesign(spec.design) : null
+
+            return {
+                hex:   spec.color ? findColor(spec.color)?.hex_code ?? null : null,
+                image: design?.image_path ?? null,
+                price: Number(design?.price_per_nail ?? 0),
+            }
+        })
+
+        return {
+            ...template,
+            preview: nails,
+            price:   nails.reduce((sum, nail) => sum + nail.price, 0),
+        }
+    })
+)
+
+// Vorlage auf die Hand legen (alle Nägel) und Pop-up schließen
+function applyTemplate(template) {
+    FINGERS.forEach(finger => {
+        const spec = templateNail(template, finger)
+
+        nailDesigns.value[finger].color  = spec.color  ? findColor(spec.color)   : null
+        nailDesigns.value[finger].design = spec.design ? findDesign(spec.design) : null
+    })
+
+    selectedFingers.value  = []
+    selectedColor.value    = null
+    selectedDesign.value   = null
+    colorTarget.value      = null
+    activeTemplateId.value = template.id
+    designName.value       = template.name
+    showTemplates.value    = false
+}
+
+
+// =========================================
+// DESIGN SPEICHERN
+// =========================================
 
 const designName = ref('Mein Nageldesign')
 const isSaving = ref(false)
@@ -442,12 +487,12 @@ async function saveDesign() {
         <main class="nail-designer">
 
 
-            <!-- ===================================================== -->
-            <!-- EDITOR (GRID)                                         -->
-            <!--                                                       -->
-            <!--  Kategorien | Form  | Hand    | Verzierung | Korb-Panel -->
-            <!--  Kategorien | Farbe | Designs ──────────── | Korb-Button-->
-            <!-- ===================================================== -->
+            <!-- ======================================================= -->
+            <!-- EDITOR (GRID)                                           -->
+            <!--                                                         -->
+            <!--  Kategorien | Form  | Hand    | Verzierung | Warenkorb   -->
+            <!--  Kategorien | Farbe | Designs ──────────── | Warenkorb   -->
+            <!-- ======================================================= -->
 
             <div class="editor-row">
 
@@ -463,9 +508,7 @@ async function saveDesign() {
                     />
 
                     <div
-                        v-if="
-                            selectedCategories.includes('Effekte')
-                        "
+                        v-if="selectedCategories.includes('Effekte')"
                         class="nail-selection-wrapper"
                     >
 
@@ -483,9 +526,7 @@ async function saveDesign() {
                 <!-- ========================================= -->
 
                 <div
-                    v-if="
-                        selectedCategories.includes('Form')
-                    "
+                    v-if="selectedCategories.includes('Form')"
                     class="form-effekt-area area-form"
                 >
 
@@ -504,46 +545,63 @@ async function saveDesign() {
                 <!-- ========================================= -->
 
                 <section class="nail-canvas area-canvas">
+
                     <div class="nail-canvas-inner">
-                <NailHand
-                    :shape="shape"
-                    :length="length"
-                    :selected-fingers="selectedFingers"
-                    :nail-designs="nailDesigns"
-                    :color="selectedColor?.hex_code"
-                    :pattern="selectedDesign?.image_path"
-                    :layers="selectedDesign?.layers ?? []"
-                    @toggle-finger="toggleFinger"
-                />
+
+                        <NailHand
+                            :shape="shape"
+                            :length="length"
+                            :selected-fingers="selectedFingers"
+                            :nail-designs="nailDesigns"
+                            :color="selectedColor?.hex_code"
+                            :pattern="selectedDesign?.image_path"
+                            :layers="selectedDesign?.layers ?? []"
+                            @toggle-finger="toggleFinger"
+                        />
+
                     </div>
+
                 </section>
 
 
                 <!-- ========================================= -->
-                <!-- SPALTE 4: VERZIERUNG -->
+                <!-- SPALTE 4: VERZIERUNG + MEIN DESIGN -->
                 <!-- ========================================= -->
 
-                            <div class="design-area area-deko">
+                                  <div class="design-area area-deko">
 
                     <CharmPanel
                         v-if="selectedCategories.includes('Verzierung')"
                         @verziehrung-selected="selectVerziehrung"
                     />
 
-                    <DesignSavePanel
-                        v-model="designName"
-                        :nail-count="selectedFingers.length"
-                        :price="totalDesignPrice"
-                        :saving="isSaving"
-                        :message="saveMessage"
-                        @save="saveDesign"
-                    />
+                    <!-- Immer ganz unten in der Spalte -->
+                    <div class="save-slot">
+
+                        <button
+                            v-if="!showSavePanel"
+                            type="button"
+                            class="open-save-button"
+                            @click="showSavePanel = true"
+                        >
+                            Design speichern
+                        </button>
+
+                        <DesignSavePanel
+                            v-else
+                            v-model="designName"
+                            :nail-count="selectedFingers.length"
+                            :price="totalDesignPrice"
+                            :saving="isSaving"
+                            :message="saveMessage"
+                            @save="saveDesign"
+                            @close="showSavePanel = false"
+                        />
+
+                    </div>
 
                 </div>
 
-                
-
-                
                 <!-- ========================================= -->
                 <!-- UNTERE ROW: FARBE + DESIGNS -->
                 <!-- reicht bis zum Ende der Verzierung -->
@@ -555,9 +613,7 @@ async function saveDesign() {
                 >
 
                     <div
-                        v-if="
-                            selectedCategories.includes('Farbe')
-                        "
+                        v-if="selectedCategories.includes('Farbe')"
                         class="color-section"
                     >
 
@@ -567,80 +623,48 @@ async function saveDesign() {
                             :target-label="targetLabel"
                             @color-selected="selectColor"
                         />
+
                     </div>
 
                     <div
-                        v-if="
-                            selectedCategories.includes('Designs')
-                        "
+                        v-if="selectedCategories.includes('Designs')"
                         class="design-section"
                     >
 
-                       <DesignPanel
-    ref="designPanel"
-    :active-layer="colorTarget"
-    @layer-target="onLayerTarget"
-    @design-selected="selectDesign"
-/>
-                    </div>
-
-                </div>
-
-
-                <!-- ========================================= -->
-                <!-- SPALTE 5 OBEN: WARENKORB-PANEL -->
-                <!-- (neben Verzierung) -->
-                <!-- ========================================= -->
-
-                <Transition name="cart">
-
-                    <div
-                        v-if="showCart"
-                        class="cart-dropdown area-cartpanel"
-                    >
-
-                                               <CartPanel
-                            :nail-designs="nailDesigns"
-                            :design-price="totalDesignPrice"
-                            @checkout="showCheckout = true"
+                        <DesignPanel
+                            ref="designPanel"
+                            :active-layer="colorTarget"
+                            @layer-target="onLayerTarget"
+                            @design-selected="selectDesign"
+                            @open-templates="showTemplates = true"
                         />
 
                     </div>
 
-                </Transition>
-
-
-                <!-- ========================================= -->
-                <!-- SPALTE 5 UNTEN: WARENKORB-BUTTON -->
-                <!-- ========================================= -->
-
-                <div class="cart-cell area-cart">
-
-                    <button
-                        type="button"
-                        class="cart-toggle"
-                        :aria-expanded="showCart"
-                        @click="toggleCart"
-                    >
-
-                        <span class="cart-icon">
-                            🛒
-                        </span>
-
-                        <span class="cart-label">
-                            Warenkorb
-                        </span>
-
-                        <span
-                            v-if="cartItemCount > 0"
-                            class="cart-badge"
-                        >
-                            {{ cartItemCount }}
-                        </span>
-
-                    </button>
-
                 </div>
+
+
+                <!-- ========================================= -->
+                <!-- SPALTE 5: WARENKORB                        -->
+                <!-- immer sichtbar, oben auf Höhe der Verzierung -->
+                <!-- ========================================= -->
+
+                             <!-- ========================================= -->
+                <!-- SPALTE 5: WARENKORB + MEIN DESIGN          -->
+                <!-- ========================================= -->
+
+                <aside class="cart-area area-cart">
+
+                    <CartPanel
+                        :nail-designs="nailDesigns"
+                        :design-price="totalDesignPrice"
+                        @checkout="showCheckout = true"
+                    />
+
+                  
+
+                </aside>
+                
 
 
             </div>
@@ -648,30 +672,6 @@ async function saveDesign() {
 
         </main>
 
-            <div class="design-price">
-                <p>Ausgewählte Nägel: {{ selectedFingers.length || 'alle' }}</p>
-                <p>Gesamtpreis: {{ totalDesignPrice.toFixed(2) }} €</p>
-
-                <input
-                    v-model="designName"
-                    type="text"
-                    maxlength="255"
-                    placeholder="Name des Designs"
-                    aria-label="Name des Designs"
-                />
-
-                <button
-                    type="button"
-                    :disabled="isSaving"
-                    @click="saveDesign"
-                >
-                    {{ isSaving ? 'Speichert...' : 'Design speichern' }}
-                </button>
-
-                <p v-if="saveMessage" role="status">
-                    {{ saveMessage }}
-                </p>
-            </div>
 
         <!-- ========================================= -->
         <!-- CHECKOUT -->
@@ -680,6 +680,19 @@ async function saveDesign() {
         <Checkout
             v-if="showCheckout"
             @close="showCheckout = false"
+        />
+
+
+        <!-- ========================================= -->
+        <!-- VORLAGEN ENTDECKEN (Pop-up) -->
+        <!-- ========================================= -->
+
+        <TemplateModal
+            v-if="showTemplates"
+            :templates="templateList"
+            :active-template-id="activeTemplateId"
+            @apply="applyTemplate"
+            @close="showTemplates = false"
         />
 
 
@@ -709,9 +722,6 @@ async function saveDesign() {
     /* Höhe der unteren Row, wenn Farbe/Designs offen sind */
     --farbe-h: 10rem;
 
-    /* Höhe der unteren Row, wenn nur der Warenkorb-Button da ist */
-    --cart-row-h: 2.8rem;
-
     /* Breite der Warenkorb-Spalte */
     --cart-w: clamp(13rem, 15vw, 16rem);
 
@@ -739,8 +749,8 @@ async function saveDesign() {
 
 .editor-row {
 
-    /* aktuelle Höhe der unteren Row */
-    --bottom-h: var(--cart-row-h);
+    /* aktuelle Höhe der unteren Row (0, solange Farbe/Designs zu sind) */
+    --bottom-h: 0px;
 
     /* Höhe, die der Hand zur Verfügung steht */
     --canvas-h: calc(100cqh - var(--bottom-h) - var(--gap));
@@ -755,15 +765,16 @@ async function saveDesign() {
         auto                                                  /* Kategorien + Effekt */
         auto                                                  /* Form */
         minmax(0, calc(var(--canvas-h) * var(--hand-ratio))) /* Hand */
-        auto                                                  /* Verzierung */
+        auto                                                  /* Verzierung + Mein Design */
         var(--cart-w);                                        /* Warenkorb */
 
     grid-template-rows:
         minmax(0, 1fr)
         var(--bottom-h);
 
+    /* Warenkorb oben rechts, über beide Zeilen */
     grid-template-areas:
-        "kategorien form   canvas deko   cartpanel"
+        "kategorien form   canvas deko   cart"
         "kategorien bottom bottom bottom cart";
 
     /* Spalten nicht strecken, sondern als Block zentrieren */
@@ -804,7 +815,6 @@ async function saveDesign() {
 .area-canvas,
 .area-deko,
 .area-bottom,
-.area-cartpanel,
 .area-cart {
 
     min-width: 0;
@@ -817,13 +827,13 @@ async function saveDesign() {
 .area-canvas     { grid-area: canvas; }
 .area-deko       { grid-area: deko; }
 .area-bottom     { grid-area: bottom; }
-.area-cartpanel  { grid-area: cartpanel; }
 .area-cart       { grid-area: cart; }
 
 
 /* Spalten, die zu lang werden können, scrollen intern */
 .area-form,
-.area-deko {
+.area-deko,
+.area-cart {
 
     overflow-y: auto;
 
@@ -833,12 +843,14 @@ async function saveDesign() {
 }
 
 .area-form::-webkit-scrollbar,
-.area-deko::-webkit-scrollbar {
+.area-deko::-webkit-scrollbar,
+.area-cart::-webkit-scrollbar {
     width: 0.3rem;
 }
 
 .area-form::-webkit-scrollbar-thumb,
-.area-deko::-webkit-scrollbar-thumb {
+.area-deko::-webkit-scrollbar-thumb,
+.area-cart::-webkit-scrollbar-thumb {
 
     background: #d9b3bc;
 
@@ -943,9 +955,8 @@ async function saveDesign() {
 
 
 /* ========================================= */
-/* VERZIERUNG */
+/* VERZIERUNG + MEIN DESIGN */
 /* ========================================= */
-
 .design-area {
 
     display: flex;
@@ -953,6 +964,8 @@ async function saveDesign() {
     flex-direction: column;
 
     gap: var(--gap);
+
+    height: 100%;
 
 }
 
@@ -1023,23 +1036,27 @@ async function saveDesign() {
 
 
 /* ========================================= */
-/* WARENKORB-PANEL (oben, neben Verzierung) */
+/* WARENKORB (oben rechts, immer sichtbar)    */
 /* ========================================= */
 
-.cart-dropdown {
+.cart-area {
+
+    display: flex;
+
+    flex-direction: column;
+
+    /* Abstand zwischen Warenkorb und Mein Design */
+    gap: var(--gap);
 
     align-self: start;
 
-    max-height: 100%;
-
-    overflow-y: auto;
-
-    scrollbar-width: thin;
-    scrollbar-color: #d9b3bc transparent;
+    /* Keine Höhenbegrenzung, keine Scrollbar */
+    overflow: visible;
 
 }
 
-.cart-dropdown > * {
+/* Warenkorb und Mein Design gleich breit wie die Spalte */
+.cart-area > * {
 
     width: 100%;
 
@@ -1049,150 +1066,10 @@ async function saveDesign() {
 
 }
 
-/* Kurzes Einblenden */
-.cart-enter-active,
-.cart-leave-active {
-
-    transition:
-        opacity 0.15s ease,
-        transform 0.15s ease;
-
-}
-
-.cart-enter-from,
-.cart-leave-to {
-
-    opacity: 0;
-
-    transform: translateY(0.4rem);
-
-}
 
 
 /* ========================================= */
-/* WARENKORB-ZELLE (unten rechts) */
-/* ========================================= */
-
-.cart-cell {
-
-    display: flex;
-
-    align-items: flex-end;
-
-}
-
-
-/* ========================================= */
-/* WARENKORB BUTTON */
-/* ========================================= */
-
-.cart-toggle {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 0.5rem;
-
-    /* so breit wie das Panel darüber */
-    width: 100%;
-
-    min-height: var(--cart-row-h);
-
-    padding: 0.65rem 1rem;
-
-    border: none;
-
-    border-radius: 0.7rem;
-
-    background: #7d1024;
-
-    color: #ffffff;
-
-    white-space: nowrap;
-
-    cursor: pointer;
-
-    box-shadow: 0 0.3vw 1vw rgba(0, 0, 0, 0.15);
-
-    transition:
-        background-color 0.2s ease,
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
-
-}
-
-.cart-toggle:hover {
-
-    background: #64101f;
-
-    transform: translateY(-0.1rem);
-
-    box-shadow: 0 0.5vw 1.2vw rgba(125, 16, 36, 0.2);
-
-}
-
-.cart-toggle:focus-visible {
-
-    outline: 2px solid #7d1024;
-
-    outline-offset: 2px;
-
-}
-
-
-/* ========================================= */
-/* WARENKORB ICON / TEXT / ANZAHL */
-/* ========================================= */
-
-.cart-icon {
-
-    font-size: 1.1rem;
-
-    line-height: 1;
-
-}
-
-.cart-label {
-
-    font-size: clamp(0.7rem, 0.8vw, 0.9rem);
-
-    font-weight: 500;
-
-}
-
-.cart-badge {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    min-width: 1.35rem;
-
-    height: 1.35rem;
-
-    padding: 0 0.25rem;
-
-    border-radius: 50%;
-
-    background: #ffffff;
-
-    color: #7d1024;
-
-    font-size: 0.65rem;
-
-    font-weight: 600;
-
-}
-
-
-/* ========================================= */
-/* TABLET: Seite darf scrollen,              */
-/* Warenkorb schwebt unten rechts            */
+/* TABLET: Seite darf scrollen               */
 /* ========================================= */
 
 @media (max-width: 1200px) {
@@ -1218,7 +1095,7 @@ async function saveDesign() {
         grid-template-areas:
             "kategorien form   canvas"
             "bottom     bottom bottom"
-            "deko       deko   deko";
+            "deko       deko   cart";
 
         justify-content: normal;
 
@@ -1261,38 +1138,10 @@ async function saveDesign() {
 
     }
 
-    /* Warenkorb schwebend */
-    .cart-cell {
+    .area-deko,
+    .area-cart {
 
-        position: fixed;
-
-        right: 1rem;
-
-        bottom: 1rem;
-
-        z-index: 1000;
-
-    }
-
-    .cart-toggle {
-
-        width: auto;
-
-    }
-
-    .cart-dropdown {
-
-        position: fixed;
-
-        right: 1rem;
-
-        bottom: 4.8rem;
-
-        z-index: 999;
-
-        width: min(18rem, calc(100vw - 2rem));
-
-        max-height: calc(100vh - 7rem);
+        overflow: visible;
 
     }
 
@@ -1314,7 +1163,8 @@ async function saveDesign() {
             "kategorien"
             "form"
             "bottom"
-            "deko";
+            "deko"
+            "cart";
 
         padding: 0;
 
@@ -1352,28 +1202,59 @@ async function saveDesign() {
     }
 
 }
+/* Speichern-Bereich ans untere Ende der Spalte schieben */
+.save-slot {
 
+    margin-top: auto;
 
+}
 /* ========================================= */
-/* REDUCED MOTION */
+/* BUTTON "DESIGN SPEICHERN" (unter Verzierung) */
 /* ========================================= */
 
-@media (prefers-reduced-motion: reduce) {
+.open-save-button {
 
-    .cart-toggle,
-    .cart-enter-active,
-    .cart-leave-active {
+    width: 100%;
 
-        transition: none;
+    padding: 0.65rem 1rem;
 
-    }
+    border: none;
 
-    .cart-toggle:hover {
+    border-radius: 0.7rem;
 
-        transform: none;
+    background: #7d1024;
 
-    }
+    color: #ffffff;
+
+    font: inherit;
+
+    font-size: clamp(0.75rem, 0.85vw, 0.9rem);
+
+    font-weight: 500;
+
+    cursor: pointer;
+
+    box-shadow: 0 0.3vw 1vw rgba(0, 0, 0, 0.12);
+
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
 
 }
 
+.open-save-button:hover {
+
+    background: #64101f;
+
+    transform: translateY(-0.1rem);
+
+}
+
+.open-save-button:focus-visible {
+
+    outline: 2px solid #7d1024;
+
+    outline-offset: 2px;
+
+}
 </style>
