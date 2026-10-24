@@ -21,6 +21,7 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\DesignEditorController;
 use App\Models\NailStudio;
 use App\Models\User;
+use App\Http\Controllers\ReceiptController;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -94,6 +95,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/admin/users/{user}', [UserManagementController::class, 'update'])
         ->middleware('role:owner')
         ->name('admin.users.update');
+        // Rechnungen: Kundin sieht eigene, Download mit Rechteprüfung
+    Route::get('/rechnungen', [ReceiptController::class, 'index'])
+        ->name('receipts.index');
+    Route::get('/rechnungen/{receipt}/pdf', [ReceiptController::class, 'download'])
+        ->name('receipts.download');
+
+    // Rechnungen des Studios: Inhaberin und Schichtleitung
+    Route::get('/studio/rechnungen', [ReceiptController::class, 'studioIndex'])
+        ->middleware('role:owner,admin')
+        ->name('receipts.studio');    
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
 
