@@ -16,7 +16,7 @@ class DefaultPatternSeeder extends Seeder
      * Kann beliebig oft ausgeführt werden: Vorhandene Muster werden
      * aktualisiert statt doppelt angelegt.
      */
-    public function run(): void
+      public function run(): void
     {
         $patterns = json_decode(
             File::get(database_path('data/default_patterns.json')),
@@ -25,30 +25,35 @@ class DefaultPatternSeeder extends Seeder
 
         foreach ($patterns as $data) {
 
-            // Muster anlegen oder aktualisieren
-            $element = DesignElement::updateOrCreate(
+            // Nur anlegen, wenn es das Muster noch nicht gibt.
+            // Vorhandene Muster (z. B. vom Studio geänderte Preise)
+            // bleiben unverändert → sicher bei jedem Deployment.
+            $element = DesignElement::firstOrCreate(
                 [
                     'name'           => $data['name'],
                     'nail_studio_id' => null,
                 ],
-                              [
+                [
                     'category'       => $data['category'],
                     'price_per_nail' => $data['price_per_nail'],
-                    'image_path'     => $data['image'] ?? null,    // deckendes Muster
+                    'image_path'     => $data['image'] ?? null,
                     'layers'         => $data['layers'] ?? null,
-                    'generator'      => $data['generator'] ?? null,  // generiertes Muster
-                    'params'         => $data['params'] ?? null,     // Startwerte der Regler   // umfärbbares Muster
+                    'generator'      => $data['generator'] ?? null,
+                    'params'         => $data['params'] ?? null,
                     'is_active'      => true,
                 ]
             );
 
-            // Tags anlegen (falls neu) und mit dem Muster verknüpfen
-            $tagIds = collect($data['tags'])
-                ->map(fn ($name) => Tag::firstOrCreate([
-                    'name' => mb_strtolower(trim($name)),
-                ])->id);
+            // Tags nur bei neu angelegten Mustern setzen
+            if ($element->wasRecentlyCreated) {
 
-            $element->tags()->sync($tagIds);
+                $tagIds = collect($data['tags'] ?? [])
+                    ->map(fn ($name) => Tag::firstOrCreate([
+                        'name' => mb_strtolower(trim($name)),
+                    ])->id);
+
+                $element->tags()->sync($tagIds);
+            }
         }
     }
 }
