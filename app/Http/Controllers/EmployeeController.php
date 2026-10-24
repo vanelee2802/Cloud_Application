@@ -2,187 +2,102 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\NailStudio;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Inertia\Inertia;
 
 class EmployeeController extends Controller
 {
     /**
-     * Mitarbeiter-Dashboard
+     * Mitarbeiter zum Studio hinzufügen.
+     *
+     * Gibt es die E-Mail schon (z. B. Kundin mit Google-Login),
+     * wird das bestehende Konto zur Mitarbeiterin gemacht.
+     * Sonst wird ein neues Konto angelegt. Anmelden kann sie sich
+     * dann mit "Mit Google anmelden" und genau dieser E-Mail.
      */
-  public function index(Request $request)
-{
-    $employees = User::where('role', 'employee')
-        ->orderBy('name')
-        ->get([
-            'id',
-            'name',
-            'email',
-            'avatar',
-            'role',
-            'nail_studio_id',
-        ]);
-
-    dd($employees);
-}
-
-    /**
-     * Mitarbeiter hinzufügen
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        $admin = $request->user();
+        $validated = $request->validate(
+            [
+                'name'  => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+            ],
+            [
+                'name.required'  => 'Bitte gib einen Namen ein.',
+                'email.required' => 'Bitte gib eine E-Mail-Adresse ein.',
+                'email.email'    => 'Bitte gib eine gültige E-Mail-Adresse ein.',
+            ]
+        );
 
-        // Nur Admins dürfen Mitarbeiter hinzufügen
-        if ($admin->role !== 'admin') {
-            abort(403, 'Nur ein Admin kann Mitarbeiter hinzufügen.');
+        $email = Str::lower(trim($validated['email']));
+
+        // Studio: das des Admins, sonst das erste vorhandene
+        $studioId = $request->user()->nail_studio_id
+            ?? NailStudio::query()->value('id');
+
+        if (! $studioId) {
+            return back()->withErrors([
+                'email' => 'Es gibt noch kein Studio, dem der Mitarbeiter zugeordnet werden kann.',
+            ]);
         }
 
-        $validated = $request->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+        $user = User::where('email', $email)->first();
 
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-            ],
-        ]);
+        if ($user?->role === 'admin') {
+            return back()->withErrors([
+                'email' => 'Diese E-Mail gehört zu einem Admin-Konto.',
+            ]);
+        }
 
+        if ($user?->role === 'employee' && $user->nail_studio_id == $studioId) {
+            return back()->withErrors([
+                'email' => 'Diese Person ist bereits Mitarbeiter in diesem Studio.',
+            ]);
+        }
 
-        /*
-         * Prüfen, ob bereits ein Account mit dieser
-         * E-Mail-Adresse existiert.
-         */
-        $employee = User::where(
-            'email',
-            $validated['email']
-        )->first();
+        if ($user) {
 
-
-        /*
-         * ACCOUNT EXISTIERT NOCH NICHT
-         */
-        if (!$employee) {
-
-            $employee = User::create([
-                'name' => $validated['name'],
-                'email' => $validated['email'],
-
-                /*
-                 * Der Mitarbeiter meldet sich später
-                 * über Google an.
-                 *
-                 * Deshalb brauchen wir hier kein
-                 * vom Mitarbeiter eingegebenes Passwort.
-                 */
-                'password' => Hash::make(
-                    Str::random(40)
-                ),
-
-                'role' => 'employee',
-
-                /*
-                 * Mitarbeiter gehört zum gleichen
-                 * Studio wie der Admin.
-                 */
-                'nail_studio_id' => $admin->nail_studio_id,
-
-                'email_verified_at' => now(),
+            // Bestehendes Konto zur Mitarbeiterin machen
+            $user->update([
+                'role'           => 'employee',
+                'nail_studio_id' => $studioId,
             ]);
 
         } else {
 
-            /*
-             * ACCOUNT EXISTIERT BEREITS
-             *
-             * Name aktualisieren
-             * Rolle auf employee setzen
-             * Studio zuweisen
-             */
-            $employee->update([
-                'name' => $validated['name'],
-                'role' => 'employee',
-                'nail_studio_id' => $admin->nail_studio_id,
+            // Neues Konto (Passwort zufällig, Login läuft über Google)
+            User::create([
+                'name'           => trim($validated['name']),
+                'email'          => $email,
+                'password'       => Str::random(40),
+                'role'           => 'employee',
+                'nail_studio_id' => $studioId,
             ]);
+
         }
 
-
-        return redirect()
-            ->back()
-            ->with(
-                'success',
-                'Mitarbeiter wurde erfolgreich hinzugefügt.'
-            );
+        return back()->with('success', 'Mitarbeiter wurde hinzugefügt.');
     }
 
 
     /**
-     * Mitarbeiter entfernen
+     * Mitarbeiter aus dem Studio entfernen.
+     *
+     * Das Konto wird NICHT gelöscht, sondern wieder zur Kundin,
+     * damit alte Termine mit dieser Mitarbeiterin erhalten bleiben.
      */
-    public function destroy(
-        Request $request,
-        User $employee
-    ) {
-        $admin = $request->user();
+    public function destroy(User $employee): RedirectResponse
+    {
+        abort_unless($employee->role === 'employee', 404);
 
-        // Nur Admins dürfen Mitarbeiter entfernen
-        if ($admin->role !== 'admin') {
-            abort(403, 'Nur ein Admin kann Mitarbeiter entfernen.');
-        }
-
-
-        /*
-         * Sicherheitsprüfung:
-         *
-         * Der Mitarbeiter muss zum gleichen
-         * Studio gehören.
-         */
-        if (
-            $employee->nail_studio_id !==
-            $admin->nail_studio_id
-        ) {
-            abort(403, 'Dieser Mitarbeiter gehört nicht zu deinem Studio.');
-        }
-
-
-        /*
-         * Der aktuell eingeloggte Admin darf sich
-         * nicht selbst entfernen.
-         */
-        if ($employee->id === $admin->id) {
-            abort(
-                422,
-                'Du kannst dich nicht selbst als Mitarbeiter entfernen.'
-            );
-        }
-
-
-        /*
-         * Wir löschen den Account nicht komplett.
-         *
-         * Stattdessen wird die Rolle wieder auf
-         * customer gesetzt.
-         *
-         * So bleiben Designs, Termine usw. erhalten.
-         */
         $employee->update([
-            'role' => 'customer',
+            'role'           => 'customer',
             'nail_studio_id' => null,
         ]);
 
-
-        return redirect()
-            ->back()
-            ->with(
-                'success',
-                'Mitarbeiter wurde entfernt.'
-            );
+        return back()->with('success', 'Mitarbeiter wurde entfernt.');
     }
 }

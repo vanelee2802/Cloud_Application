@@ -19,7 +19,8 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\DesignEditorController;
-
+use App\Models\NailStudio;
+use App\Models\User;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -76,6 +77,9 @@ Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'p
 Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
     ->name('appointments.manage');
 
+// Muster-Katalog: für alle lesbar (auch ohne Login), damit der Design-Editor funktioniert.
+// Anlegen/Ändern/Löschen bleibt unten im geschützten Bereich.
+Route::get('/design-elements', [DesignElementController::class, 'index']);
 Route::middleware('auth')->group(function () {
 
     // Übersicht der gespeicherten Nageldesigns
@@ -106,13 +110,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{service}', [ServiceController::class, 'show']);
     Route::get('/nail-shapes', [NailShapeController::class, 'index']);
-    Route::get('/design-elements', [DesignElementController::class, 'index']);
 
     Route::apiResource('designs', DesignController::class);
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
     Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
+            Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
+
 
     Route::middleware('role:employee,admin')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
@@ -120,7 +125,6 @@ Route::middleware('auth')->group(function () {
 
         Route::apiResource('services', ServiceController::class)->except(['index', 'show']);
         Route::apiResource('nail-shapes', NailShapeController::class)->except(['index', 'show']);
-        Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
 
         Route::patch('/appointments/{appointment}', [AppointmentController::class, 'update']);
         Route::delete('/appointments/{appointment}', [AppointmentController::class, 'destroy']);
@@ -135,6 +139,35 @@ Route::middleware('auth')->group(function () {
         Route::post('/{appointment}/decline', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'decline']);
         Route::post('/{appointment}/alternatives', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'offerAlternatives']);
     });
+
+    // Studioverwaltung + Mitarbeiter verwalten: nur für eingeloggte Admins
+    Route::middleware('role:admin')->group(function () {
+
+        Route::get('/Studioverwaltung', function () {
+
+            // Studio des Admins, sonst das erste vorhandene
+            $studioId = auth()->user()->nail_studio_id
+                ?? NailStudio::query()->value('id');
+
+            // DATENBANKABFRAGE: alle Mitarbeiter dieses Studios
+            $employees = User::query()
+                ->where('role', 'employee')
+                ->where('nail_studio_id', $studioId)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+
+            return Inertia::render('Studioverwaltung', [
+                'employees' => $employees,
+            ]);
+
+        })->name('Studioverwaltung');
+
+        Route::post('/employees', [EmployeeController::class, 'store'])
+            ->name('employees.store');
+
+        Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
+            ->name('employees.destroy');
+    });
 });
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
@@ -147,18 +180,6 @@ Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
 Route::get('/StudioDashboard', function () {
     return Inertia::render('StudioDashboard');
 })->name('StudioDashboard');
-
-Route::get('/Studioverwaltung', function () {
-    return Inertia::render('Studioverwaltung');
-})->name('Studioverwaltung');
-Route::post('/Studioverwaltung', [
-    EmployeeController::class,
-    'store'
-])->name('employees.store');
-Route::delete('/employees/{employee}', [
-    EmployeeController::class,
-    'destroy'
-])->name('employees.destroy');
 
 
 require __DIR__.'/auth.php';

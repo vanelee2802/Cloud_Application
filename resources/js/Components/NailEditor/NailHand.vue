@@ -1,8 +1,6 @@
 <template>
     <!--
     | hand-stage = Hand + fester Freiraum oben für lange Nägel.
-    | Der Freiraum ist IMMER da, damit die Hand beim Umschalten
-    | der Länge nicht springt.
     -->
     <div class="hand-stage">
 
@@ -12,16 +10,19 @@
         >
 
             <img
-                src="/images/nail-editor/Hand.png"
+                src="/images/nail-editor/nail-editor/Hand.png"
                 alt="Hand"
                 class="hand-image"
             />
 
-            <img
+            <!--
+            | Pro Finger ein Wrapper. Position, Größe und Drehung
+            | sitzen auf dem Wrapper, alle Schichten darin liegen
+            | deckungsgleich übereinander.
+            -->
+            <span
                 v-for="finger in fingers"
                 :key="finger.key"
-                :src="`${basePath}/${finger.key}.png`"
-                :alt="finger.alt"
                 :class="['nail', `nail-${finger.key}`, {
                     'nail-selected': selectedFingers.includes(finger.key)
                 }]"
@@ -31,7 +32,53 @@
                 @click="toggleFinger(finger.key)"
                 @keydown.enter.prevent="toggleFinger(finger.key)"
                 @keydown.space.prevent="toggleFinger(finger.key)"
-            />
+            >
+
+                <!-- 1. Nagelbild als Basis -->
+                <img
+                    :src="nailSrc(finger.key)"
+                    :alt="finger.alt"
+                    class="nail-base"
+                />
+
+                <!-- 2. Grundfarbe -->
+                <span
+                    v-if="color"
+                    class="nail-layer"
+                    :style="colorStyle(finger.key)"
+                ></span>
+
+                <!-- 3. Muster -->
+                <span
+                    v-if="pattern"
+                    class="nail-layer nail-pattern"
+                    :style="patternStyle(finger.key)"
+                ></span>
+
+                <!-- 4. Umfärbbare Farbschichten -->
+                <span
+                    v-for="(layer, index) in layers"
+                    :key="`${finger.key}-layer-${index}`"
+                    class="nail-layer"
+                    :style="layerStyle(finger.key, layer)"
+                ></span>
+
+                <!-- 5. Wölbung -->
+                <img
+                    v-if="hasPaint"
+                    :src="nailSrc(finger.key)"
+                    alt=""
+                    aria-hidden="true"
+                    class="nail-shine"
+                />
+
+                <!-- 6. Glanz -->
+                <span
+                    v-if="hasPaint"
+                    class="nail-layer nail-gloss"
+                    :style="maskStyle(finger.key)"
+                ></span>
+            </span>
 
         </div>
 
@@ -45,6 +92,9 @@ const props = defineProps({
     shape: { type: String, default: 'almond' },
     length: { type: String, default: 'medium' },
     selectedFingers: { type: Array, default: () => [] },
+    color: { type: String, default: null },
+    pattern: { type: String, default: null },
+    layers: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['toggle-finger'])
@@ -52,6 +102,11 @@ const emit = defineEmits(['toggle-finger'])
 function toggleFinger(fingerKey) {
     emit('toggle-finger', fingerKey)
 }
+
+// Ist überhaupt etwas auf dem Nagel? Dann Wölbung + Glanz zeigen
+const hasPaint = computed(() =>
+    Boolean(props.color || props.pattern || props.layers.length)
+)
 
 // Formen, die nur EINEN Bildsatz haben (unabhängig von der Länge).
 // Stiletto gibt es nur lang -> Ordner "stiletto-right hand"
@@ -75,12 +130,73 @@ const basePath = computed(() => {
 
     }
 
-    return `/images/nail-editor/${folder}`
-
+    return `/images/nail-editor/FormPanel/forms_right hand/${folder}`
 })
 
-// Lange Nägel / Stiletto haben eine höhere Leinwand (1080 x 1556).
-// Dafür gelten unten andere "top"-Werte (Klasse .is-tall).
+function nailSrc(finger) {
+
+    return `${basePath.value}/${finger}.png`
+
+}
+
+// Maske: das Nagelbild selbst schneidet jede Schicht zu
+function maskStyle(finger) {
+
+    const mask = `url("${nailSrc(finger)}")`
+
+    return {
+        WebkitMaskImage: mask,
+        maskImage:       mask,
+    }
+
+}
+
+// Farb-Schicht
+function colorStyle(finger) {
+
+    return {
+        ...maskStyle(finger),
+        backgroundColor: props.color,
+    }
+
+}
+
+// Muster-Schicht
+function patternStyle(finger) {
+
+    return {
+        ...maskStyle(finger),
+        backgroundImage: `url("${props.pattern}")`,
+    }
+
+}
+// Farbschicht: Form aus der Schicht-Maske UND Nagelform, Farbe frei wählbar
+function layerStyle(finger, layer) {
+
+    const masks = `url("${layer.mask}"), url("${nailSrc(finger)}")`
+
+    return {
+        backgroundColor: layer.color,
+
+        WebkitMaskImage:     masks,
+        maskImage:           masks,
+
+        WebkitMaskSize:      'cover, 100% 100%',
+        maskSize:            'cover, 100% 100%',
+
+        WebkitMaskPosition:  'center top, center',
+        maskPosition:        'center top, center',
+
+        WebkitMaskRepeat:    'no-repeat',
+        maskRepeat:          'no-repeat',
+
+        // nur dort sichtbar, wo BEIDE Masken etwas zeigen
+        WebkitMaskComposite: 'source-in',
+        maskComposite:       'intersect',
+    }
+
+}
+// Lange Nägel / Stiletto haben eine höhere Leinwand (1080 x 1556)
 const isTall = computed(() =>
     props.length === 'long' || props.shape === 'stiletto'
 )
@@ -98,10 +214,6 @@ const fingers = [
 
 /* =========================================
    STAGE
-   Füllt die Breite des Elternelements.
-   padding-top in % bezieht sich auf die BREITE
-   -> der Freiraum skaliert immer mit der Hand mit.
-   Gesamtverhältnis: 1080 / 1186
    ========================================= */
 
 .hand-stage {
@@ -129,12 +241,16 @@ const fingers = [
     object-fit: contain;
 }
 
-.nail {
-    position: absolute;
-}
+
+/* =========================================
+   NAGEL-WRAPPER
+   ========================================= */
 
 .nail {
-    cursor: pointer;
+    position: absolute;
+    display: block;
+}
+
 .nail {
     cursor: pointer;
     transition: filter 0.2s ease, outline 0.2s ease;
@@ -145,8 +261,19 @@ const fingers = [
     outline: 2px solid #d63384;
     outline-offset: 2px;
 }
+
+/* 1. Nagel: gibt dem Wrapper seine Höhe */
+.nail-base {
+    display: block;
+    width: 100%;
+    height: auto;
 }
 
+/* 2. + 3. Farbe und Muster: exakt auf den Nagel zugeschnitten */
+.nail-layer {
+    position: absolute;
+    inset: 0;
+}
 /* Daumen */
 .nail-thumb {
     width: 21.05%;
@@ -190,8 +317,6 @@ const fingers = [
 
 /* =========================================
    LANG / STILETTO (höhere Leinwand)
-   Breite, left und Rotation bleiben gleich,
-   nur "top" ist nach oben verschoben.
    ========================================= */
 
 .is-tall .nail-index  { top: -2.34%; }

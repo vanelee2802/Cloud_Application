@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 190" width="120" height="190">
+<defs><pattern id="karo-pl" width="80" height="80" patternUnits="userSpaceOnUse">
+<rect width="80" height="80" fill="#e8d9c0"/>
+<rect x="0" y="0" width="26" height="80" fill="#8e3b1d" opacity=".55"/><rect x="0" y="0" width="80" height="26" fill="#8e3b1d" opacity=".55"/>
+<rect x="50" y="0" width="10" height="80" fill="#c48a3f" opacity=".55"/><rect x="0" y="50" width="80" height="10" fill="#c48a3f" opacity=".55"/>
+<rect x="33" y="0" width="2.4" height="80" fill="#3b2216" opacity=".85"/><rect x="38" y="0" width="2.4" height="80" fill="#3b2216" opacity=".85"/>
+<rect x="0" y="33" width="80" height="2.4" fill="#3b2216" opacity=".85"/><rect x="0" y="38" width="80" height="2.4" fill="#3b2216" opacity=".85"/>
+<rect x="12" y="0" width="1.4" height="80" fill="#f3e6cf" opacity=".7"/><rect x="0" y="12" width="80" height="1.4" fill="#f3e6cf" opacity=".7"/>
+</pattern>
+<pattern id="karo-tw" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="4" fill="#000" opacity=".05"/></pattern>
+<clipPath id="karo-clip"><path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z"/></clipPath>
+<filter id="karo-sh" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4"/></filter>
+<radialGradient id="karo-vol" cx=".45" cy=".42" r=".7"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient>
+<linearGradient id="karo-hl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+</defs>
+<ellipse cx="62" cy="176" rx="34" ry="7" fill="#000" opacity=".22" filter="url(#karo-sh)"/>
+<g clip-path="url(#karo-clip)">
+  <g transform="translate(4.67 6) scale(0.5533)"><rect width="200" height="300" fill="url(#karo-pl)"/><rect width="200" height="300" fill="url(#karo-tw)"/></g>
+  <path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z" fill="url(#karo-vol)"/>
+  <path d="M38 140 C36 100 40 55 52 26" stroke="url(#karo-hl)" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <ellipse cx="71" cy="34" rx="3" ry="6" fill="#fff" opacity="0.60" transform="rotate(20 71 34)"/>
+</g>
+<path d="M60 6 C79 10 95 46 95 86 L95 148 Q95 172 60 172 Q25 172 25 148 L25 86 C25 46 41 10 60 6 Z" fill="none" stroke="#000" stroke-opacity=".18" stroke-width="1.2"/>
+</svg>

@@ -1,0 +1,136 @@
+[
+    {
+        "name": "Schildpatt Karamell",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "image": "/images/nail-editor/designs/patterns/schildpatt-karamell.svg",
+        "tags": ["schildpatt", "tortoise", "karamell", "braun", "animal", "herbst"]
+    },
+    {
+        "name": "Zopfstrick Creme",
+        "category": "Muster",
+        "price_per_nail": 3.50,
+        "image": "/images/nail-editor/designs/patterns/zopfstrick-creme.svg",
+        "tags": ["strick", "zopf", "pullover", "creme", "matt", "herbst", "winter"]
+    },
+    {
+        "name": "Rost Ombré",
+        "category": "Ombre",
+        "price_per_nail": 2.50,
+        "image": "/images/nail-editor/designs/patterns/rost-ombre.svg",
+        "tags": ["ombre", "verlauf", "gradient", "rost", "orange", "herbst"]
+    },
+    {
+        "name": "Karo",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "image": "/images/nail-editor/designs/patterns/karo-herbst.svg",
+        "tags": ["karo", "plaid", "tartan", "kariert", "muster", "herbst"]
+    },
+    {
+        "name": "Karamell French",
+        "category": "French",
+        "price_per_nail": 2.00,
+        "image": "/images/nail-editor/designs/patterns/karamell-french.svg",
+        "tags": ["french", "spitze", "tip", "karamell", "klassisch", "herbst"]
+    },
+    {
+        "name": "Goldfolie",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "image": "/images/nail-editor/designs/patterns/goldfolie.svg",
+        "tags": ["gold", "folie", "flakes", "nude", "glamour", "herbst"]
+    },
+    {
+        "name": "Herbstblätter",
+        "category": "Nail Art",
+        "price_per_nail": 3.50,
+        "image": "/images/nail-editor/designs/patterns/herbstblaetter.svg",
+        "tags": ["blätter", "laub", "ahorn", "nail art", "nude", "herbst"]
+    },
+    {
+        "name": "Burgund & Goldlinie",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "image": "/images/nail-editor/designs/patterns/burgund-goldlinie.svg",
+        "tags": ["burgund", "bordeaux", "gold", "linie", "elegant", "herbst"]
+    },
+    {
+        "name": "Rost Glitzer",
+        "category": "Glitzer",
+        "price_per_nail": 1.00,
+        "image": "/images/nail-editor/designs/patterns/rost-glitzer.svg",
+        "tags": ["glitzer", "glitter", "rost", "kupfer", "funkeln", "herbst"]
+    },
+    {
+        "name": "Brauner Marmor",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "image": "/images/nail-editor/designs/patterns/marmor-braun.svg",
+               "tags": ["marmor", "marble", "braun", "creme", "gold", "herbst"]
+    },
+    {
+        "name": "French Tip",
+        "category": "French",
+        "price_per_nail": 2.00,
+        "layers": [
+            { "name": "Spitze", "mask": "/images/nail-editor/designs/layers/french-spitze.svg", "color": "#FFFFFF" }
+        ],
+        "tags": ["french", "spitze", "tip", "klassisch", "einfärbbar"]
+    },
+    {
+        "name": "Tartan",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "layers": [
+            { "name": "Streifen", "mask": "/images/nail-editor/designs/layers/karo-streifen.svg", "color": "#8E3B1D" },
+            { "name": "Linien",   "mask": "/images/nail-editor/designs/layers/karo-linien.svg",   "color": "#3B2216" },
+            { "name": "Akzent",   "mask": "/images/nail-editor/designs/layers/karo-akzent.svg",   "color": "#C48A3F" }
+        ],
+        "tags": ["karo", "plaid", "tartan", "kariert", "einfärbbar"]
+    },
+    {
+        "name": "Linien-Art",
+        "category": "Nail Art",
+        "price_per_nail": 2.50,
+        "layers": [
+            { "name": "Hauptlinie", "mask": "/images/nail-editor/designs/layers/linien-haupt.svg",  "color": "#D6AB45" },
+            { "name": "Akzent",     "mask": "/images/nail-editor/designs/layers/linien-akzent.svg", "color": "#FFFFFF" }
+        ],
+                "tags": ["linien", "lines", "minimal", "elegant", "einfärbbar"]
+    },
+    {
+        "name": "French Individuell",
+        "category": "French",
+        "price_per_nail": 2.50,
+        "generator": "french",
+        "params": { "tiefe": 26, "bogen": 13, "schraeg": 0 },
+        "tags": ["french", "spitze", "tip", "anpassbar", "einfärbbar"]
+    },
+    {
+        "name": "Streifen",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "generator": "streifen",
+        "params": { "breite": 8, "abstand": 18, "winkel": 0 },
+        "tags": ["streifen", "stripes", "linien", "anpassbar", "einfärbbar"]
+    },
+    {
+        "name": "Punkte",
+        "category": "Muster",
+        "price_per_nail": 2.50,
+        "generator": "punkte",
+        "params": { "groesse": 7, "abstand": 28, "versatz": 50 },
+        "tags": ["punkte", "dots", "polka", "anpassbar", "einfärbbar"]
+    },
+    {
+        "name": "Karo Individuell",
+        "category": "Muster",
+        "price_per_nail": 3.00,
+        "generator": "karo",
+        "params": { "raster": 80, "breite": 26, "linien": 2, "staerke": 2.5, "winkel": 0 },
+        "tags": ["karo", "plaid", "kariert", "anpassbar", "einfärbbar"]
+    }
+]
+    
+

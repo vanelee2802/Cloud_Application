@@ -4,8 +4,9 @@
         <!-- Überschrift + Lupe -->
         <div class="color-header">
 
-            <h3>FARBE</h3>
-
+                      <h3>
+                FARBE<span v-if="targetLabel" class="target-label"> · {{ targetLabel }}</span>
+            </h3>
             <button
                 type="button"
                 class="search-toggle"
@@ -149,11 +150,13 @@
         <!-- Farbliste -->
         <div class="color-list">
 
-            <button
+                     <button
                 v-for="color in filteredColors"
                 :key="color.id ?? color.name"
                 type="button"
                 class="color-button"
+                                :class="{ active: isActive(color) }"
+                :aria-pressed="isActive(color)"
                 :title="color.name"
                 @click="selectColor(color)"
             >
@@ -192,12 +195,22 @@ import { ref, computed } from 'vue'
 
 const emit = defineEmits(['color-selected'])
 
+
 const props = defineProps({
     colors: {
         type: Array,
         default: () => [],
     },
+    activeHex: {
+        type: String,
+        default: null,
+    },
+    targetLabel: {
+        type: String,
+        default: '',
+    },
 })
+
 
 
 
@@ -215,13 +228,15 @@ const selectedFilter = ref(null)
 
 const showSearch = ref(false)
 
+function isActive(color) {
 
-/*
-|--------------------------------------------------------------------------
-| Farbe auswählen
-|--------------------------------------------------------------------------
-*/
+    return Boolean(props.activeHex) &&
+        color.hex_code?.toLowerCase() === props.activeHex.toLowerCase()
 
+}
+
+
+// Der Editor entscheidet, was mit der Farbe passiert
 function selectColor(color) {
 
     emit('color-selected', color)
@@ -884,6 +899,7 @@ const filteredColors = computed(() => {
 }
 
 
+
 /*
 |--------------------------------------------------------------------------
 | KEINE ERGEBNISSE
@@ -968,6 +984,39 @@ const filteredColors = computed(() => {
         transform: none;
 
     }
+
+}
+
+/*
+|--------------------------------------------------------------------------
+| AUSGEWÄHLTE FARBE (gleicher Stil wie Form + Designs)
+|--------------------------------------------------------------------------
+*/
+
+.color-panel .color-button.active {
+
+    background: #f8f0f2;
+
+    box-shadow: inset 0 0 0 2px #7d1024;
+
+}
+
+.color-panel .color-button.active .color-name {
+
+    color: #7d1024;
+
+}
+
+/* Ziel der Farbauswahl, z. B. "· Spitze" */
+.target-label {
+
+    font-family: system-ui, sans-serif;
+
+    font-size: 0.8em;
+
+    letter-spacing: 0.02em;
+
+    color: #555555;
 
 }
 

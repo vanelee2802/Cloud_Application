@@ -7,27 +7,45 @@ use Illuminate\Http\Request;
 
 class DesignElementController extends Controller
 {
-    public function index(Request $request)
-{
-    $query = DesignElement::query();
+       public function index(Request $request)
+    {
+        $query = DesignElement::query()
+            ->with('tags:id,name');
 
-    if ($request->filled('category')) {
-        $query->where('category', $request->input('category'));
+        // Nur aktive Muster mit Bild (fürs DesignPanel): ?patterns=1
+        if ($request->boolean('patterns')) {
+            $query->patterns()->active();
+        }
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        // Suche in Name UND Tags
+        if ($request->filled('search')) {
+
+            $search = '%' . $request->input('search') . '%';
+
+            $query->where(function ($q) use ($search) {
+                $q->whereLike('name', $search, caseSensitive: false)
+                  ->orWhereHas('tags', fn ($t) =>
+                      $t->whereLike('name', $search, caseSensitive: false)
+                  );
+            });
+        }
+
+        if ($request->filled('min_price')) {
+            $query->where('price_per_nail', '>=', $request->input('min_price'));
+        }
+
+        if ($request->filled('max_price')) {
+            $query->where('price_per_nail', '<=', $request->input('max_price'));
+        }
+
+        return response()->json(
+            $query->orderBy('category')->orderBy('name')->get()
+        );
     }
-
-    if ($request->filled('search')) {
-$query->whereLike('name', '%' . $request->input('search') . '%', caseSensitive: false);    }
-
-    if ($request->filled('min_price')) {
-        $query->where('price_per_nail', '>=', $request->input('min_price'));
-    }
-
-    if ($request->filled('max_price')) {
-        $query->where('price_per_nail', '<=', $request->input('max_price'));
-    }
-
-    return response()->json($query->get());
-}
 
     public function store(Request $request)
     {

@@ -24,46 +24,19 @@ const props = defineProps({
 })
 
 // =========================================
-// KATEGORIEN
+// KATEGORIEN UND NAGELAUSWAHL
 // =========================================
 
 const selectedCategories = ref([])
-
 const selectedFingers = ref([])
 
-const nailDesigns = ref({})
-
-
-function selectDesign(design) {
-    if (selectedFingers.value.length === 0) {
-        return
-    }
-
-    selectedFingers.value.forEach(finger => {
-        const currentNail = nailDesigns.value[finger] ?? {}
-
-        nailDesigns.value[finger] = {
-            ...currentNail,
-            ...design,
-        }
-    })
-}
-
-function selectColor(color) {
-    if (selectedFingers.value.length === 0) {
-        return
-    }
-
-    selectedFingers.value.forEach(finger => {
-        const currentNail = nailDesigns.value[finger] ?? {}
-
-        nailDesigns.value[finger] = {
-            ...currentNail,
-            color,
-        }
-    })
-}
-
+const nailDesigns = ref({
+    thumb:  { form: null, color: null, design: null, effekt: null },
+    index:  { form: null, color: null, design: null, effekt: null },
+    middle: { form: null, color: null, design: null, effekt: null },
+    ring:   { form: null, color: null, design: null, effekt: null },
+    pinky:  { form: null, color: null, design: null, effekt: null },
+})
 
 function toggleFinger(fingerKey) {
     if (selectedFingers.value.includes(fingerKey)) {
@@ -84,25 +57,6 @@ function toggleFinger(fingerKey) {
 // length = Länge: short | medium | long
 const shape  = ref('almond')
 const length = ref('medium')
-
-const selectedFingers = ref([])
-const nailDesigns = ref({
-    thumb:  { form: null, color: null, design: null, effekt: null },
-    index:  { form: null, color: null, design: null, effekt: null },
-    middle: { form: null, color: null, design: null, effekt: null },
-    ring:   { form: null, color: null, design: null, effekt: null },
-    pinky:  { form: null, color: null, design: null, effekt: null },
-})
-
-function toggleFinger(fingerKey) {
-    if (selectedFingers.value.includes(fingerKey)) {
-        selectedFingers.value = selectedFingers.value.filter(
-            finger => finger !== fingerKey
-        )
-    } else {
-        selectedFingers.value.push(fingerKey)
-    }
-}
 
 const shapeNameMap = {
     almond: 'Almond',
@@ -166,8 +120,7 @@ onMounted(() => {
 
             const img = new Image()
 
-            img.src = `/images/nail-editor/${folder}/${finger}.png`
-
+            img.src = `/images/nail-editor/FormPanel/forms_right hand/${folder}/${finger}.png`
         }
 
     }
@@ -236,24 +189,87 @@ function selectCategory(category) {
 // AUSWAHL-EVENTS
 // =========================================
 
+// =========================================
+// FARBE
+// Ziel der Farbauswahl:
+//   colorTarget = null  → Grundfarbe des Nagels
+//   colorTarget = 0, 1… → Farbschicht des Musters (z. B. Spitze)
+// =========================================
+
+const selectedColor = ref(null)
+
+const colorTarget = ref(null)
+
+const designPanel = ref(null)
+
+
 function selectColor(color) {
     if (selectedFingers.value.length === 0) {
         alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
         return
     }
 
-    selectedFingers.value.forEach(finger => {
-        nailDesigns.value[finger].color = color
-    })
+    // Ziel ist eine Schicht: Farbe an das DesignPanel geben
+    if (colorTarget.value !== null) {
+        designPanel.value?.setLayerColor(colorTarget.value, color.hex_code)
+        return
+    }
 
+    // Ziel ist die Grundfarbe: zweiter Klick auf dieselbe Farbe hebt sie auf
+    const sameColor =
+        selectedColor.value?.hex_code?.toLowerCase() === color.hex_code?.toLowerCase()
+
+    selectedColor.value = sameColor ? null : color
+
+    // Grundfarbe allen ausgewählten Nägeln zuweisen
+    selectedFingers.value.forEach(finger => {
+        nailDesigns.value[finger].color = selectedColor.value
+    })
     console.log('Farbe zugewiesen:', color)
 }
+
+
+// Klick auf "● Spitze" im DesignPanel
+function onLayerTarget(index) {
+
+    colorTarget.value = index
+
+    // Farbauswahl automatisch einblenden, damit man direkt färben kann
+    if (index !== null && !selectedCategories.value.includes('Farbe')) {
+        selectedCategories.value.push('Farbe')
+    }
+
+}
+
+
+// Welche Farbe im ColorPanel markiert ist
+const activeHex = computed(() => {
+
+    if (colorTarget.value !== null) {
+        return selectedDesign.value?.layers?.[colorTarget.value]?.color ?? null
+    }
+
+    return selectedColor.value?.hex_code ?? null
+
+})
+
+// Hinweis im ColorPanel, z. B. "FARBE · Spitze"
+const targetLabel = computed(() =>
+    colorTarget.value !== null
+        ? selectedDesign.value?.layers?.[colorTarget.value]?.name ?? ''
+        : ''
+)
+
+// Gewähltes Design (ganzes Objekt aus der Datenbank)
+const selectedDesign = ref(null)
 
 function selectDesign(design) {
     if (selectedFingers.value.length === 0) {
         alert('Bitte wähle zuerst einen Nagel an der Hand aus.')
         return
     }
+
+    selectedDesign.value = design
 
     selectedFingers.value.forEach(finger => {
         nailDesigns.value[finger].design = design
@@ -477,12 +493,15 @@ async function saveDesign() {
 
                 <section class="nail-canvas area-canvas">
                     <div class="nail-canvas-inner">
-                        <NailHand
-                            :shape="shape"
-                            :length="length"
-                            :selected-fingers="selectedFingers"
-                            @toggle-finger="toggleFinger"
-                        />
+                <NailHand
+                    :shape="shape"
+                    :length="length"
+                    :selected-fingers="selectedFingers"
+                    :color="selectedColor?.hex_code"
+                    :pattern="selectedDesign?.image_path"
+                    :layers="selectedDesign?.layers ?? []"
+                    @toggle-finger="toggleFinger"
+                />
                     </div>
                 </section>
 
@@ -529,9 +548,10 @@ async function saveDesign() {
 
                         <ColorPanel
                             :colors="props.colors"
+                            :active-hex="activeHex"
+                            :target-label="targetLabel"
                             @color-selected="selectColor"
                         />
-
                     </div>
 
                     <div
@@ -541,10 +561,12 @@ async function saveDesign() {
                         class="design-section"
                     >
 
-                        <DesignPanel
-                            @design-selected="selectDesign"
-                        />
-
+                       <DesignPanel
+    ref="designPanel"
+    :active-layer="colorTarget"
+    @layer-target="onLayerTarget"
+    @design-selected="selectDesign"
+/>
                     </div>
 
                 </div>

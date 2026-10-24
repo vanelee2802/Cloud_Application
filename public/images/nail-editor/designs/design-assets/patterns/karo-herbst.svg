@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" width="200" height="300" preserveAspectRatio="xMidYMid slice"><defs><pattern id="karo-pl" width="80" height="80" patternUnits="userSpaceOnUse">
+<rect width="80" height="80" fill="#e8d9c0"/>
+<rect x="0" y="0" width="26" height="80" fill="#8e3b1d" opacity=".55"/><rect x="0" y="0" width="80" height="26" fill="#8e3b1d" opacity=".55"/>
+<rect x="50" y="0" width="10" height="80" fill="#c48a3f" opacity=".55"/><rect x="0" y="50" width="80" height="10" fill="#c48a3f" opacity=".55"/>
+<rect x="33" y="0" width="2.4" height="80" fill="#3b2216" opacity=".85"/><rect x="38" y="0" width="2.4" height="80" fill="#3b2216" opacity=".85"/>
+<rect x="0" y="33" width="80" height="2.4" fill="#3b2216" opacity=".85"/><rect x="0" y="38" width="80" height="2.4" fill="#3b2216" opacity=".85"/>
+<rect x="12" y="0" width="1.4" height="80" fill="#f3e6cf" opacity=".7"/><rect x="0" y="12" width="80" height="1.4" fill="#f3e6cf" opacity=".7"/>
+</pattern>
+<pattern id="karo-tw" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2" height="4" fill="#000" opacity=".05"/></pattern></defs><rect width="200" height="300" fill="url(#karo-pl)"/><rect width="200" height="300" fill="url(#karo-tw)"/></svg>

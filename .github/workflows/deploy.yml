@@ -1,7 +1,13 @@
 name: Deploy
 
 on:
-  workflow_dispatch:   # nur manuell per Knopfdruck, bis der Server steht
+  push:
+    branches: [main]   # automatisch bei jedem Push auf main
+  workflow_dispatch:   # zusätzlich weiterhin per Knopfdruck
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -23,19 +29,32 @@ jobs:
           done
 
       - name: Per SSH auf dem Server deployen
-        uses: appleboy/ssh-action@v1
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
-          script_stop: true
           script: |
+            set -e
+            export COMPOSER_ALLOW_SUPERUSER=1
             cd ${{ secrets.DEPLOY_PATH }}
-            git pull origin main
+
+            php artisan down || true
+
+            git fetch origin main
+            git reset --hard origin/main
+
             composer install --no-dev --optimize-autoloader --no-interaction
             npm ci
             npm run build
+
             php artisan migrate --force
-            php artisan config:cache
+            php artisan db:seed --class=DefaultPatternSeeder --force
+            php artisan optimize
             php artisan queue:restart
+
+            chown -R www-data:www-data storage bootstrap/cache database
+            chmod -R 775 storage bootstrap/cache database
+
+            php artisan up

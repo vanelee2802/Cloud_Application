@@ -28,23 +28,23 @@ function selectCategory(category) {
 const categories = [
     {
         name: 'Form',
-        icon: '/images/nail-editor/icon/nail_icon.svg',
+        icon: '/images/nail-editor/icon/CategoryPanel/nail_icon.svg',
     },
     {
         name: 'Farbe',
-        icon: '/images/nail-editor/icon/NailPolish_icon.svg',
+        icon: '/images/nail-editor/icon/CategoryPanel/NailPolish_icon.svg',
     },
     {
         name: 'Designs',
-        icon: '/images/nail-editor/icon/NailDesign_icon.svg',
+        icon: '/images/nail-editor/icon/CategoryPanel/NailDesign_icon.svg',
     },
     {
         name: 'Effekte',
-        icon: '/images/nail-editor/icon/NailEffect_icon.svg',
+        icon: '/images/nail-editor/icon/CategoryPanel/NailEffect_icon.svg',
     },
     {
         name: 'Verzierung',
-        icon: '/images/nail-editor/icon/NailVerzierung_icon.svg',
+        icon: '/images/nail-editor/icon/CategoryPanel/NailVerzierung_icon.svg',
     },
 ]
 
