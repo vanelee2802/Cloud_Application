@@ -30,6 +30,14 @@
                 @click="toggleSearch"
             ></button>
 
+                        <button
+                type="button"
+                class="templates-link"
+                @click="emit('open-templates')"
+            >
+                Vorlagen
+            </button>
+
             <div
                 v-if="showSearch"
                 class="design-search"
@@ -241,7 +249,8 @@ function baseLayers(design) {
 }
 const emit = defineEmits([
     'design-selected',
-    'layer-target',      // welche Schicht gerade gefärbt wird (Index oder null)
+    'layer-target',  
+    'open-templates'    // welche Schicht gerade gefärbt wird (Index oder null)
 ])
 
 // Vom Editor: welche Schicht gerade Ziel der Farbauswahl ist
@@ -1338,6 +1347,53 @@ function formatPreis(preis) {
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+/* Button "Vorlagen" in der Kopfzeile */
+.templates-link {
+
+    flex-shrink: 0;
+
+    margin-left: 0.3rem;
+
+    padding: 0.25em 0.75em;
+
+    border: 1px solid #ead8dd;
+
+    border-radius: 100vw;
+
+    background: linear-gradient(135deg, #fdf7f8, #f6e9ec);
+
+    color: var(--bordeaux);
+
+    font-size: clamp(0.65rem, 0.72vw, 0.78rem);
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    cursor: pointer;
+
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease;
+
+}
+
+.templates-link:hover {
+
+    border-color: var(--bordeaux);
+
+    background: #f8f0f2;
+
+}
+
+.templates-link:focus-visible {
+
+    outline: 2px solid var(--bordeaux);
+
+    outline-offset: 1px;
+
 }
 
 </style>
