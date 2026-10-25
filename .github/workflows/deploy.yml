@@ -1,13 +1,10 @@
-name: Deploy
+name: deploy
 
 on:
   push:
-    branches: [main]   # automatisch bei jedem Push auf main
-  workflow_dispatch:   # zusätzlich weiterhin per Knopfdruck
-
-concurrency:
-  group: production-deploy
-  cancel-in-progress: false
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -60,8 +57,37 @@ jobs:
             chown -R www-data:www-data storage bootstrap/cache database
             chmod -R 775 storage bootstrap/cache database
 
-            # NEU: Prüfen, ob ein Queue-Worker läuft (Ergebnis steht im Actions-Log)
+            APP_DIR="$(pwd)"
+            PHP_BIN="$(command -v php)"
+
+            # Queue-Worker als dauerhafter Dienst (startet auch nach einem Server-Neustart)
+            cat > /etc/systemd/system/mixmatch-queue.service <<EOF
+            [Unit]
+            Description=mixmatch Laravel Queue Worker
+            After=network.target
+
+            [Service]
+            User=www-data
+            Group=www-data
+            Restart=always
+            RestartSec=5
+            WorkingDirectory=$APP_DIR
+            ExecStart=$PHP_BIN $APP_DIR/artisan queue:work --sleep=3 --tries=3 --max-time=3600
+
+            [Install]
+            WantedBy=multi-user.target
+            EOF
+
+            systemctl daemon-reload
+            systemctl enable --now mixmatch-queue
+            systemctl restart mixmatch-queue
+
+            # Scheduler für geplante Jobs (z. B. stündliche Terminerinnerungen)
+            echo "* * * * * www-data cd $APP_DIR && $PHP_BIN artisan schedule:run >> /dev/null 2>&1" > /etc/cron.d/mixmatch-scheduler
+            chmod 644 /etc/cron.d/mixmatch-scheduler
+
+            # Prüfen, ob der Queue-Worker läuft (Ergebnis steht im Actions-Log)
             echo "=========== QUEUE-WORKER-CHECK ==========="
-            pgrep -af "queue:work" || echo "ACHTUNG: Es läuft KEIN Queue-Worker – Mails werden nicht verschickt!"
-            echo "Wartende Aufträge in der Queue: $(php artisan tinker --execute='echo DB::table(\"jobs\")->count();' 2>/dev/null || echo unbekannt)"
+            systemctl is-active mixmatch-queue || echo "ACHTUNG: Der Queue-Worker läuft NICHT!"
+            echo "Wartende Aufträge: $(php artisan tinker --execute 'echo DB::table("jobs")->count();' 2>/dev/null || echo unbekannt)"
             echo "=========================================="
