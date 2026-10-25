@@ -41,6 +41,8 @@ jobs:
             cd ${{ secrets.DEPLOY_PATH }}
 
             php artisan down || true
+            # App immer wieder hochfahren – auch wenn ein Schritt fehlschlägt
+            trap 'php artisan up' EXIT
 
             git fetch origin main
             git reset --hard origin/main
@@ -51,10 +53,9 @@ jobs:
 
             php artisan migrate --force
             php artisan db:seed --class=DefaultPatternSeeder --force
+            php artisan db:seed --class=ServerGrunddatenSeeder --force
             php artisan optimize
             php artisan queue:restart
 
             chown -R www-data:www-data storage bootstrap/cache database
             chmod -R 775 storage bootstrap/cache database
-
-            php artisan up
