@@ -250,32 +250,19 @@ onBeforeUnmount(() => {
                                 </NavLink>
 
                                 <!-- Preisverwaltung: nur für die Studioinhaberin -->
-<button
-    v-if="isOwner"
-    type="button"
-    class="mega-menu-link placeholder-link"
-    @click="closeMenu"
->
-    <svg
-        class="menu-icon"
-        xmlns="http://www.w3.org/2000/svg"
-        width="23"
-        height="23"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-    >
-        <path d="M12 2v20" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-
-    <span>Preisverwaltung</span>
-    <span class="coming-soon">Bald</span>
-</button>
+                                <NavLink
+                                    v-if="isOwner"
+                                    href="/admin/preise"
+                                    :active="route().current('admin.prices.index')"
+                                    class="mega-menu-link"
+                                    @click="closeMenu"
+                                >
+                                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                        <path d="M12 2v20" />
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                    </svg>
+                                    <span>Preisverwaltung</span>
+                                </NavLink>
 
                                 <NavLink
                                     v-if="isOwner"
