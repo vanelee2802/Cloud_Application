@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\NailStudio;
 use App\Models\Service;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -16,9 +15,12 @@ use Illuminate\Support\Str;
  */
 class ServerGrunddatenSeeder extends Seeder
 {
+    // Inhaberin des Hauptstudios
+    private const HAUPT_INHABERIN_EMAIL = 'oetken45@gmail.com';
+
     public function run(): void
     {
-        // 1. Studio anlegen (nur wenn es noch nicht existiert)
+        // 1. Hauptstudio anlegen (nur wenn es noch nicht existiert)
         $studio = NailStudio::firstOrCreate(
             ['name' => 'Nagelstudio Mix and Match'],
             [
@@ -27,7 +29,7 @@ class ServerGrunddatenSeeder extends Seeder
             ]
         );
 
-        // 2. Leistungen des Studios
+        // 2. Leistungen des Hauptstudios
         $services = [
             ['name' => 'Maniküre + Design', 'price' => 25.00, 'duration_minutes' => 45],
             ['name' => 'Nur Maniküre',      'price' => 15.00, 'duration_minutes' => 30],
@@ -46,29 +48,55 @@ class ServerGrunddatenSeeder extends Seeder
             );
         }
 
-        // 3. Studio allen Inhaberinnen als eigenes Studio zuordnen
-        $owners = User::query()->where('role', 'owner')->get();
+        // 3. Hauptstudio gezielt der Haupt-Inhaberin zuordnen (owner_id)
+        $hauptInhaberin = User::query()
+            ->where('email', self::HAUPT_INHABERIN_EMAIL)
+            ->first();
 
-        foreach ($owners as $owner) {
-            $relation = $owner->ownedStudios();
-
-            if ($relation instanceof BelongsToMany) {
-                $relation->syncWithoutDetaching([$studio->id]);
-            } elseif (! $owner->ownedStudios()->whereKey($studio->id)->exists()) {
-                $owner->ownedStudios()->save($studio);
-            }
+        if ($hauptInhaberin) {
+            $studio->forceFill(['owner_id' => $hauptInhaberin->id])->save();
         }
 
-        // 4. NEU: Inhaberinnen und Admins ohne direktes Studio bekommen dieses Studio
+        // 4. Weitere Inhaberinnen ohne eigenes Studio bekommen ein eigenes Teststudio
         User::query()
-            ->whereIn('role', ['owner', 'admin'])
-            ->whereNull('nail_studio_id')
+            ->where('role', User::ROLE_OWNER)
+            ->when($hauptInhaberin, fn ($query) => $query->where('id', '!=', $hauptInhaberin->id))
             ->get()
-            ->each(function (User $user) use ($studio) {
-                $user->forceFill(['nail_studio_id' => $studio->id])->save();
+            ->each(function (User $owner) {
+                if ($owner->ownedStudios()->exists()) {
+                    return;
+                }
+
+                $owner->ownedStudios()->create([
+                    'name'          => 'Teststudio von ' . $owner->name,
+                    'address'       => 'Musterstraße 2, 30159 Hannover',
+                    'opening_hours' => 'Mo–Fr 9–18 Uhr',
+                ]);
             });
 
-        // 5. Demo-Mitarbeiterinnen für die Präsentation (Login nicht möglich: zufälliges Passwort)
+        // 5. Inhaberinnen ohne direktes Studio bekommen ihr erstes eigenes Studio
+        User::query()
+            ->where('role', User::ROLE_OWNER)
+            ->whereNull('nail_studio_id')
+            ->get()
+            ->each(function (User $owner) {
+                $ersteStudioId = $owner->ownedStudios()->orderBy('id')->value('id');
+
+                if ($ersteStudioId) {
+                    $owner->forceFill(['nail_studio_id' => $ersteStudioId])->save();
+                }
+            });
+
+        // 6. Admins ohne Studio bekommen das Hauptstudio
+        User::query()
+            ->where('role', User::ROLE_ADMIN)
+            ->whereNull('nail_studio_id')
+            ->get()
+            ->each(function (User $admin) use ($studio) {
+                $admin->forceFill(['nail_studio_id' => $studio->id])->save();
+            });
+
+        // 7. Demo-Mitarbeiterinnen für die Präsentation (Login nicht möglich: zufälliges Passwort)
         $demoEmployees = [
             ['name' => 'Lena (Demo)', 'email' => 'lena.demo@mixmatch.invalid'],
             ['name' => 'Mia (Demo)',  'email' => 'mia.demo@mixmatch.invalid'],
