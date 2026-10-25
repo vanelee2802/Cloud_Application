@@ -21,6 +21,7 @@ class UserManagementController extends Controller
         $studioIds = $owner->manageableStudioIds();
 
         $users = User::query()
+        ->whereNull('anonymized_at')
             ->where(function ($q) use ($owner, $studioIds) {
                 $q->where('id', $owner->id)
                   ->orWhereIn('nail_studio_id', $studioIds)
@@ -103,4 +104,61 @@ class UserManagementController extends Controller
 
         return back()->with('success', 'Benutzerdaten wurden aktualisiert.');
     }
+
+    public function destroy(Request $request, User $user): RedirectResponse
+{
+    $owner = $request->user();
+
+    // Nur Studioinhaber dürfen Benutzer entfernen.
+    abort_unless($owner->isOwner(), 403);
+
+    // Kunden und Mitarbeiter dürfen entfernt werden,
+    // andere Rollen bleiben geschützt.
+    abort_unless(
+        in_array($user->role, [User::ROLE_CUSTOMER, User::ROLE_EMPLOYEE], true),
+        403
+    );
+
+    // Mitarbeiter nicht löschen, damit Termine und zugehörige
+    // Datensätze nicht versehentlich verloren gehen.
+    if ($user->role === User::ROLE_EMPLOYEE) {
+        $user->nail_studio_id = null;
+        $user->role = User::ROLE_CUSTOMER;
+        $user->save();
+
+        return back()->with(
+            'success',
+            'Der Mitarbeiter wurde aus deinem Studio entfernt.'
+        );
+    }
+
+    // Kundenkonto anonymisieren, statt Termine und Designs
+    // durch ein echtes Löschen möglicherweise zu verlieren.
+    if ($user->anonymized_at !== null) {
+        return back()->with(
+            'success',
+            'Dieses Kundenkonto wurde bereits anonymisiert.'
+        );
+    }
+
+    \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+        $user->appointments()->update([
+            'customer_name' => 'Gelöschter Kunde',
+            'customer_email' => null,
+        ]);
+
+        $user->name = 'Gelöschter Kunde';
+        $user->email = 'deleted-' . $user->id . '@anonymized.invalid';
+        $user->email_verified_at = null;
+        $user->password = \Illuminate\Support\Str::random(64);
+        $user->remember_token = null;
+        $user->anonymized_at = now();
+        $user->save();
+    });
+
+    return back()->with(
+        'success',
+        'Das Kundenkonto wurde anonymisiert.'
+    );
+}
 }
