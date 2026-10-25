@@ -529,8 +529,8 @@ async function goToCheckout() {
 
     const service = cartServices.value[0] ?? null
 
-    // Ohne Leistung oder ohne gestaltete Nägel: Checkout wie bisher
-    if (!service || !hasDesign.value) {
+    // Nichts gestaltet: Checkout wie bisher (dort kann die Leistung gewählt werden)
+    if (!hasDesign.value) {
         showCheckout.value = true
         return
     }
@@ -558,17 +558,21 @@ async function goToCheckout() {
         return
     }
 
-    // Altes Design zu dieser Leistung ersetzen
+    // Altes Design ersetzen: das zur Leistung bzw. eins, das noch zu keiner Leistung gehört
     cartItems.value
-        .filter(item => item.type === 'design' && item.serviceItemId === service.id)
+        .filter(item =>
+            item.type === 'design'
+            && (service ? item.serviceItemId === service.id : !item.serviceItemId)
+        )
         .forEach(item => removeFromCart(item.id))
 
+    // GEÄNDERT: Auch ohne Leistung ins Warenkorb – die Leistung wählt die Kundin dann im Checkout
     addToCart({
         type: 'design',
         name: designName.value,
         price: totalDesignPrice.value,
         designId,
-        serviceItemId: service.id,
+        serviceItemId: service?.id ?? null,
     })
 
     showCheckout.value = true

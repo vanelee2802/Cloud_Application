@@ -76,19 +76,35 @@ function toPrice(value) {
 
 // ---- Gemeinsamer Zustand ----
 
-const cartItems = ref(loadCart())
+/**
+ * Der Zustand hängt an window, damit es garantiert nur EINEN Warenkorb gibt –
+ * auch wenn Vite das Modul zweimal lädt (z. B. '@/Stores/cart' und '@/Stores/cart.js'
+ * oder unterschiedliche Groß-/Kleinschreibung im Pfad unter Windows).
+ * Sonst sieht der Checkout direkt nach dem Hinzufügen einen alten, leeren Warenkorb.
+ */
+const GLOBAL_KEY = '__mixmatchCartState__'
 
-// flush: 'sync' → sofort speichern, auch wenn direkt danach zum Checkout weitergeleitet wird
-watch(cartItems, (items) => saveCart(items), { deep: true, flush: 'sync' })
+function createState() {
+    const items = ref(loadCart())
 
-// Änderungen aus anderen Tabs übernehmen
-if (isBrowser()) {
-    window.addEventListener('storage', (event) => {
-        if (event.key === CART_STORAGE_KEY) {
-            cartItems.value = loadCart()
-        }
-    })
+    // flush: 'sync' → sofort speichern, auch wenn direkt danach zum Checkout weitergeleitet wird
+    watch(items, (value) => saveCart(value), { deep: true, flush: 'sync' })
+
+    // Änderungen aus anderen Tabs übernehmen
+    if (isBrowser()) {
+        window.addEventListener('storage', (event) => {
+            if (event.key === CART_STORAGE_KEY) {
+                items.value = loadCart()
+            }
+        })
+    }
+
+    return items
 }
+
+const cartItems = isBrowser()
+    ? (window[GLOBAL_KEY] ??= createState())
+    : createState()
 
 // ---- Öffentliche API ----
 

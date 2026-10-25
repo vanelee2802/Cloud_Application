@@ -1,17 +1,54 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 
 const page = usePage()
 
 /*
 |--------------------------------------------------------------------------
-| Daten aus dem Backend
+| Daten vom Server
 |--------------------------------------------------------------------------
+| GEÄNDERT: Die Seite gibt keine Termine als Prop mit (page.props.appointments
+| war immer leer). Jetzt lädt die Komponente die gebuchten Termine selbst –
+| dieselbe Liste wie „Aktuelle Buchungen“ im Studio-Dashboard.
 */
 
-const appointments = computed(() => {
-    return page.props.appointments ?? []
+const appointments = ref(page.props.appointments ?? [])
+const loading = ref(true)
+const error = ref('')
+
+let timer = null
+
+async function load() {
+    try {
+        const response = await fetch('/admin/appointments/bookings', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        })
+
+        if (!response.ok) {
+            error.value = response.status === 401 || response.status === 403
+                ? 'Du hast keinen Zugriff auf die Termine dieses Studios.'
+                : 'Die Termine konnten nicht geladen werden.'
+            return
+        }
+
+        error.value = ''
+        appointments.value = await response.json()
+    } catch {
+        error.value = 'Die Termine konnten nicht geladen werden.'
+    } finally {
+        loading.value = false
+    }
+}
+
+onMounted(() => {
+    load()
+    timer = setInterval(load, 60000)   // jede Minute neu laden
+})
+
+onBeforeUnmount(() => {
+    clearInterval(timer)
 })
 
 /*
@@ -69,18 +106,53 @@ function getFirstDayOfMonth() {
     return day === 0 ? 6 : day - 1
 }
 
+// NEU: Anzahl Termine pro Tag im angezeigten Monat, z. B. { 20: 2, 24: 1 }
+const countsByDay = computed(() => {
+    const year = calendarDate.value.getFullYear()
+    const month = String(calendarDate.value.getMonth() + 1).padStart(2, '0')
+    const prefix = `${year}-${month}-`
+
+    const result = {}
+
+    for (const appointment of appointments.value) {
+        const date = dateOnly(appointment.date)
+
+        if (date.startsWith(prefix)) {
+            const day = Number(date.slice(8, 10))
+            result[day] = (result[day] ?? 0) + 1
+        }
+    }
+
+    return result
+})
+
+function dayLabel(day) {
+    const count = countsByDay.value[day] ?? 0
+
+    if (count === 0) {
+        return `${day}.`
+    }
+
+    return count === 1 ? `${day}., 1 Termin` : `${day}., ${count} Termine`
+}
+
 /*
 |--------------------------------------------------------------------------
 | Datum und Uhrzeit
 |--------------------------------------------------------------------------
 */
 
+// Nur den Datumsteil, egal ob "2026-10-20" oder "2026-10-20 00:00:00"
+function dateOnly(date) {
+    return String(date ?? '').slice(0, 10)
+}
+
 function formatDate(date) {
     if (!date) {
         return ''
     }
 
-    const value = new Date(date)
+    const value = new Date(`${dateOnly(date)}T00:00:00`)
 
     if (Number.isNaN(value.getTime())) {
         return date
@@ -143,6 +215,7 @@ function formatAppointmentTime(appointment) {
                 <button
                     type="button"
                     class="calendar-nav"
+                    aria-label="Vorheriger Monat"
                     @click="previousMonth"
                 >
                     ‹
@@ -155,6 +228,7 @@ function formatAppointmentTime(appointment) {
                 <button
                     type="button"
                     class="calendar-nav"
+                    aria-label="Nächster Monat"
                     @click="nextMonth"
                 >
                     ›
@@ -180,19 +254,43 @@ function formatAppointmentTime(appointment) {
                 >
                 </div>
 
+                <!-- GEÄNDERT: Tage mit Terminen sind markiert -->
                 <div
                     v-for="day in getDaysInMonth()"
                     :key="day"
                     class="calendar-day"
+                    :class="{ 'has-appointments': countsByDay[day] }"
+                    :aria-label="dayLabel(day)"
                 >
                     <span>{{ day }}</span>
+                    <span
+                        v-if="countsByDay[day]"
+                        class="day-count"
+                        aria-hidden="true"
+                    >
+                        {{ countsByDay[day] }}
+                    </span>
                 </div>
 
             </div>
         </div>
 
+        <p
+            v-if="error"
+            class="error-text"
+        >
+            {{ error }}
+        </p>
+
+        <p
+            v-else-if="loading && !appointments.length"
+            class="loading-text"
+        >
+            Termine werden geladen …
+        </p>
+
         <div
-            v-if="appointments.length"
+            v-else-if="appointments.length"
             class="appointment-list"
         >
             <div
@@ -213,9 +311,9 @@ function formatAppointmentTime(appointment) {
                 <div class="appointment-info">
                     <h3>
                         {{
-                            appointment.customer?.name ||
-                            appointment.user?.name ||
                             appointment.customer_name ||
+                            appointment.user?.name ||
+                            appointment.customer?.name ||
                             'Kunde'
                         }}
                     </h3>
@@ -259,8 +357,7 @@ function formatAppointmentTime(appointment) {
             </strong>
 
             <span>
-                Für das Studio sind aktuell keine Termine
-                eingetragen.
+                Sobald eine Kundin einen Termin bezahlt hat, erscheint er hier.
             </span>
         </div>
 
@@ -373,6 +470,7 @@ function formatAppointmentTime(appointment) {
 }
 
 .calendar-day {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -389,6 +487,40 @@ function formatAppointmentTime(appointment) {
 
 .calendar-day-empty {
     background-color: transparent;
+}
+
+/* NEU: Tag mit Terminen */
+.calendar-day.has-appointments {
+    background-color: #f5e7eb;
+    font-weight: 700;
+}
+
+.day-count {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    border-radius: 999px;
+    background-color: #8f5364;
+    color: white;
+    font-size: 0.6rem;
+    line-height: 15px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.error-text {
+    margin: 0;
+    color: #b42318;
+    font-size: 0.9rem;
+}
+
+.loading-text {
+    margin: 0;
+    color: #8a7a80;
+    font-size: 0.9rem;
 }
 
 .appointment-list {

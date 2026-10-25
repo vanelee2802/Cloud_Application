@@ -8,6 +8,8 @@ use App\Models\Payment;
 use App\Notifications\AlternativesOffered;
 use App\Notifications\AppointmentConfirmed;
 use App\Notifications\AppointmentDeclined;
+use App\Services\AppointmentCompletion;                // NEU (Bewertungen)
+use App\Services\PriceService;                         // NEU (Design-Preis)
 use App\Services\SlotService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -21,15 +23,15 @@ use Illuminate\Validation\ValidationException;
 class AppointmentRequestController extends Controller
 {
     // Alle offenen Anfragen, früheste zuerst
-    public function index()
-
-    
+    public function index(Request $request)
     {
         $requests = Appointment::with('service')
             ->where('status', 'requested')
+            // NEU: nur Anfragen der eigenen Studios
+            ->whereIn('nail_studio_id', $this->studioIds($request))
             ->orderBy('date')
             ->orderBy('time')
-                      ->get([
+            ->get([
                 'id', 'nail_studio_id', 'service_id', 'date', 'time',
                 'customer_name', 'customer_email', 'created_at',
             ]);
@@ -38,8 +40,10 @@ class AppointmentRequestController extends Controller
     }
 
     // Anfrage bestätigen → Kundin kann bezahlen
-    public function confirm(Appointment $appointment)
+    public function confirm(Request $request, Appointment $appointment, PriceService $prices)
     {
+        $this->authorizeStudio($request, $appointment);
+
         // Nur ändern, wenn die Anfrage JETZT noch offen ist
         $updated = Appointment::whereKey($appointment->id)
             ->where('status', 'requested')
@@ -56,7 +60,8 @@ class AppointmentRequestController extends Controller
 
         $payment = Payment::create([
             'appointment_id' => $appointment->id,
-            'amount' => $appointment->service->price,
+            // GEÄNDERT: Leistung + Design (mit Studio-Preisen)
+            'amount' => $prices->appointmentPrice($appointment),
             'status' => 'pending',
         ]);
 
@@ -78,6 +83,8 @@ class AppointmentRequestController extends Controller
     // Anfrage komplett absagen → Platz wird wieder frei
     public function decline(Request $request, Appointment $appointment)
     {
+        $this->authorizeStudio($request, $appointment);
+
         // Optionale Nachricht der Studioleitung an die Kundin
         $validated = $request->validate([
             'note' => 'nullable|string|max:1000',
@@ -114,6 +121,8 @@ class AppointmentRequestController extends Controller
     // Ersatztermine anbieten → Wunschtermin wird frei, Kundin wählt einen Vorschlag
     public function offerAlternatives(Request $request, Appointment $appointment, SlotService $slots)
     {
+        $this->authorizeStudio($request, $appointment);
+
         $validated = $request->validate([
             'alternatives' => 'required|array|min:1|max:5',
             'alternatives.*.date' => 'required|date_format:Y-m-d|after_or_equal:today',
@@ -173,11 +182,18 @@ class AppointmentRequestController extends Controller
             'message' => 'Alternativen gesendet. Die Kundin wurde benachrichtigt.',
         ]);
     }
-        // Gebuchte (bezahlte) Termine ab heute, nächste zuerst
-    public function bookings()
+
+    // Gebuchte (bezahlte) Termine ab heute, nächste zuerst
+    // Sehen dürfen: Schichtleitung und Mitarbeiterinnen (Route: role:admin,employee)
+    public function bookings(Request $request, AppointmentCompletion $completion)
     {
+        // NEU: Vorbei gegangene Termine abschließen (falls auf dem Server kein Cron läuft)
+        $completion->runIfDue();
+
         $bookings = Appointment::with('service', 'user:id,name')
             ->where('status', 'confirmed')
+            // NEU: nur Termine der eigenen Studios
+            ->whereIn('nail_studio_id', $this->studioIds($request))
             ->whereDate('date', '>=', now()->toDateString())
             ->orderBy('date')
             ->orderBy('time')
@@ -187,5 +203,61 @@ class AppointmentRequestController extends Controller
             ]);
 
         return response()->json($bookings);
+    }
+
+    // NEU: Schichtleitung klickt „Abgeschlossen“ → Termin abschließen, Danke-Mail an die Kundin
+    public function complete(Request $request, Appointment $appointment, AppointmentCompletion $completion)
+    {
+        $this->authorizeStudio($request, $appointment);
+
+        if ($appointment->status !== 'confirmed') {
+            return response()->json([
+                'message' => 'Nur gebuchte und bezahlte Termine können abgeschlossen werden.',
+            ], 409);
+        }
+
+        if ($completion->startsAt($appointment)->isFuture()) {
+            return response()->json([
+                'message' => 'Dieser Termin hat noch nicht begonnen.',
+            ], 422);
+        }
+
+        if (! $completion->complete($appointment)) {
+            return response()->json([
+                'message' => 'Dieser Termin wurde bereits abgeschlossen.',
+            ], 409);
+        }
+
+        return response()->json([
+            'message' => 'Termin abgeschlossen. Die Kundin bekommt eine Danke-Mail mit Link zur Bewertung.',
+        ]);
+    }
+
+    // NEU: Studios, deren Termine diese Person sehen darf
+    // Inhaberin/Schichtleitung: verwaltete Studios, Mitarbeiterin: ihr eigenes Studio (nur Buchungsliste)
+    private function studioIds(Request $request): array
+    {
+        $user = $request->user();
+
+        $ids = collect($user->manageableStudioIds());
+
+        if ($user->role === 'employee' && $user->nail_studio_id) {
+            $ids->push($user->nail_studio_id);
+        }
+
+        return $ids
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    // NEU: Termin muss zu einem eigenen Studio gehören
+    private function authorizeStudio(Request $request, Appointment $appointment): void
+    {
+        abort_unless(
+            in_array((int) $appointment->nail_studio_id, $this->studioIds($request), true),
+            403
+        );
     }
 }

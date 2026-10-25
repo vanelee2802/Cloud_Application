@@ -39,7 +39,7 @@
 
                         <div class="cart-item-info">
                             <span>{{ item.name }}</span>
-                            <span>{{ Number(item.price).toFixed(2) }} €</span>
+                            <span>{{ euro(item.price) }}</span>
                         </div>
 
                         <button
@@ -55,7 +55,7 @@
 
                     <div class="cart-total">
                         <span>Gesamt</span>
-                        <span>{{ total.toFixed(2) }} €</span>
+                        <span>{{ euro(total) }}</span>
                     </div>
 
                 </div>
@@ -66,15 +66,53 @@
 
                     <h2>Wähle deinen Termin</h2>
 
-                    <!-- NEU: Ohne Leistung im Warenkorb kein Termin -->
+                    <!-- NEU: Ohne Leistung im Warenkorb → Leistung direkt hier auswählen -->
                     <template v-if="!bookedService">
-                        <p>
+                        <p v-if="unassignedDesign">
+                            Wähle eine Leistung zu deinem Design „{{ unassignedDesign.name }}“:
+                        </p>
+                        <p v-else>
                             Wähle zuerst eine Leistung aus, damit wir die passenden Uhrzeiten finden.
                         </p>
 
-                        <a href="/Leistungen" class="services-link">
-                            Zu den Leistungen
-                        </a>
+                        <label v-if="pickerStudios.length > 1" class="picker-studio">
+                            <span>Studio</span>
+                            <select
+                                :value="pickerStudioId"
+                                @change="loadPicker(Number($event.target.value))"
+                            >
+                                <option v-for="studio in pickerStudios" :key="studio.id" :value="studio.id">
+                                    {{ studio.name }}
+                                </option>
+                            </select>
+                        </label>
+
+                        <p v-if="pickerLoading" class="picker-state">Leistungen werden geladen …</p>
+
+                        <p v-else-if="pickerError" class="picker-state">{{ pickerError }}</p>
+
+                        <div v-else class="service-picker">
+                            <button
+                                v-for="service in bookablePickerServices"
+                                :key="service.id"
+                                type="button"
+                                class="service-option"
+                                @click="chooseService(service)"
+                            >
+                                <span class="option-name">{{ service.name }}</span>
+                                <span class="option-meta">
+                                    {{ service.duration_minutes }} Min., {{ euro(service.price) }}
+                                </span>
+                            </button>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="text-link"
+                            @click="goToServices"
+                        >
+                            {{ onServicesPage ? 'Zurück zu den Leistungskarten' : 'Alle Leistungen mit Beschreibung ansehen' }}
+                        </button>
                     </template>
 
                     <template v-else>
@@ -132,7 +170,7 @@
 
                         <!-- NEU: Endbetrag vom Server (mit den Preisen dieses Studios) -->
                         <p v-if="hold && serverTotal !== null" class="server-total">
-                            Zu zahlen: {{ serverTotal.toFixed(2).replace('.', ',') }} €
+                            Zu zahlen: {{ euro(serverTotal) }}
                         </p>
 
                         <p v-if="selectedDate && selectedTime">
@@ -185,15 +223,24 @@
 <script setup>
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useCart } from '@/Stores/cart.js'
-import { usePage } from '@inertiajs/vue3'
+import { useCart } from '@/Stores/cart'
+import { usePage, router } from '@inertiajs/vue3'
 
 const emit = defineEmits(['close'])
+
+// NEU: Preise im deutschen Format, z. B. 45,00 €
+const euroFormat = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
+
+function euro(value) {
+    return euroFormat.format(Number(value ?? 0))
+}
 
 const {
     cartItems,
     services,
     total,
+    addToCart,
+    updateItem,
     removeFromCart,
     clearCart,
 } = useCart()
@@ -214,6 +261,78 @@ const bookedDesign = computed(() =>
 
 const selectedDate = ref('')
 const selectedTime = ref('')
+
+
+// ---------- NEU: Leistung direkt im Checkout auswählen ----------
+// (z. B. wenn die Kundin im Design-Editor angefangen hat und noch keine Leistung gewählt hat)
+
+// Gespeichertes Design, das noch zu keiner Leistung gehört
+const unassignedDesign = computed(() =>
+    cartItems.value.find(item =>
+        item.type === 'design' && item.designId && !item.serviceItemId
+    ) ?? null
+)
+
+const pickerStudios = ref([])
+const pickerStudioId = ref(null)
+const pickerServices = ref([])
+const pickerLoading = ref(false)
+const pickerError = ref('')
+
+const bookablePickerServices = computed(() =>
+    pickerServices.value.filter(service => service.bookable)
+)
+
+async function loadPicker(studio = null) {
+    pickerLoading.value = true
+    pickerError.value = ''
+
+    try {
+        const url = studio ? `/services/catalog?nail_studio_id=${studio}` : '/services/catalog'
+        const response = await fetch(url, { headers: { Accept: 'application/json' } })
+
+        if (!response.ok) {
+            throw new Error()
+        }
+
+        const data = await response.json()
+
+        pickerStudios.value = data.studios
+        pickerStudioId.value = data.studio_id
+        pickerServices.value = data.services
+
+        if (bookablePickerServices.value.length === 0) {
+            pickerError.value = 'Für dieses Studio sind noch keine buchbaren Leistungen eingetragen.'
+        }
+    } catch {
+        pickerError.value = 'Die Leistungen konnten nicht geladen werden. Bitte versuche es erneut.'
+    } finally {
+        pickerLoading.value = false
+    }
+}
+
+function chooseService(service) {
+    const serviceItemId = addToCart({
+        type: 'service',
+        serviceId: service.id,
+        studioId: service.nail_studio_id,
+        name: service.name,
+        price: service.price,
+        durationMinutes: service.duration_minutes,
+    })
+
+    // Gespeichertes Design ohne Leistung an die gewählte Leistung hängen
+    cartItems.value
+        .filter(item => item.type === 'design' && item.designId && !item.serviceItemId)
+        .forEach(item => updateItem(item.id, { serviceItemId }))
+}
+
+// Leistungen laden, sobald keine Leistung im Warenkorb ist
+watch(bookedService, (service) => {
+    if (!service && pickerServices.value.length === 0 && !pickerLoading.value) {
+        loadPicker()
+    }
+}, { immediate: true })
 
 
 // ---------- Freie Uhrzeiten ----------
@@ -454,6 +573,25 @@ async function submitBooking() {
 }
 
 
+// ---------- NEU: Zu den Leistungen ----------
+
+// Sind wir schon auf der Leistungsseite? Dann nur Fenster schließen und zu den Karten scrollen
+const onServicesPage = computed(() =>
+    window.location.pathname.toLowerCase() === '/leistungen'
+)
+
+function goToServices() {
+    if (onServicesPage.value) {
+        close()
+        document.getElementById('preise')?.scrollIntoView({ behavior: 'smooth' })
+        return
+    }
+
+    close()
+    router.visit('/Leistungen')
+}
+
+
 // ---------- Checkout verlassen ----------
 
 // × geklickt: erst freigeben, dann schließen
@@ -670,12 +808,119 @@ onBeforeUnmount(() => {
 }
 
 
+.picker-studio {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+
+    font-size: 0.85rem;
+}
+
+
+.picker-state {
+    color: #8b7b80;
+}
+
+
+.service-picker {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+
+.service-option {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 12px 14px;
+
+    border: 1px solid #ead7dd;
+
+    border-radius: 8px;
+
+    background: white;
+
+    color: #3d2930;
+
+    font: inherit;
+
+    text-align: left;
+
+    cursor: pointer;
+}
+
+
+.service-option:hover {
+    border-color: #8f5364;
+
+    background: #fff6f8;
+}
+
+
+.service-option:focus-visible,
+.text-link:focus-visible {
+    outline: 2px solid #8f5364;
+
+    outline-offset: 2px;
+}
+
+
+.option-name {
+    font-weight: 600;
+}
+
+
+.option-meta {
+    flex-shrink: 0;
+
+    color: #8f5364;
+
+    font-size: 0.85rem;
+}
+
+
+.text-link {
+    align-self: flex-start;
+
+    padding: 0;
+
+    border: none;
+
+    background: none;
+
+    color: #8f5364;
+
+    font: inherit;
+    font-size: 0.85rem;
+
+    text-decoration: underline;
+
+    cursor: pointer;
+}
+
+
 .services-link {
     align-self: flex-start;
 
     padding: 10px 16px;
 
+    border: none;
+
     border-radius: 6px;
+
+    font: inherit;
+
+    cursor: pointer;
 
     background: #8f5364;
 
@@ -704,9 +949,33 @@ select {
 
     border-radius: 6px;
 
+    background: #8f5364;
+
+    color: white;
+
     cursor: pointer;
 
-    font-size: 14px;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.payment-button:hover:not(:disabled) {
+    background: #754353;
+}
+
+/* Noch nicht alles ausgefüllt */
+.payment-button:disabled {
+    background: #e6d6db;
+
+    color: #8b7b80;
+
+    cursor: not-allowed;
+}
+
+.payment-button:focus-visible {
+    outline: 2px solid #8f5364;
+    outline-offset: 2px;
 }
 
 
