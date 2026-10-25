@@ -3,31 +3,73 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\EmployeeShift;
+use App\Models\Payment;
+use App\Models\Service;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use App\Models\Payment;
-
-
 
 class SlotService
 {
+    /** Merkt sich pro Anfrage, ob ein Studio Schichten benutzt */
+    private array $usesShifts = [];
+
     /**
-     * Wie viele Termine pro Uhrzeit gleichzeitig möglich sind
-     * = Anzahl Mitarbeiter dieses Studios.
+     * Wie viele Termine zu einem Zeitpunkt gleichzeitig möglich sind.
+     *
+     * Mit Datum + Uhrzeit:
+     *   Anzahl der Personen, die an diesem Wochentag eine Schicht haben,
+     *   die den ganzen Termin (Uhrzeit + Dauer) abdeckt.
+     *
+     * Ohne Datum/Uhrzeit oder solange im Studio noch niemand Schichten
+     * eingetragen hat: wie bisher alle Mitarbeiterinnen + Schichtleitungen.
      */
-    public function capacity(int $studioId): int
+    public function capacity(int $studioId, ?string $date = null, ?string $time = null, ?int $durationMinutes = null): int
     {
-        return User::where('nail_studio_id', $studioId)
-            ->whereIn('role', ['employee', 'admin'])
+        $staff = User::where('nail_studio_id', $studioId)
+            ->whereIn('role', [User::ROLE_EMPLOYEE, User::ROLE_ADMIN]);
+
+        if ($date === null || $time === null || ! $this->studioUsesShifts($studioId)) {
+            return $staff->count();
+        }
+
+        $weekday = Carbon::parse($date)->dayOfWeekIso;          // 1 = Montag … 7 = Sonntag
+        $start   = Carbon::createFromFormat('H:i', substr($time, 0, 5));
+        $end     = $start->copy()->addMinutes(max(0, (int) $durationMinutes));
+
+        return $staff
+            ->whereHas('shifts', function ($query) use ($weekday, $start, $end, $durationMinutes) {
+                $query->where('weekday', $weekday)
+                    ->whereTime('start_time', '<=', $start->format('H:i:s'));
+
+                // Mit Dauer: Schicht muss bis zum Terminende gehen.
+                // Ohne Dauer: Schicht muss zum Terminbeginn noch laufen.
+                $durationMinutes
+                    ? $query->whereTime('end_time', '>=', $end->format('H:i:s'))
+                    : $query->whereTime('end_time', '>', $start->format('H:i:s'));
+            })
             ->count();
     }
 
+    /** Hat irgendwer in diesem Studio schon Schichten eingetragen? */
+    private function studioUsesShifts(int $studioId): bool
+    {
+        return $this->usesShifts[$studioId] ??= EmployeeShift::whereHas('user', function ($query) use ($studioId) {
+            $query->where('nail_studio_id', $studioId)
+                ->whereIn('role', [User::ROLE_EMPLOYEE, User::ROLE_ADMIN]);
+        })->exists();
+    }
 
-        /**
-     * Gibt Reservierungen frei, deren 3 Minuten abgelaufen sind.
-     */
-      /**
+    /** Dauer einer Dienstleistung in Minuten (null, wenn unbekannt) */
+    private function durationOf(?int $serviceId): ?int
+    {
+        return $serviceId ? Service::whereKey($serviceId)->value('duration_minutes') : null;
+    }
+
+
+    /**
      * Gibt Plätze frei, deren Frist abgelaufen ist:
      * 3-Minuten-Reservierungen und nicht bezahlte Termine.
      */
@@ -60,13 +102,16 @@ class SlotService
         }
     }
 
-        /**
+    /**
      * Freie Plätze pro Uhrzeit an einem Tag,
      * z. B. [['time' => '14:00', 'free' => 2], ...]
+     *
+     * $durationMinutes (optional): Dauer der gewählten Dienstleistung.
+     * Dann zählen nur Personen, deren Schicht den ganzen Termin abdeckt.
      */
-    public function availability(int $studioId, string $date): array
-    {           $this->releaseExpired();
-        $capacity = $this->capacity($studioId);
+    public function availability(int $studioId, string $date, ?int $durationMinutes = null): array
+    {
+        $this->releaseExpired();
 
         // Wie viele Plätze sind pro Uhrzeit schon belegt?
         $taken = Appointment::where('nail_studio_id', $studioId)
@@ -79,17 +124,25 @@ class SlotService
         return collect(config('booking.times'))
             ->map(fn ($time) => [
                 'time' => $time,
-                'free' => max(0, $capacity - ($taken[$time] ?? 0)),
+                'free' => max(0, $this->capacity($studioId, $date, $time, $durationMinutes) - ($taken[$time] ?? 0)),
             ])
             ->all();
     }
 
-        /**
+    /**
      * Reserviert einen freien Platz für 3 Minuten.
      * Gibt den Termin zurück oder null, wenn alles belegt ist.
      */
-    public function hold(?int $userId, array $data): ?Appointment    {           $this->releaseExpired();
-        $capacity = $this->capacity($data['nail_studio_id']);
+    public function hold(?int $userId, array $data): ?Appointment
+    {
+        $this->releaseExpired();
+
+        $capacity = $this->capacity(
+            $data['nail_studio_id'],
+            $data['date'],
+            $data['time'],
+            $this->durationOf($data['service_id'] ?? null)
+        );
 
         for ($seat = 1; $seat <= $capacity; $seat++) {
             try {
@@ -113,7 +166,7 @@ class SlotService
         return null; // alle Plätze belegt
     }
 
-        /**
+    /**
      * Gibt einem bestehenden Termin wieder einen freien Platz,
      * z. B. wenn die Zahlung knapp nach Ablauf der Frist eintrifft.
      * true = Platz bekommen, false = alles belegt.
@@ -122,7 +175,12 @@ class SlotService
     {
         $this->releaseExpired();
 
-        $capacity = $this->capacity($appointment->nail_studio_id);
+        $capacity = $this->capacity(
+            $appointment->nail_studio_id,
+            Carbon::parse($appointment->date)->toDateString(),
+            substr($appointment->time, 0, 5),
+            $this->durationOf($appointment->service_id)
+        );
 
         for ($seat = 1; $seat <= $capacity; $seat++) {
             try {

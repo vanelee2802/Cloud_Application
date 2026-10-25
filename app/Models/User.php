@@ -80,6 +80,12 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\NailStudio::class, 'owner_id');
     }
 
+        /** Wöchentliche Schichten */
+    public function shifts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(EmployeeShift::class)->orderBy('weekday');
+    }
+    
     public function isOwner(): bool
     {
         return $this->role === self::ROLE_OWNER;
