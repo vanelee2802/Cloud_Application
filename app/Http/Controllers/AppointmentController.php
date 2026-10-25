@@ -76,16 +76,27 @@ class AppointmentController extends Controller
         return response()->json($appointment->load('service', 'nailStudio', 'employee'));
     }
 
-    // Freie Plätze pro Uhrzeit an einem Tag
+     // Freie Plätze pro Uhrzeit an einem Tag
     public function availability(Request $request, SlotService $slots)
     {
         $validated = $request->validate([
             'nail_studio_id' => 'required|integer|exists:nail_studios,id',
-            'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+            'date'           => 'required|date_format:Y-m-d|after_or_equal:today',
+
+            // Optional: gewählte Dienstleistung → Dauer wird berücksichtigt
+            'service_id'     => 'nullable|integer|exists:services,id',
         ]);
 
+        $duration = isset($validated['service_id'])
+            ? \App\Models\Service::whereKey($validated['service_id'])->value('duration_minutes')
+            : null;
+
         return response()->json([
-            'times' => $slots->availability((int) $validated['nail_studio_id'], $validated['date']),
+            'times' => $slots->availability(
+                (int) $validated['nail_studio_id'],
+                $validated['date'],
+                $duration
+            ),
         ]);
     }
 

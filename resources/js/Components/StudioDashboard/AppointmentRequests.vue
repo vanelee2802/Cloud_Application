@@ -110,7 +110,7 @@ watch(altDate, async (date) => {
 
     const request = requests.value.find((r) => r.id === openId.value)
 
-    const response = await fetch(`/appointments/availability?nail_studio_id=${request.nail_studio_id}&date=${date}`, {
+       const response = await fetch(`/appointments/availability?nail_studio_id=${request.nail_studio_id}&date=${date}&service_id=${request.service_id ?? ''}`, {
         headers: { Accept: 'application/json' },
     })
 

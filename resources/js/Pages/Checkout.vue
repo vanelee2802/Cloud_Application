@@ -146,7 +146,12 @@
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useCart } from '@/Stores/cart.js'
-import { usePage } from '@inertiajs/vue3'          // NEU (Schritt 40)
+import { usePage } from '@inertiajs/vue3'      
+
+// Vorläufig fest – wird später durch die Auswahl der Kundin ersetzt
+const studioId  = 1
+const serviceId = 1// 
+
 
 
 const emit = defineEmits(['close'])
@@ -177,7 +182,7 @@ watch(selectedDate, async (date) => {
 
     if (!date) return
 
-    const response = await fetch(`/appointments/availability?nail_studio_id=1&date=${date}`, {
+    const response = await fetch(`/appointments/availability?nail_studio_id=${studioId}&date=${date}&service_id=${serviceId}`, {
         headers: { Accept: 'application/json' },
     })
 
@@ -235,8 +240,8 @@ watch(selectedTime, async (time) => {
             'X-CSRF-TOKEN': csrfToken(),
         },
         body: JSON.stringify({
-            nail_studio_id: 1,
-            service_id: 1,
+            nail_studio_id: studioId,
+            service_id: serviceId,
             design_id: null,
             date: selectedDate.value,
             time: time,

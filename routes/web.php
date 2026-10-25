@@ -24,6 +24,8 @@ use App\Models\User;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\StudioPriceController;
 use App\Http\Controllers\CatalogController;
+use App\Http\Controllers\ShiftController;
+use App\Models\EmployeeShift;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -175,12 +177,19 @@ Route::middleware('auth')->group(function () {
             $studioIds = $user->manageableStudioIds();
 
             // Mitarbeiterinnen aller Studios, die diese Person verwalten darf
-            $employees = User::query()
+                    $employees = User::query()
                 ->where('role', User::ROLE_EMPLOYEE)
                 ->whereIn('nail_studio_id', $studioIds)
-                ->with('nailStudio:id,name')
+                ->with(['nailStudio:id,name', 'shifts'])
                 ->orderBy('name')
-                ->get(['id', 'name', 'email', 'nail_studio_id']);
+                ->get(['id', 'name', 'email', 'nail_studio_id'])
+                ->map(fn (User $employee) => [
+                    'id'          => $employee->id,
+                    'name'        => $employee->name,
+                    'email'       => $employee->email,
+                    'nail_studio' => $employee->nailStudio,
+                    'shifts'      => EmployeeShift::mapFor($employee),
+                ]);
 
             return Inertia::render('Studioverwaltung', [
                 'employees' => $employees,
@@ -198,6 +207,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
             ->name('employees.destroy');
     });
+
+        Route::put('/employees/{employee}/shifts', [ShiftController::class, 'update'])
+            ->name('shifts.update');
 
         // Preise pro Studio – nur für die Inhaberin
     Route::get('/admin/preise', [StudioPriceController::class, 'index'])
