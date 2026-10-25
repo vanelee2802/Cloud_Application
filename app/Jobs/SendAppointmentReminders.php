@@ -18,6 +18,11 @@ class SendAppointmentReminders implements ShouldQueue
             ->get();
 
         foreach ($appointments as $appointment) {
+            // Gäste haben kein Konto, für sie gibt es keine App-Benachrichtigung
+            if (!$appointment->user) {
+                continue;
+            }
+
             // Mit Klammern suchen, damit (#1) nicht auch (#12) findet
             $alreadyReminded = $appointment->user->notifications()
                 ->where('type', 'appointment_reminder')
