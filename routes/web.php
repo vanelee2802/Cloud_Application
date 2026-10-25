@@ -248,6 +248,10 @@ Route::get('/StudioSearch', function () {
     return Inertia::render('StudioSearch');
 })->name('StudioSearch');
 
+Route::get('/settings', function () {
+    return Inertia::render('Setting');
+})->name('settings');
+
 
 
 
