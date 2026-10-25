@@ -34,7 +34,6 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\PublicReviewController;
 use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
 
-Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
 
 Route::get('/', function () {
@@ -182,9 +181,12 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
-    Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
-            Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
+        Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
 
+    Route::middleware('role:owner,admin,employee')->group(function () {
+        Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
+        Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
+    });
 
     Route::middleware('role:employee,admin')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
