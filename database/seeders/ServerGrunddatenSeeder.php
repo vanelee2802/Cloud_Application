@@ -46,22 +46,29 @@ class ServerGrunddatenSeeder extends Seeder
             );
         }
 
-        // 3. Studio allen Inhaberinnen zuordnen
+        // 3. Studio allen Inhaberinnen als eigenes Studio zuordnen
         $owners = User::query()->where('role', 'owner')->get();
 
         foreach ($owners as $owner) {
             $relation = $owner->ownedStudios();
 
             if ($relation instanceof BelongsToMany) {
-                // Zuordnung über Zwischentabelle
                 $relation->syncWithoutDetaching([$studio->id]);
             } elseif (! $owner->ownedStudios()->whereKey($studio->id)->exists()) {
-                // Zuordnung über Spalte in der Studio-Tabelle
                 $owner->ownedStudios()->save($studio);
             }
         }
 
-        // 4. Demo-Mitarbeiterinnen für die Präsentation (Login nicht möglich: zufälliges Passwort)
+        // 4. NEU: Inhaberinnen und Admins ohne direktes Studio bekommen dieses Studio
+        User::query()
+            ->whereIn('role', ['owner', 'admin'])
+            ->whereNull('nail_studio_id')
+            ->get()
+            ->each(function (User $user) use ($studio) {
+                $user->forceFill(['nail_studio_id' => $studio->id])->save();
+            });
+
+        // 5. Demo-Mitarbeiterinnen für die Präsentation (Login nicht möglich: zufälliges Passwort)
         $demoEmployees = [
             ['name' => 'Lena (Demo)', 'email' => 'lena.demo@mixmatch.invalid'],
             ['name' => 'Mia (Demo)',  'email' => 'mia.demo@mixmatch.invalid'],
