@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <a href="#preise" class="intro-button">
+                <a href="/Leistungen" class="intro-button">
                     Unsere Leistungen entdecken
                     <span aria-hidden="true">→</span>
                 </a>
