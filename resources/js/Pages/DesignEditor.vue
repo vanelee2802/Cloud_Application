@@ -1,7 +1,9 @@
 <script setup>
 
 import { ref, computed, onMounted } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 import { buildLayers } from '@/Components/NailEditor/patternGenerators'
+import { useCart } from '@/Stores/cart'
 
 import pagesLayout from '@/Layouts/pagesLayout.vue'
 
@@ -379,9 +381,14 @@ const designName = ref('Mein Nageldesign')
 const isSaving = ref(false)
 const saveMessage = ref('')
 
+// NEU: Zuletzt gespeichertes Design merken, damit beim Buchen nicht doppelt gespeichert wird
+const lastSaved = ref({ id: null, snapshot: null })
 
-async function saveDesign() {
-    saveMessage.value = ''
+/**
+ * NEU: Nägel für den Server zusammenstellen.
+ * Gibt { nails } zurück oder { error } mit einer Meldung für die Kundin.
+ */
+function buildNailsPayload() {
 
     // Alle gestalteten Nägel berücksichtigen, nicht nur ausgewählte.
     const designedFingers = Object.keys(nailDesigns.value).filter(
@@ -389,16 +396,13 @@ async function saveDesign() {
     )
 
     if (designedFingers.length === 0) {
-        saveMessage.value = 'Bitte gestalte mindestens einen Nagel mit einer Farbe.'
-        return
+        return { error: 'Bitte gestalte mindestens einen Nagel mit einer Farbe.' }
     }
 
     const nailShapeId = getShapeId()
 
     if (!nailShapeId) {
-        saveMessage.value =
-            'Diese Nagelform ist noch nicht in der Datenbank vorhanden.'
-        return
+        return { error: 'Diese Nagelform ist noch nicht in der Datenbank vorhanden.' }
     }
 
     const nails = []
@@ -408,8 +412,7 @@ async function saveDesign() {
         const position = fingerPositionMap[finger]
 
         if (!position) {
-            saveMessage.value = `Die Nagelposition "${finger}" ist ungültig.`
-            return
+            return { error: `Die Nagelposition "${finger}" ist ungültig.` }
         }
 
         const elementId = getElementId(nailData)
@@ -420,6 +423,30 @@ async function saveDesign() {
             color_id: nailData.color.id,
             element_ids: elementId ? [elementId] : [],
         })
+    }
+
+    return { nails }
+}
+
+/**
+ * NEU: Design auf dem Server speichern.
+ * Gibt die ID zurück, bei Fehlern null (Meldung steht dann in saveMessage).
+ * Ist das Design seit dem letzten Speichern unverändert, wird die alte ID genutzt.
+ */
+async function persistDesign() {
+    saveMessage.value = ''
+
+    const { nails, error } = buildNailsPayload()
+
+    if (error) {
+        saveMessage.value = error
+        return null
+    }
+
+    const snapshot = JSON.stringify({ name: designName.value, nails })
+
+    if (lastSaved.value.id && lastSaved.value.snapshot === snapshot) {
+        return lastSaved.value.id
     }
 
     isSaving.value = true
@@ -458,18 +485,93 @@ async function saveDesign() {
                     result.message || 'Das Design konnte nicht gespeichert werden.'
             }
 
-            return
+            return null
         }
 
-        saveMessage.value =
-            `Design erfolgreich gespeichert! (ID: ${result.id})`
+        lastSaved.value = { id: result.id, snapshot }
+
+        return result.id
     } catch (error) {
         console.error('Fehler beim Speichern:', error)
         saveMessage.value =
             'Server nicht erreichbar. Bitte versuche es erneut.'
+        return null
     } finally {
         isSaving.value = false
     }
+}
+
+// Button „Design speichern“
+async function saveDesign() {
+    const id = await persistDesign()
+
+    if (id) {
+        saveMessage.value = `Design erfolgreich gespeichert! (ID: ${id})`
+    }
+}
+
+
+// =========================================
+// NEU: ZUR KASSE – Leistung + Design zusammen buchen
+// =========================================
+
+const page = usePage()
+const user = computed(() => page.props.auth?.user ?? null)
+
+const { services: cartServices, cartItems, addToCart, removeFromCart } = useCart()
+
+// Wurde überhaupt etwas gestaltet?
+const hasDesign = computed(() =>
+    Object.values(nailDesigns.value).some(nail => nail.color?.id)
+)
+
+async function goToCheckout() {
+
+    const service = cartServices.value[0] ?? null
+
+    // Ohne Leistung oder ohne gestaltete Nägel: Checkout wie bisher
+    if (!service || !hasDesign.value) {
+        showCheckout.value = true
+        return
+    }
+
+    // Design speichern geht nur mit Konto
+    if (!user.value) {
+        const withoutDesign = window.confirm(
+            'Um dein Design mitzubuchen, musst du angemeldet sein.\n\n'
+            + 'OK: ohne Design weiter zur Buchung\n'
+            + 'Abbrechen: zurück zum Editor (anmelden über „Mit Google anmelden“)'
+        )
+
+        if (withoutDesign) {
+            showCheckout.value = true
+        }
+
+        return
+    }
+
+    const designId = await persistDesign()
+
+    if (!designId) {
+        // Meldung im Speichern-Bereich anzeigen
+        showSavePanel.value = true
+        return
+    }
+
+    // Altes Design zu dieser Leistung ersetzen
+    cartItems.value
+        .filter(item => item.type === 'design' && item.serviceItemId === service.id)
+        .forEach(item => removeFromCart(item.id))
+
+    addToCart({
+        type: 'design',
+        name: designName.value,
+        price: totalDesignPrice.value,
+        designId,
+        serviceItemId: service.id,
+    })
+
+    showCheckout.value = true
 }
 
 </script>
@@ -568,7 +670,7 @@ async function saveDesign() {
                 <!-- SPALTE 4: VERZIERUNG + MEIN DESIGN -->
                 <!-- ========================================= -->
 
-                                  <div class="design-area area-deko">
+                <div class="design-area area-deko">
 
                     <CharmPanel
                         v-if="selectedCategories.includes('Verzierung')"
@@ -646,25 +748,18 @@ async function saveDesign() {
 
                 <!-- ========================================= -->
                 <!-- SPALTE 5: WARENKORB                        -->
-                <!-- immer sichtbar, oben auf Höhe der Verzierung -->
-                <!-- ========================================= -->
-
-                             <!-- ========================================= -->
-                <!-- SPALTE 5: WARENKORB + MEIN DESIGN          -->
                 <!-- ========================================= -->
 
                 <aside class="cart-area area-cart">
 
+                    <!-- GEÄNDERT: erst Design speichern und mit der Leistung verknüpfen, dann Checkout -->
                     <CartPanel
                         :nail-designs="nailDesigns"
                         :design-price="totalDesignPrice"
-                        @checkout="showCheckout = true"
+                        @checkout="goToCheckout"
                     />
 
-                  
-
                 </aside>
-                
 
 
             </div>

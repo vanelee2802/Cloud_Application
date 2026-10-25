@@ -1,6 +1,7 @@
-
 <script setup>
 import NavLink from '@/Components/NavLink.vue'
+import CartIcon from '@/Components/CartIcon.vue'
+import Checkout from '@/Pages/Checkout.vue'
 import { usePage, router } from '@inertiajs/vue3'
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 
@@ -24,6 +25,9 @@ const isStaff = computed(() =>
 
 const menuOpen = ref(false)
 const menuRef = ref(null)
+
+// Warenkorb-Symbol öffnet das bestehende Checkout-Fenster
+const showCheckout = ref(false)
 
 function toggleMenu() {
     menuOpen.value = !menuOpen.value
@@ -72,6 +76,15 @@ onBeforeUnmount(() => {
                         :active="route().current('Leistungen')"
                     >
                         Leistungen
+                    </NavLink>
+                </li>
+
+                <li>
+                    <NavLink
+                        href="/DesignEditor"
+                        :active="route().current('DesignEditor')"
+                    >
+                        Design Editor
                     </NavLink>
                 </li>
 
@@ -150,21 +163,6 @@ onBeforeUnmount(() => {
                                         <rect x="14" y="14" width="7" height="7" rx="1" />
                                     </svg>
                                     <span>Dashboard</span>
-                                </NavLink>
-
-                                <NavLink
-                                    href="/DesignEditor"
-                                    :active="route().current('DesignEditor')"
-                                    class="mega-menu-link"
-                                    @click="closeMenu"
-                                >
-                                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 1.5-3.3 1.7 1.7 0 0 1 1.3-2.8H18a3 3 0 0 0 3-3c0-5-4-9-9-9Z" />
-                                        <circle cx="7.5" cy="10" r="1" />
-                                        <circle cx="11" cy="6.5" r="1" />
-                                        <circle cx="16" cy="8" r="1" />
-                                    </svg>
-                                    <span>Design Editor</span>
                                 </NavLink>
 
                                 <NavLink
@@ -299,6 +297,8 @@ onBeforeUnmount(() => {
 
             <!-- Benutzerinformationen bleiben rechts -->
             <div v-if="user" class="navbar-right">
+                <CartIcon @open="showCheckout = true" />
+
                 <img
                     v-if="user.avatar"
                     :src="user.avatar"
@@ -331,12 +331,23 @@ onBeforeUnmount(() => {
                 </button>
             </div>
 
+            <!-- Gäste können auch buchen, daher Warenkorb auch hier -->
             <div v-else class="navbar-right">
+                <CartIcon @open="showCheckout = true" />
+
                 <a href="/auth/google" class="login-button">
                     Mit Google anmelden
                 </a>
             </div>
         </div>
+
+        <!-- Checkout-Fenster über der ganzen Seite -->
+        <Teleport to="body">
+            <Checkout
+                v-if="showCheckout"
+                @close="showCheckout = false"
+            />
+        </Teleport>
     </nav>
 </template>
 
@@ -515,6 +526,21 @@ onBeforeUnmount(() => {
     gap: 0.7rem;
     margin-left: auto;
     flex-shrink: 0;
+}
+
+/* Warenkorb-Symbol auf dem dunklen Hintergrund: weiß statt dunkelrosa */
+.navbar-right :deep(.cart-icon) {
+    color: white;
+}
+
+.navbar-right :deep(.cart-icon:hover) {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.navbar-right :deep(.cart-badge) {
+    border-color: #8f5364;
+    background: white;
+    color: #8f5364;
 }
 
 .profile-image {

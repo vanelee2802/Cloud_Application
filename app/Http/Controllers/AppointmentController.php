@@ -15,6 +15,9 @@ use Inertia\Inertia;
 use App\Models\User;                                   // NEU (Schritt 60)
 use App\Notifications\AppointmentRequested;            // NEU (Schritt 60)
 use Illuminate\Support\Facades\Notification;           // NEU (Schritt 60)
+use App\Models\Design;                                 // NEU (Warenkorb-Buchung)
+use App\Models\Service;                                // NEU (Warenkorb-Buchung)
+use Illuminate\Validation\ValidationException;         // NEU (Warenkorb-Buchung)
 
 class AppointmentController extends Controller
 {
@@ -87,9 +90,17 @@ class AppointmentController extends Controller
             'service_id'     => 'nullable|integer|exists:services,id',
         ]);
 
-        $duration = isset($validated['service_id'])
-            ? \App\Models\Service::whereKey($validated['service_id'])->value('duration_minutes')
-            : null;
+        $duration = null;
+
+        // GEÄNDERT: Leistung muss zum Studio gehören und buchbar sein
+        if (isset($validated['service_id'])) {
+            $service = $this->bookableService(
+                (int) $validated['service_id'],
+                (int) $validated['nail_studio_id']
+            );
+
+            $duration = $service->duration_minutes;
+        }
 
         return response()->json([
             'times' => $slots->availability(
@@ -110,6 +121,14 @@ class AppointmentController extends Controller
             'date' => 'required|date_format:Y-m-d|after_or_equal:today',
             'time' => ['required', Rule::in(config('booking.times'))],
         ]);
+
+        // NEU: Nur buchbare Leistungen dieses Studios
+        $this->bookableService((int) $validated['service_id'], (int) $validated['nail_studio_id']);
+
+        // NEU: Ein Design darf nur von seiner Besitzerin mitgebucht werden
+        if (! empty($validated['design_id'])) {
+            $this->ensureOwnDesign($request, (int) $validated['design_id']);
+        }
 
         $appointment = $slots->hold($request->user()?->id, $validated);
 
@@ -357,6 +376,36 @@ class AppointmentController extends Controller
                 ]),
             ]),
         ]);
+    }
+
+    // NEU: Leistung muss zum Studio gehören, sichtbar und keine Zusatzleistung sein
+    private function bookableService(int $serviceId, int $studioId): Service
+    {
+        $service = Service::find($serviceId);
+
+        if (! $service || (int) $service->nail_studio_id !== $studioId || ! $service->isBookable()) {
+            throw ValidationException::withMessages([
+                'service_id' => 'Diese Leistung kann in diesem Studio nicht gebucht werden.',
+            ]);
+        }
+
+        return $service;
+    }
+
+    // NEU: Gäste können kein Design mitbuchen, Kundinnen nur ihr eigenes
+    private function ensureOwnDesign(Request $request, int $designId): void
+    {
+        $user = $request->user();
+
+        $isOwn = $user && Design::whereKey($designId)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (! $isOwn) {
+            throw ValidationException::withMessages([
+                'design_id' => 'Dieses Design kann nicht mitgebucht werden. Bitte melde dich mit dem Konto an, in dem du es gespeichert hast.',
+            ]);
+        }
     }
 
     // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?

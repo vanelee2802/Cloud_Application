@@ -27,6 +27,9 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ShiftController;
 use App\Models\EmployeeShift;
 
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\ServiceCatalogController;
+
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
 
@@ -92,9 +95,15 @@ Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'p
 Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
     ->name('appointments.manage');
 
+    
+
 // Muster-Katalog: für alle lesbar (auch ohne Login), damit der Design-Editor funktioniert.
 // Anlegen/Ändern/Löschen bleibt unten im geschützten Bereich.
 Route::get('/design-elements', [DesignElementController::class, 'index']);
+// Öffentlich: Leistungen für die Leistungsseite
+Route::get('/services/catalog', [ServiceCatalogController::class, 'index'])
+    ->name('services.catalog');
+
 Route::middleware('auth')->group(function () {
 
     // Übersicht der gespeicherten Nageldesigns
@@ -273,6 +282,18 @@ Route::get('/StudioSearch', function () {
 Route::get('/settings', function () {
     return Inertia::render('Setting');
 })->name('settings');
+
+
+// Preisverwaltung: nur Inhaberin
+Route::middleware(['auth', 'role:owner'])
+    ->prefix('admin/services')
+    ->name('admin.services.')
+    ->group(function () {
+        Route::get('/', [AdminServiceController::class, 'index'])->name('index');
+        Route::post('/', [AdminServiceController::class, 'store'])->name('store');
+        Route::patch('/{service}', [AdminServiceController::class, 'update'])->name('update');
+        Route::delete('/{service}', [AdminServiceController::class, 'destroy'])->name('destroy');
+    });
 
 
 

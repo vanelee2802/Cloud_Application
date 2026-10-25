@@ -6,6 +6,7 @@
             <!-- X zum Schließen -->
             <button
                 class="close-button"
+                aria-label="Schließen"
                 @click="close"
             >
                 ×
@@ -25,11 +26,12 @@
                     </p>
 
                     <div
-                        v-for="(item, index) in cartItems"
-                        :key="index"
+                        v-for="item in cartItems"
+                        :key="item.id"
                         class="cart-item"
                     >
                         <img
+                            v-if="item.image"
                             :src="item.image"
                             :alt="item.name"
                             class="cart-item-image"
@@ -37,8 +39,17 @@
 
                         <div class="cart-item-info">
                             <span>{{ item.name }}</span>
-                            <span>{{ item.price.toFixed(2) }} €</span>
+                            <span>{{ Number(item.price).toFixed(2) }} €</span>
                         </div>
+
+                        <button
+                            type="button"
+                            class="remove-button"
+                            :aria-label="`${item.name} entfernen`"
+                            @click="removeFromCart(item.id)"
+                        >
+                            Entfernen
+                        </button>
 
                     </div>
 
@@ -55,83 +66,107 @@
 
                     <h2>Wähle deinen Termin</h2>
 
-                    <label for="date">
-                        Datum
-                    </label>
+                    <!-- NEU: Ohne Leistung im Warenkorb kein Termin -->
+                    <template v-if="!bookedService">
+                        <p>
+                            Wähle zuerst eine Leistung aus, damit wir die passenden Uhrzeiten finden.
+                        </p>
 
-                    <!-- :min verhindert vergangene Tage -->
-                    <input
-                        id="date"
-                        type="date"
-                        :min="today"
-                        v-model="selectedDate"
-                    >
-
-                    <label for="time">
-                        Uhrzeit
-                    </label>
-
-                    <!-- Uhrzeiten kommen vom Server, ausgebuchte sind gesperrt -->
-                    <select
-                        id="time"
-                        v-model="selectedTime"
-                        :disabled="!selectedDate"
-                    >
-                        <option value="">
-                            Uhrzeit auswählen
-                        </option>
-
-                        <option
-                            v-for="slot in times"
-                            :key="slot.time"
-                            :value="slot.time"
-                            :disabled="slot.free === 0"
-                        >
-                            {{ slot.time }}{{ slot.free === 0 ? ' – ausgebucht' : '' }}
-                        </option>
-                    </select>
-
-                    <!-- Reservierung mit Countdown -->
-                    <p v-if="hold">
-                        Diese Uhrzeit ist für dich reserviert – noch {{ countdown }} Min.
-                    </p>
-
-                    <p v-if="selectedDate && selectedTime">
-                        Gewählter Termin:
-                        {{ selectedDate }} um {{ selectedTime }}
-                    </p>
-
-                    <!-- NEU (Schritt 40): Nur für Gäste – Kontaktdaten -->
-                    <template v-if="!user">
-                        <label for="customer-name">
-                            Name
-                        </label>
-                        <input
-                            id="customer-name"
-                            v-model.trim="customerName"
-                            autocomplete="name"
-                        >
-
-                        <label for="customer-email">
-                            E-Mail (für Bestätigung und Quittung)
-                        </label>
-                        <input
-                            id="customer-email"
-                            type="email"
-                            v-model.trim="customerEmail"
-                            autocomplete="email"
-                        >
+                        <a href="/Leistungen" class="services-link">
+                            Zu den Leistungen
+                        </a>
                     </template>
 
-                    <!-- ZAHLUNG -->
-                    <!-- GEÄNDERT (Schritt 40): :disabled="!canSubmit" -->
-                    <button
-                        class="payment-button"
-                        :disabled="!canSubmit"
-                        @click="submitBooking"
-                    >
-                        {{ loading ? 'Einen Moment …' : buttonLabel }}
-                    </button>
+                    <template v-else>
+
+                        <p class="booked-service">
+                            {{ bookedService.name }}
+                            <template v-if="bookedService.durationMinutes">
+                                ({{ bookedService.durationMinutes }} Min.)
+                            </template>
+                            <template v-if="bookedDesign">
+                                <br>mit Design „{{ bookedDesign.name }}“
+                            </template>
+                        </p>
+
+                        <label for="date">
+                            Datum
+                        </label>
+
+                        <!-- :min verhindert vergangene Tage -->
+                        <input
+                            id="date"
+                            type="date"
+                            :min="today"
+                            v-model="selectedDate"
+                        >
+
+                        <label for="time">
+                            Uhrzeit
+                        </label>
+
+                        <!-- Uhrzeiten kommen vom Server, ausgebuchte sind gesperrt -->
+                        <select
+                            id="time"
+                            v-model="selectedTime"
+                            :disabled="!selectedDate"
+                        >
+                            <option value="">
+                                Uhrzeit auswählen
+                            </option>
+
+                            <option
+                                v-for="slot in times"
+                                :key="slot.time"
+                                :value="slot.time"
+                                :disabled="slot.free === 0"
+                            >
+                                {{ slot.time }}{{ slot.free === 0 ? ' – ausgebucht' : '' }}
+                            </option>
+                        </select>
+
+                        <!-- Reservierung mit Countdown -->
+                        <p v-if="hold">
+                            Diese Uhrzeit ist für dich reserviert – noch {{ countdown }} Min.
+                        </p>
+
+                        <p v-if="selectedDate && selectedTime">
+                            Gewählter Termin:
+                            {{ selectedDate }} um {{ selectedTime }}
+                        </p>
+
+                        <!-- Nur für Gäste – Kontaktdaten -->
+                        <template v-if="!user">
+                            <label for="customer-name">
+                                Name
+                            </label>
+                            <input
+                                id="customer-name"
+                                v-model.trim="customerName"
+                                autocomplete="name"
+                            >
+
+                            <label for="customer-email">
+                                E-Mail (für Bestätigung und Quittung)
+                            </label>
+                            <input
+                                id="customer-email"
+                                type="email"
+                                v-model.trim="customerEmail"
+                                autocomplete="email"
+                            >
+                        </template>
+
+                        <!-- ZAHLUNG -->
+                        <button
+                            class="payment-button"
+                            :disabled="!canSubmit"
+                            @click="submitBooking"
+                        >
+                            {{ loading ? 'Einen Moment …' : buttonLabel }}
+                        </button>
+
+                    </template>
 
                 </div>
 
@@ -146,26 +181,37 @@
 
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useCart } from '@/Stores/cart.js'
-import { usePage } from '@inertiajs/vue3'      
-
-// Vorläufig fest – wird später durch die Auswahl der Kundin ersetzt
-const studioId  = 1
-const serviceId = 1// 
-
-
+import { usePage } from '@inertiajs/vue3'
 
 const emit = defineEmits(['close'])
 
 const {
     cartItems,
-    total
+    services,
+    total,
+    removeFromCart,
+    clearCart,
 } = useCart()
+
+// GEÄNDERT: Studio und Leistung kommen aus dem Warenkorb statt fest aus dem Code
+const bookedService = computed(() => services.value[0] ?? null)
+const studioId = computed(() => bookedService.value?.studioId ?? null)
+const serviceId = computed(() => bookedService.value?.serviceId ?? null)
+
+// NEU: Gespeichertes Design, das zu dieser Leistung gehört (aus dem Design-Editor)
+const bookedDesign = computed(() =>
+    cartItems.value.find(item =>
+        item.type === 'design'
+        && item.designId
+        && item.serviceItemId === bookedService.value?.id
+    ) ?? null
+)
 
 const selectedDate = ref('')
 const selectedTime = ref('')
 
 
-// ---------- Schritt 15: freie Uhrzeiten ----------
+// ---------- Freie Uhrzeiten ----------
 
 // Freie Plätze pro Uhrzeit vom Server, z. B. [{ time: '14:00', free: 3 }]
 const times = ref([])
@@ -173,16 +219,15 @@ const times = ref([])
 // Heute als YYYY-MM-DD, damit keine vergangenen Tage wählbar sind
 const today = new Date().toLocaleDateString('sv-SE')
 
-// Sobald ein Datum gewählt wird: alten Platz freigeben, freie Uhrzeiten laden
-watch(selectedDate, async (date) => {
+async function loadTimes(date) {
     await releaseHold()
 
     selectedTime.value = ''
     times.value = []
 
-    if (!date) return
+    if (!date || !serviceId.value) return
 
-    const response = await fetch(`/appointments/availability?nail_studio_id=${studioId}&date=${date}&service_id=${serviceId}`, {
+    const response = await fetch(`/appointments/availability?nail_studio_id=${studioId.value}&date=${date}&service_id=${serviceId.value}`, {
         headers: { Accept: 'application/json' },
     })
 
@@ -193,10 +238,24 @@ watch(selectedDate, async (date) => {
 
     const data = await response.json()
     times.value = data.times
+}
+
+// Sobald ein Datum gewählt wird: alten Platz freigeben, freie Uhrzeiten laden
+watch(selectedDate, loadTimes)
+
+// Leistung im Warenkorb geändert oder entfernt → Uhrzeiten neu laden bzw. zurücksetzen
+watch(serviceId, () => {
+    if (!serviceId.value) {
+        releaseHold()
+        selectedDate.value = ''
+        return
+    }
+
+    loadTimes(selectedDate.value)
 })
 
 
-// ---------- Schritt 16 bis 18: Platz reservieren und freigeben ----------
+// ---------- Platz reservieren und freigeben ----------
 
 // Aktuelle Reservierung: { id, hold_token, expires_in } oder null
 const hold = ref(null)
@@ -230,7 +289,7 @@ async function releaseHold(keepalive = false) {
 watch(selectedTime, async (time) => {
     await releaseHold()
 
-    if (!time) return
+    if (!time || !serviceId.value) return
 
     const response = await fetch('/appointments/hold', {
         method: 'POST',
@@ -240,9 +299,9 @@ watch(selectedTime, async (time) => {
             'X-CSRF-TOKEN': csrfToken(),
         },
         body: JSON.stringify({
-            nail_studio_id: studioId,
-            service_id: serviceId,
-            design_id: null,
+            nail_studio_id: studioId.value,
+            service_id: serviceId.value,
+            design_id: bookedDesign.value?.designId ?? null,
             date: selectedDate.value,
             time: time,
         }),
@@ -261,7 +320,7 @@ watch(selectedTime, async (time) => {
 })
 
 
-// ---------- Schritt 19: Countdown ----------
+// ---------- Countdown ----------
 
 const secondsLeft = ref(0)
 let timer = null
@@ -299,13 +358,13 @@ const countdown = computed(() => {
 })
 
 
-// ---------- Schritt 22, 39, 40: Termin abschicken ----------
+// ---------- Termin abschicken ----------
 
-// NEU (Schritt 40): Eingeloggte Kundin oder null (Gast)
+// Eingeloggte Kundin oder null (Gast)
 const page = usePage()
 const user = computed(() => page.props.auth?.user ?? null)
 
-// NEU (Schritt 40): Nur für Gäste – Kontaktdaten für Bestätigung und Zahlung
+// Nur für Gäste – Kontaktdaten für Bestätigung und Zahlung
 const customerName = ref('')
 const customerEmail = ref('')
 
@@ -318,7 +377,7 @@ const buttonLabel = computed(() =>
     isToday.value ? 'Termin anfragen' : 'Jetzt bezahlen'
 )
 
-// NEU (Schritt 40): Button nur klickbar, wenn reserviert und (bei Gästen) Name + E-Mail ausgefüllt
+// Button nur klickbar, wenn reserviert und (bei Gästen) Name + E-Mail ausgefüllt
 const canSubmit = computed(() =>
     hold.value
     && !loading.value
@@ -326,7 +385,7 @@ const canSubmit = computed(() =>
 )
 
 async function submitBooking() {
-    if (!canSubmit.value) return                    // GEÄNDERT (Schritt 40)
+    if (!canSubmit.value) return
 
     loading.value = true
 
@@ -338,7 +397,7 @@ async function submitBooking() {
             'X-CSRF-TOKEN': csrfToken(),
             'X-Hold-Token': hold.value.hold_token,
         },
-        // GEÄNDERT (Schritt 40): Eingeloggt nichts mitschicken, als Gast Name + E-Mail
+        // Eingeloggt nichts mitschicken, als Gast Name + E-Mail
         body: JSON.stringify(
             user.value
                 ? {}
@@ -368,6 +427,9 @@ async function submitBooking() {
     stopCountdown()
     hold.value = null
 
+    // NEU: Termin ist angelegt → Warenkorb leeren, damit nicht doppelt gebucht wird
+    clearCart()
+
     // Späterer Tag: direkt zur Zahlung
     if (data.checkout_url) {
         window.location.href = data.checkout_url
@@ -380,7 +442,7 @@ async function submitBooking() {
 }
 
 
-// ---------- Schritt 18: Checkout verlassen ----------
+// ---------- Checkout verlassen ----------
 
 // × geklickt: erst freigeben, dann schließen
 function close() {
@@ -402,37 +464,6 @@ onBeforeUnmount(() => {
     window.removeEventListener('pagehide', onPageHide)
     releaseHold(true)
 })
-
-
-/**
- * Stripe-Zahlung
- *
- * Diese Funktion bleibt bestehen.
- * Sie wird später aufgerufen, nachdem der
- * Termin vom Admin bestätigt wurde.
- */
-async function startPayment() {
-
-    const response = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-
-        headers: {
-            'Content-Type': 'application/json',
-        },
-
-        body: JSON.stringify({
-            payment_id: 6,
-        }),
-    })
-
-    const data = await response.json()
-
-    console.log('Stripe Antwort:', data)
-
-    if (data.checkout_url) {
-        window.location.href = data.checkout_url
-    }
-}
 
 </script>
 
@@ -560,9 +591,29 @@ async function startPayment() {
 .cart-item-info {
     display: flex;
 
+    flex: 1;
+
     flex-direction: column;
 
     gap: 4px;
+}
+
+
+.remove-button {
+    padding: 0;
+
+    border: none;
+
+    background: none;
+
+    color: #9b2c3c;
+
+    font: inherit;
+    font-size: 0.8rem;
+
+    text-decoration: underline;
+
+    cursor: pointer;
 }
 
 
@@ -591,6 +642,30 @@ async function startPayment() {
 }
 
 
+.booked-service {
+    margin: 0 0 6px;
+
+    color: #8f5364;
+
+    font-weight: 600;
+}
+
+
+.services-link {
+    align-self: flex-start;
+
+    padding: 10px 16px;
+
+    border-radius: 6px;
+
+    background: #8f5364;
+
+    color: white;
+
+    text-decoration: none;
+}
+
+
 input,
 select {
     padding: 10px;
@@ -613,6 +688,19 @@ select {
     cursor: pointer;
 
     font-size: 14px;
+}
+
+
+@media (max-width: 700px) {
+    .checkout-window {
+        width: 100%;
+        padding: 50px 20px 20px;
+    }
+
+    .checkout-content {
+        flex-direction: column;
+        gap: 20px;
+    }
 }
 
 </style>
