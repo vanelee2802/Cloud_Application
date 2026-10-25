@@ -2,53 +2,56 @@
 
 namespace App\Services;
 
+use App\Models\Color;
 use App\Models\DesignElement;
 use App\Models\NailStudio;
 use App\Models\PriceOption;
 use App\Models\Service;
 use App\Models\StudioPrice;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Preise pro Studio.
+ * Preise und Katalog pro Studio.
  *
- * Regel: Hat das Studio einen eigenen Preis (studio_prices), gilt dieser.
- *        Sonst gilt der Standardpreis (design_elements.price_per_nail
- *        bzw. price_options.default_price).
+ * Sichtbar für ein Studio sind:
+ *   - Platzhalter (nail_studio_id = NULL)
+ *   - eigene Einträge dieses Studios
  *
- * Dienstleistungen (services) gehören schon zu einem Studio und
- * haben ihren Preis direkt in der eigenen Spalte "price".
+ * Preis: eigener Studio-Preis (studio_prices) vor Standardpreis.
  */
 class PriceService
 {
-    /**
-     * Komplette Preisliste eines Studios – für den Editor und die Preis-Seite.
-     */
     public function priceList(NailStudio $studio): array
     {
         $overrides = $this->overrides($studio);
 
-        // Muster: Standardpreis + ggf. Studio-Preis
         $designs = DesignElement::where('is_active', true)
+            ->where(fn (Builder $q) => $this->forStudio($q, $studio))
+            ->with('tags:id,name')
             ->orderBy('category')
             ->orderBy('name')
-            ->get(['id', 'name', 'category', 'price_per_nail'])
+            ->get(['id', 'name', 'category', 'price_per_nail', 'image_path', 'nail_studio_id'])
             ->map(fn (DesignElement $design) => [
                 'id'            => $design->id,
                 'name'          => $design->name,
                 'category'      => $design->category,
                 'unit'          => 'nagel',
+                'image'         => $design->image_path,
+                                'tags'          => $design->tags->pluck('name')->all(),
                 'default_price' => (float) $design->price_per_nail,
                 'price'         => $overrides[DesignElement::class][$design->id]
                                     ?? (float) $design->price_per_nail,
                 'is_custom'     => isset($overrides[DesignElement::class][$design->id]),
+                'is_own'        => $design->nail_studio_id === $studio->id,
             ])
             ->values();
 
-        // Effekte, Verzierungen, Längen, Materialien
         $options = PriceOption::where('is_active', true)
+            ->where(fn (Builder $q) => $this->forStudio($q, $studio))
             ->orderBy('category')
             ->orderBy('sort_order')
+            ->orderBy('name')
             ->get()
             ->map(fn (PriceOption $option) => [
                 'id'            => $option->id,
@@ -56,14 +59,28 @@ class PriceService
                 'key'           => $option->key,
                 'name'          => $option->name,
                 'unit'          => $option->unit,
+                'image'         => $option->image_path,
                 'default_price' => (float) $option->default_price,
                 'price'         => $overrides[PriceOption::class][$option->id]
                                     ?? (float) $option->default_price,
                 'is_custom'     => isset($overrides[PriceOption::class][$option->id]),
+                'is_own'        => $option->nail_studio_id === $studio->id,
             ])
             ->groupBy('category');
 
-        // Dienstleistungen: gehören direkt zum Studio
+        $colors = Color::where(fn (Builder $q) => $this->forStudio($q, $studio))
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get(['id', 'name', 'hex_code', 'category', 'nail_studio_id'])
+            ->map(fn (Color $color) => [
+                'id'       => $color->id,
+                'name'     => $color->name,
+                'hex'      => $color->hex_code,
+                'category' => $color->category,
+                'is_own'   => $color->nail_studio_id === $studio->id,
+            ])
+            ->values();
+
         $services = Service::where('nail_studio_id', $studio->id)
             ->orderBy('name')
             ->get(['id', 'name', 'price', 'duration_minutes'])
@@ -79,14 +96,12 @@ class PriceService
         return [
             'designs'  => $designs,
             'options'  => $options,
+            'colors'   => $colors,
             'services' => $services,
         ];
     }
 
-    /**
-     * Preis für ein Muster oder eine Option in einem Studio setzen.
-     * $price = null → eigenen Preis entfernen, Standardpreis gilt wieder.
-     */
+    /** $price = null → eigenen Preis entfernen, Standardpreis gilt wieder */
     public function setPrice(NailStudio $studio, Model $priceable, ?float $price): void
     {
         $match = [
@@ -103,10 +118,12 @@ class PriceService
         StudioPrice::updateOrCreate($match, ['price' => round($price, 2)]);
     }
 
-    /**
-     * Alle eigenen Preise eines Studios als
-     * [Klassenname => [id => preis]]
-     */
+    /** Platzhalter + eigene Einträge des Studios */
+    private function forStudio(Builder $query, NailStudio $studio): void
+    {
+        $query->whereNull('nail_studio_id')->orWhere('nail_studio_id', $studio->id);
+    }
+
     private function overrides(NailStudio $studio): array
     {
         $result = [];

@@ -23,6 +23,7 @@ use App\Models\NailStudio;
 use App\Models\User;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\StudioPriceController;
+use App\Http\Controllers\CatalogController;
 
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
@@ -207,6 +208,15 @@ Route::middleware('auth')->group(function () {
         ->middleware('role:owner')
         ->name('admin.prices.update');
 });
+
+    // Eigener Katalog pro Studio – nur für die Inhaberin
+    Route::post('/admin/katalog/{studio}', [CatalogController::class, 'store'])
+        ->middleware('role:owner')
+        ->name('catalog.store');
+
+    Route::delete('/admin/katalog/{studio}/{type}/{id}', [CatalogController::class, 'destroy'])
+        ->middleware('role:owner')
+        ->name('catalog.destroy');
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
