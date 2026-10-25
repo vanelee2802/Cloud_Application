@@ -173,7 +173,7 @@ Route::middleware('auth')->group(function () {
 #})->middleware('role:employee,admin')->name('studio.dashboard');
 
     Route::get('/studio', [NailStudioController::class, 'show'])->name('studio.show');
-    Route::get('/services', [ServiceController::class, 'index']);
+    Route::get('/services', [ServiceController::class, 'index']);Ö
     Route::get('/services/{service}', [ServiceController::class, 'show']);
     Route::get('/nail-shapes', [NailShapeController::class, 'index']);
 
@@ -188,7 +188,7 @@ Route::middleware('auth')->group(function () {
         Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
     });
 
-    Route::middleware('role:employee,admin,owner')->group(function () {
+    Route::middleware('role:employee,admin,ownerÖ')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
         Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
@@ -333,6 +333,33 @@ Route::middleware(['auth', 'role:owner'])
 
 
 
+    // TEMPORÄR: Diagnose der Server-Datenbank – nach dem Test wieder löschen!
+Route::get('/debug/inhaberin', function () {
+    $user = auth()->user();
+
+    try {
+        return response()->json([
+            'datenbank'          => config('database.default'),
+            'datenbank_datei'    => config('database.connections.sqlite.database'),
+            'user_id'            => $user->id,
+            'rolle'              => $user->role,
+            'ist_inhaberin'      => $user->isOwner(),
+            'eigenes_studio_id'  => $user->nail_studio_id,
+            'eigene_studios'     => $user->ownedStudios()->get(['id', 'name']),
+            'verwaltbar_ids'     => $user->manageableStudioIds(),
+            'anzahl_studios'     => NailStudio::query()->count(),
+            'alle_studios'       => NailStudio::query()->get(),
+            'nutzer_pro_rolle'   => User::query()
+                ->selectRaw('role, count(*) as anzahl')
+                ->groupBy('role')
+                ->get(),
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'fehler' => $e->getMessage(),
+        ], 500);
+    }
+})->middleware(['auth', 'role:owner']);
 
 
 require __DIR__.'/auth.php';
