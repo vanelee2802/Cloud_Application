@@ -114,7 +114,7 @@ onBeforeUnmount(() => {
                     aria-haspopup="true"
                     @click="toggleMenu"
                 >
-                    <span>Mein Bereich</span>
+               <span>Mein Bereich</span>
 
                     <svg
                         class="chevron"
@@ -142,8 +142,9 @@ onBeforeUnmount(() => {
                             <h2 class="menu-heading">Mein Studio</h2>
 
                             <div class="menu-grid">
+                                <!-- Dashboard: für Studioleitung und Mitarbeiter -->
                                 <NavLink
-                                    v-if="isLead"
+                                    v-if="isLead || isStaff"
                                     href="/StudioDashboard"
                                     :active="route().current('StudioDashboard')"
                                     class="mega-menu-link"
@@ -170,22 +171,6 @@ onBeforeUnmount(() => {
                                         <path d="m21 15-5-5L5 21" />
                                     </svg>
                                     <span>Meine Designs</span>
-                                </NavLink>
-
-                                <NavLink
-                                    v-if="isStaff"
-                                    href="/Studioverwaltung"
-                                    :active="route().current('Studioverwaltung')"
-                                    class="mega-menu-link"
-                                    @click="closeMenu"
-                                >
-                                    <svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                        <path d="M3 21h18" />
-                                        <path d="M5 21V7l8-4v18" />
-                                        <path d="M13 10h6v11" />
-                                        <path d="M8 9v.01M8 13v.01M8 17v.01" />
-                                    </svg>
-                                    <span>Studioverwaltung</span>
                                 </NavLink>
 
                                 <NavLink
@@ -217,15 +202,14 @@ onBeforeUnmount(() => {
                             </div>
                         </section>
 
-                        <div class="menu-divider"></div>
+                        <!-- App-Verwaltung: nur für die Studioinhaberin -->
+                        <div v-if="isOwner" class="menu-divider"></div>
 
-                        <!-- App-Verwaltung -->
-                        <section v-if="isStaff || isOwner" class="menu-section">
+                        <section v-if="isOwner" class="menu-section">
                             <h2 class="menu-heading">App-Verwaltung</h2>
 
                             <div class="menu-grid">
                                 <NavLink
-                                    v-if="isStaff"
                                     href="/Studioverwaltung"
                                     :active="route().current('Studioverwaltung')"
                                     class="mega-menu-link"
@@ -240,9 +224,7 @@ onBeforeUnmount(() => {
                                     <span>Studios verwalten</span>
                                 </NavLink>
 
-                                <!-- Preisverwaltung: nur für die Studioinhaberin -->
                                 <NavLink
-                                    v-if="isOwner"
                                     href="/admin/preise"
                                     :active="route().current('admin.prices.index')"
                                     class="mega-menu-link"
@@ -255,9 +237,7 @@ onBeforeUnmount(() => {
                                     <span>Preisverwaltung</span>
                                 </NavLink>
 
-                                <!-- NEU: Bewertungen verwalten – nur für die Studioinhaberin -->
                                 <NavLink
-                                    v-if="isOwner"
                                     href="/admin/bewertungen"
                                     :active="route().current('admin.reviews.page')"
                                     class="mega-menu-link"
@@ -270,7 +250,6 @@ onBeforeUnmount(() => {
                                 </NavLink>
 
                                 <NavLink
-                                    v-if="isOwner"
                                     href="/admin/users"
                                     :active="route().current('admin.users.index')"
                                     class="mega-menu-link"
