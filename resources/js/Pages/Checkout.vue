@@ -66,7 +66,7 @@
 
                     <h2>Wähle deinen Termin</h2>
 
-                    <!-- NEU: Ohne Leistung im Warenkorb → Leistung direkt hier auswählen -->
+                    <!-- Ohne Leistung im Warenkorb → Leistung direkt hier auswählen -->
                     <template v-if="!bookedService">
                         <p v-if="unassignedDesign">
                             Wähle eine Leistung zu deinem Design „{{ unassignedDesign.name }}“:
@@ -127,6 +127,23 @@
                             </template>
                         </p>
 
+                        <!-- NEU: Studio auch bei bereits gewählter Leistung auswählbar -->
+                        <label v-if="switchStudios.length > 1" class="picker-studio">
+                            <span>Studio</span>
+                            <select
+                                :value="studioId"
+                                :disabled="switchLoading"
+                                @change="changeStudio($event)"
+                            >
+                                <option v-for="studio in switchStudios" :key="studio.id" :value="studio.id">
+                                    {{ studio.name }}
+                                </option>
+                            </select>
+                        </label>
+
+                        <p v-if="switchLoading" class="picker-state">Studio wird gewechselt …</p>
+                        <p v-else-if="switchError" class="picker-state">{{ switchError }}</p>
+
                         <label for="date">
                             Datum
                         </label>
@@ -168,7 +185,7 @@
                             Diese Uhrzeit ist für dich reserviert – noch {{ countdown }} Min.
                         </p>
 
-                        <!-- NEU: Endbetrag vom Server (mit den Preisen dieses Studios) -->
+                        <!-- Endbetrag vom Server (mit den Preisen dieses Studios) -->
                         <p v-if="hold && serverTotal !== null" class="server-total">
                             Zu zahlen: {{ euro(serverTotal) }}
                         </p>
@@ -228,7 +245,7 @@ import { usePage, router } from '@inertiajs/vue3'
 
 const emit = defineEmits(['close'])
 
-// NEU: Preise im deutschen Format, z. B. 45,00 €
+// Preise im deutschen Format, z. B. 45,00 €
 const euroFormat = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' })
 
 function euro(value) {
@@ -245,12 +262,12 @@ const {
     clearCart,
 } = useCart()
 
-// GEÄNDERT: Studio und Leistung kommen aus dem Warenkorb statt fest aus dem Code
+// Studio und Leistung kommen aus dem Warenkorb
 const bookedService = computed(() => services.value[0] ?? null)
 const studioId = computed(() => bookedService.value?.studioId ?? null)
 const serviceId = computed(() => bookedService.value?.serviceId ?? null)
 
-// NEU: Gespeichertes Design, das zu dieser Leistung gehört (aus dem Design-Editor)
+// Gespeichertes Design, das zu dieser Leistung gehört (aus dem Design-Editor)
 const bookedDesign = computed(() =>
     cartItems.value.find(item =>
         item.type === 'design'
@@ -263,7 +280,7 @@ const selectedDate = ref('')
 const selectedTime = ref('')
 
 
-// ---------- NEU: Leistung direkt im Checkout auswählen ----------
+// ---------- Leistung direkt im Checkout auswählen ----------
 // (z. B. wenn die Kundin im Design-Editor angefangen hat und noch keine Leistung gewählt hat)
 
 // Gespeichertes Design, das noch zu keiner Leistung gehört
@@ -335,6 +352,85 @@ watch(bookedService, (service) => {
 }, { immediate: true })
 
 
+// ---------- NEU: Studio wechseln, wenn die Leistung schon im Warenkorb ist ----------
+// (z. B. über „Buchen“ auf der Leistungsseite)
+
+const switchStudios = ref([])
+const switchLoading = ref(false)
+const switchError = ref('')
+
+// Liste aller Studios einmal laden
+async function loadSwitchStudios() {
+    if (switchStudios.value.length > 0) return
+
+    try {
+        const response = await fetch('/services/catalog', { headers: { Accept: 'application/json' } })
+
+        if (!response.ok) return
+
+        const data = await response.json()
+        switchStudios.value = data.studios ?? []
+    } catch {
+        // Ohne Liste bleibt die Auswahl einfach ausgeblendet
+    }
+}
+
+watch(bookedService, (service) => {
+    if (service) {
+        loadSwitchStudios()
+    }
+}, { immediate: true })
+
+// Dieselbe Leistung im neu gewählten Studio suchen und im Warenkorb austauschen
+async function changeStudio(event) {
+    const newStudioId = Number(event.target.value)
+    const service = bookedService.value
+
+    if (!service || newStudioId === studioId.value) return
+
+    switchLoading.value = true
+    switchError.value = ''
+
+    try {
+        const response = await fetch(`/services/catalog?nail_studio_id=${newStudioId}`, {
+            headers: { Accept: 'application/json' },
+        })
+
+        if (!response.ok) {
+            throw new Error()
+        }
+
+        const data = await response.json()
+
+        // Wie im Backend: Leistung muss buchbar sein UND genau zu diesem Studio gehören
+        const match = (data.services ?? []).find(item =>
+            item.bookable
+            && Number(item.nail_studio_id) === newStudioId
+            && item.name.trim().toLowerCase() === service.name.trim().toLowerCase()
+        )
+
+        if (!match) {
+            switchError.value = `„${service.name}“ wird in diesem Studio nicht angeboten.`
+            event.target.value = String(studioId.value)
+            return
+        }
+
+        // Gleicher Warenkorb-Eintrag → verknüpftes Design bleibt erhalten
+        updateItem(service.id, {
+            serviceId: match.id,
+            studioId: newStudioId,
+            price: match.price,
+            durationMinutes: match.duration_minutes,
+        })
+    } catch {
+        switchError.value = 'Das Studio konnte nicht gewechselt werden. Bitte versuche es erneut.'
+        event.target.value = String(studioId.value)
+    } finally {
+        switchLoading.value = false
+    }
+}
+
+
 // ---------- Freie Uhrzeiten ----------
 
 // Freie Plätze pro Uhrzeit vom Server, z. B. [{ time: '14:00', free: 3 }]
@@ -367,8 +463,10 @@ async function loadTimes(date) {
 // Sobald ein Datum gewählt wird: alten Platz freigeben, freie Uhrzeiten laden
 watch(selectedDate, loadTimes)
 
-// Leistung im Warenkorb geändert oder entfernt → Uhrzeiten neu laden bzw. zurücksetzen
-watch(serviceId, () => {
+// Leistung ODER Studio geändert → Uhrzeiten neu laden bzw. zurücksetzen
+watch([serviceId, studioId], () => {
+    switchError.value = ''
+
     if (!serviceId.value) {
         releaseHold()
         selectedDate.value = ''
@@ -384,7 +482,7 @@ watch(serviceId, () => {
 // Aktuelle Reservierung: { id, hold_token, expires_in, total_price } oder null
 const hold = ref(null)
 
-// NEU: Betrag, den der Server für diesen Termin berechnet hat
+// Betrag, den der Server für diesen Termin berechnet hat
 const serverTotal = computed(() =>
     hold.value?.total_price !== undefined && hold.value?.total_price !== null
         ? Number(hold.value.total_price)
@@ -512,6 +610,7 @@ const buttonLabel = computed(() =>
 const canSubmit = computed(() =>
     hold.value
     && !loading.value
+    && !switchLoading.value
     && (user.value || (customerName.value && customerEmail.value))
 )
 
@@ -558,7 +657,7 @@ async function submitBooking() {
     stopCountdown()
     hold.value = null
 
-    // NEU: Termin ist angelegt → Warenkorb leeren, damit nicht doppelt gebucht wird
+    // Termin ist angelegt → Warenkorb leeren, damit nicht doppelt gebucht wird
     clearCart()
 
     // Späterer Tag: direkt zur Zahlung
@@ -573,7 +672,7 @@ async function submitBooking() {
 }
 
 
-// ---------- NEU: Zu den Leistungen ----------
+// ---------- Zu den Leistungen ----------
 
 // Sind wir schon auf der Leistungsseite? Dann nur Fenster schließen und zu den Karten scrollen
 const onServicesPage = computed(() =>
