@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, useForm } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
@@ -34,14 +34,20 @@ function changeStudio() {
 | type = was beim Speichern an den Server geht (service | design | option)
 */
 
+// catalog = Art beim Anlegen/Entfernen (null = nicht anlegbar)
 const TABS = [
-    { key: 'service',    label: 'Dienstleistungen', type: 'service' },
-    { key: 'design',     label: 'Muster',           type: 'design' },
-    { key: 'effekt',     label: 'Effekte',          type: 'option' },
-    { key: 'verzierung', label: 'Verzierungen',     type: 'option' },
-    { key: 'laenge',     label: 'Länge',            type: 'option' },
-    { key: 'material',   label: 'Material',         type: 'option' },
+    { key: 'service',    label: 'Dienstleistungen', type: 'service', catalog: null },
+    { key: 'design',     label: 'Muster',           type: 'design',  catalog: 'muster' },
+    { key: 'farbe',      label: 'Farben',           type: null,      catalog: 'farbe' },
+    { key: 'effekt',     label: 'Effekte',          type: 'option',  catalog: 'effekt' },
+    { key: 'verzierung', label: 'Verzierungen',     type: 'option',  catalog: 'verzierung' },
+    { key: 'laenge',     label: 'Länge',            type: 'option',  catalog: null },
+    { key: 'material',   label: 'Material',         type: 'option',  catalog: 'material' },
 ]
+
+// Kategorien für neue Muster und Farben
+const MUSTER_KATEGORIEN = ['French', 'Muster', 'Motiv']
+const FARB_KATEGORIEN   = ['rot', 'rosa', 'blau', 'grün', 'gelb', 'orange', 'lila', 'braun', 'schwarz', 'weiß', 'nude', 'sonstige']
 
 const activeTab = ref('service')
 
@@ -53,6 +59,7 @@ function rowsFor(tabKey) {
 
     if (tabKey === 'service') return props.prices.services ?? []
     if (tabKey === 'design')  return props.prices.designs ?? []
+    if (tabKey === 'farbe')   return props.prices.colors ?? []
 
     return props.prices.options?.[tabKey] ?? []
 
@@ -122,6 +129,8 @@ function fillInputs() {
     const result = {}
 
     for (const tab of TABS) {
+        if (!tab.type) continue
+
         for (const row of rowsFor(tab.key)) {
             result[rowKey(tab.type, row.id)] = formatInput(row.price)
         }
@@ -218,6 +227,88 @@ function resetToDefault(row) {
     save(row, currentTab.value.type, null)
 
 }
+
+
+/*
+|--------------------------------------------------------------------------
+| EIGENE EINTRÄGE ANLEGEN / ENTFERNEN
+|--------------------------------------------------------------------------
+| Muster, Effekte und Verzierungen brauchen ein Bild (SVG, PNG, WebP),
+| damit sie direkt auf dem Nagel und in den Vorlagen funktionieren.
+*/
+
+const showForm  = ref(false)
+const fileInput = ref(null)
+
+const newItem = useForm({
+    type:     '',
+    name:     '',
+    price:    '',
+    category: '',
+    hex_code: '#B0122E',
+    image:    null,
+    tags:     '',
+})
+
+const needsImage = computed(() =>
+    ['muster', 'effekt', 'verzierung'].includes(currentTab.value.catalog)
+)
+
+function openForm() {
+
+    newItem.reset()
+    newItem.clearErrors()
+
+    newItem.type     = currentTab.value.catalog
+    newItem.category = currentTab.value.catalog === 'muster' ? 'Muster'
+        : currentTab.value.catalog === 'farbe' ? 'rot'
+        : ''
+
+    if (fileInput.value) fileInput.value.value = ''
+
+    showForm.value = true
+
+}
+
+function onFile(event) {
+
+    newItem.image = event.target.files?.[0] ?? null
+
+}
+
+function submitNew() {
+
+    newItem
+        .transform((data) => ({
+            ...data,
+            price: data.price === '' ? null : String(data.price).replace(',', '.'),
+        }))
+        .post(`/admin/katalog/${props.selectedStudioId}`, {
+            forceFormData:  true,
+            preserveScroll: true,
+            only: ['prices', 'flash'],
+            onSuccess: () => {
+                showForm.value = false
+                newItem.reset()
+            },
+        })
+
+}
+
+function removeItem(row) {
+
+    if (!window.confirm(`„${row.name}“ wirklich entfernen?`)) return
+
+    router.delete(`/admin/katalog/${props.selectedStudioId}/${currentTab.value.catalog}/${row.id}`, {
+        preserveScroll: true,
+        only: ['prices', 'flash'],
+    })
+
+}
+
+watch(activeTab, () => {
+    showForm.value = false
+})
 
 
 /*
@@ -323,20 +414,160 @@ const selectedStudioName = computed(() =>
                 </div>
 
 
-                <!-- Suche (nur bei vielen Einträgen sinnvoll) -->
-                <input
-                    v-if="rowsFor(activeTab).length > 8"
-                    v-model="suche"
-                    type="search"
-                    class="search"
-                    :placeholder="`${currentTab.label} durchsuchen`"
-                    aria-label="Suchen"
+                <!-- Suche + Neu-Button -->
+                <div class="toolbar">
+
+                    <input
+                        v-if="rowsFor(activeTab).length > 8"
+                        v-model="suche"
+                        type="search"
+                        class="search"
+                        :placeholder="`${currentTab.label} durchsuchen`"
+                        aria-label="Suchen"
+                    >
+
+                    <button
+                        v-if="currentTab.catalog && !showForm"
+                        type="button"
+                        class="add-button"
+                        @click="openForm"
+                    >
+                        + {{ currentTab.label }} hinzufügen
+                    </button>
+
+                </div>
+
+
+                <!-- Neuer Eintrag -->
+                <form
+                    v-if="showForm"
+                    class="new-form"
+                    @submit.prevent="submitNew"
                 >
 
+                    <div class="form-grid">
+
+                        <label class="field">
+                            <span>Name</span>
+                            <input v-model="newItem.name" type="text" maxlength="100" required>
+                            <small v-if="newItem.errors.name" class="field-error">{{ newItem.errors.name }}</small>
+                        </label>
+
+                        <label
+                            v-if="currentTab.catalog !== 'farbe'"
+                            class="field"
+                        >
+                            <span>Preis (€){{ currentTab.catalog === 'verzierung' || currentTab.catalog === 'muster' ? ' pro Nagel' : '' }}</span>
+                            <input v-model="newItem.price" type="text" inputmode="decimal" placeholder="z. B. 2,50" required>
+                            <small v-if="newItem.errors.price" class="field-error">{{ newItem.errors.price }}</small>
+                        </label>
+
+                        <label
+                            v-if="currentTab.catalog === 'muster'"
+                            class="field"
+                        >
+                            <span>Kategorie</span>
+                            <select v-model="newItem.category">
+                                <option v-for="kategorie in MUSTER_KATEGORIEN" :key="kategorie" :value="kategorie">
+                                    {{ kategorie }}
+                                </option>
+                            </select>
+                        </label>
+
+                                                <label
+                            v-if="currentTab.catalog === 'muster'"
+                            class="field"
+                        >
+                            <span>
+                                Tags
+                                <em class="hint">mit Komma getrennt, z. B. herbst, gold, elegant</em>
+                            </span>
+                            <input v-model="newItem.tags" type="text" maxlength="255" placeholder="herbst, gold">
+                            <small v-if="newItem.errors.tags" class="field-error">{{ newItem.errors.tags }}</small>
+                        </label>
+
+                        <template v-if="currentTab.catalog === 'farbe'">
+
+                            <label class="field">
+                                <span>Farbgruppe (für den Filter)</span>
+                                <select v-model="newItem.category">
+                                    <option v-for="kategorie in FARB_KATEGORIEN" :key="kategorie" :value="kategorie">
+                                        {{ kategorie }}
+                                    </option>
+                                </select>
+                            </label>
+
+                            <label class="field">
+                                <span>Farbe</span>
+                                <span class="color-row">
+                                    <input v-model="newItem.hex_code" type="color" class="color-picker">
+                                    <input v-model="newItem.hex_code" type="text" maxlength="7" class="hex-input">
+                                </span>
+                                <small v-if="newItem.errors.hex_code" class="field-error">{{ newItem.errors.hex_code }}</small>
+                            </label>
+
+                        </template>
+
+                        <label
+                            v-if="currentTab.catalog !== 'farbe'"
+                            class="field field-wide"
+                        >
+                            <span>
+                                Bild {{ needsImage ? '' : '(optional)' }}
+                                <em class="hint">SVG, PNG oder WebP, max. 2 MB, transparenter Hintergrund, Hochformat 100 × 160</em>
+                            </span>
+                            <input
+                                ref="fileInput"
+                                type="file"
+                                accept=".svg,.png,.webp,image/svg+xml,image/png,image/webp"
+                                :required="needsImage"
+                                @change="onFile"
+                            >
+                            <small v-if="newItem.errors.image" class="field-error">{{ newItem.errors.image }}</small>
+                        </label>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="cancel-button" @click="showForm = false">Abbrechen</button>
+                        <button type="submit" class="save-button" :disabled="newItem.processing">
+                            {{ newItem.processing ? 'Speichert …' : 'Anlegen' }}
+                        </button>
+                    </div>
+
+                </form>
+
+
+                <!-- Farben: Raster statt Preistabelle -->
+                <div
+                    v-if="activeTab === 'farbe' && visibleRows.length"
+                    class="color-grid"
+                >
+                    <div
+                        v-for="row in visibleRows"
+                        :key="row.id"
+                        class="color-card"
+                    >
+                        <span class="swatch" :style="{ backgroundColor: row.hex }"></span>
+                        <span class="color-text">
+                            <span class="name">{{ row.name }}</span>
+                            <span class="sub">{{ row.category }} · {{ row.hex }}</span>
+                        </span>
+                        <button
+                            v-if="row.is_own"
+                            type="button"
+                            class="remove-button"
+                            :aria-label="`${row.name} entfernen`"
+                            @click="removeItem(row)"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Tabelle -->
                 <div
-                    v-if="visibleRows.length"
+                    v-else-if="visibleRows.length"
                     class="table-wrap"
                 >
                     <table class="table">
@@ -362,19 +593,30 @@ const selectedStudioName = computed(() =>
                                 :key="row.id"
                             >
 
-                                <td>
-                                    <span class="name">{{ row.name }}</span>
+                                <td class="name-cell">
+                                    <img
+                                        v-if="row.image"
+                                        :src="row.image"
+                                        alt=""
+                                        class="thumb"
+                                    >
+                                    <span>
+                                    <span class="name">
+                                        {{ row.name }}
+                                        <span v-if="row.is_own" class="own-badge">eigener Eintrag</span>
+                                    </span>
                                     <span
                                         v-if="row.category && activeTab === 'design'"
                                         class="sub"
                                     >
-                                        {{ row.category }}
+                                        {{ row.category }}<template v-if="row.tags?.length"> · {{ row.tags.join(', ') }}</template>
                                     </span>
                                     <span
                                         v-if="row.duration_minutes"
                                         class="sub"
                                     >
                                         {{ row.duration_minutes }} Min.
+                                    </span>
                                     </span>
                                 </td>
 
@@ -436,6 +678,17 @@ const selectedStudioName = computed(() =>
                                         Standard
                                     </button>
 
+                                    <button
+                                        v-if="row.is_own && currentTab.catalog"
+                                        type="button"
+                                        class="remove-button"
+                                        :aria-label="`${row.name} entfernen`"
+                                        title="Entfernen"
+                                        @click="removeItem(row)"
+                                    >
+                                        ×
+                                    </button>
+
                                 </td>
 
                             </tr>
@@ -451,7 +704,10 @@ const selectedStudioName = computed(() =>
                     {{ rowsFor(activeTab).length ? 'Keine Treffer.' : 'Hier gibt es noch keine Einträge.' }}
                 </p>
 
-                <p class="legend">
+                <p
+                    v-if="activeTab !== 'farbe'"
+                    class="legend"
+                >
                     <span class="legend-dot"></span>
                     Eigener Preis dieses Studios (weicht vom Standard ab)
                 </p>
@@ -759,6 +1015,224 @@ const selectedStudioName = computed(() =>
 
 .empty-state strong {
     color: #4f3540;
+}
+
+
+
+/* ========================================= */
+/* EIGENE EINTRÄGE                            */
+/* ========================================= */
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.9rem;
+}
+
+.toolbar .search {
+    margin-bottom: 0;
+}
+
+.add-button {
+    margin-left: auto;
+    padding: 0.5rem 0.9rem;
+    border: 1px dashed #8f5364;
+    border-radius: 8px;
+    background: #fdf7f8;
+    color: #7d1024;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.add-button:hover {
+    background: #f5e7eb;
+}
+
+.new-form {
+    margin-bottom: 1.1rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid rgba(143, 83, 100, 0.18);
+    border-radius: 10px;
+    background: #fdfbfc;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 0.8rem 1rem;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    color: #4f3540;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.field-wide {
+    grid-column: 1 / -1;
+}
+
+.field input[type='text'],
+.field select {
+    padding: 0.45rem 0.6rem;
+    border: 1px solid rgba(143, 83, 100, 0.25);
+    border-radius: 7px;
+    background: #ffffff;
+    color: #4f3540;
+    font: inherit;
+    font-weight: 400;
+}
+
+.field input[type='file'] {
+    font-weight: 400;
+}
+
+.hint {
+    display: block;
+    margin-top: 0.15rem;
+    color: #8a7a80;
+    font-size: 0.72rem;
+    font-style: normal;
+    font-weight: 400;
+}
+
+.field-error {
+    color: #a04646;
+    font-weight: 400;
+}
+
+.color-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.color-picker {
+    width: 2.6rem;
+    height: 2.2rem;
+    padding: 0;
+    border: 1px solid rgba(143, 83, 100, 0.25);
+    border-radius: 7px;
+    background: none;
+    cursor: pointer;
+}
+
+.hex-input {
+    width: 6rem;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+}
+
+.cancel-button,
+.save-button {
+    padding: 0.5rem 1rem;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cancel-button {
+    border: 1px solid rgba(143, 83, 100, 0.25);
+    background: #ffffff;
+    color: #8f5364;
+}
+
+.save-button {
+    border: none;
+    background: #7d1024;
+    color: #ffffff;
+}
+
+.save-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.thumb {
+    width: 1.6rem;
+    height: 2.4rem;
+    flex-shrink: 0;
+    object-fit: cover;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 50% 50% 42% 42% / 62% 62% 38% 38%;
+    background: #f3dcd0;
+}
+
+.own-badge {
+    margin-left: 0.35rem;
+    padding: 0.05rem 0.45rem;
+    border-radius: 100vw;
+    background: #f3e5e8;
+    color: #754354;
+    font-size: 0.65rem;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.remove-button {
+    width: 1.7rem;
+    height: 1.7rem;
+    margin-left: 0.3rem;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: #a08890;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.remove-button:hover {
+    background: #f5e7eb;
+    color: #7d1024;
+}
+
+/* Farben als Raster */
+.color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: 0.6rem;
+}
+
+.color-card {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid rgba(143, 83, 100, 0.12);
+    border-radius: 9px;
+    background: #fdfbfc;
+}
+
+.swatch {
+    width: 1.8rem;
+    height: 1.8rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 50%;
+}
+
+.color-text {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
 }
 
 
