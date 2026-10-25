@@ -1,116 +1,5 @@
+
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-
-const slides = [
-    {
-        src: 'https://images.unsplash.com/photo-1519014816548-bf5fe059798b?auto=format&fit=crop&w=1000&q=80',
-        alt: 'Zarte rosafarbene Maniküre in Nahaufnahme',
-        title: 'Zartes Rosé',
-        subtitle: 'Natürlich & elegant',
-    },
-    {
-        src: 'https://images.unsplash.com/photo-1754799670410-b282791342c3?auto=format&fit=crop&w=1000&q=80',
-        alt: 'Hände mit weißen und rosa Nägeln mit kleinen Herzchen',
-        title: 'Little Hearts',
-        subtitle: 'Verspielt & romantisch',
-    },
-    {
-        src: 'https://images.unsplash.com/photo-1754799670312-8e7da8e40ad7?auto=format&fit=crop&w=1000&q=80',
-        alt: 'Kunstvolles Nageldesign in Navy, Gold und Weiß',
-        title: 'Navy & Gold',
-        subtitle: 'Für besondere Momente',
-    },
-    {
-        src: 'https://images.unsplash.com/photo-1571290274554-6a2eaa771e5f?auto=format&fit=crop&w=1000&q=80',
-        alt: 'Gepflegte Hände mit frischer Maniküre',
-        title: 'Classic Care',
-        subtitle: 'Zeitlos gepflegt',
-    },
-    {
-        src: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=1000&q=80',
-        alt: 'Hand mit schwarzen Nägeln im Schildpatt-Muster und goldenem Ring',
-        title: 'Tortoise Look',
-        subtitle: 'Modern & ausdrucksstark',
-    },
-]
-
-const currentIndex = ref(0)
-const isPaused = ref(false)
-const autoplayDelay = 5000
-
-let autoplayTimer = null
-let touchStartX = 0
-
-function nextSlide() {
-    currentIndex.value = (currentIndex.value + 1) % slides.length
-}
-
-function prevSlide() {
-    currentIndex.value = (currentIndex.value - 1 + slides.length) % slides.length
-}
-
-function goToSlide(index) {
-    currentIndex.value = index
-    restartAutoplay()
-}
-
-function startAutoplay() {
-    stopAutoplay()
-
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reducedMotion) return
-
-    autoplayTimer = setInterval(() => {
-        if (!isPaused.value) {
-            nextSlide()
-        }
-    }, autoplayDelay)
-}
-
-function stopAutoplay() {
-    if (autoplayTimer) {
-        clearInterval(autoplayTimer)
-        autoplayTimer = null
-    }
-}
-
-function restartAutoplay() {
-    startAutoplay()
-}
-
-function handleNext() {
-    nextSlide()
-    restartAutoplay()
-}
-
-function handlePrev() {
-    prevSlide()
-    restartAutoplay()
-}
-
-function onTouchStart(event) {
-    touchStartX = event.changedTouches[0].clientX
-}
-
-function onTouchEnd(event) {
-    const distance = event.changedTouches[0].clientX - touchStartX
-
-    if (Math.abs(distance) < 50) return
-
-    if (distance < 0) {
-        handleNext()
-    } else {
-        handlePrev()
-    }
-}
-
-onMounted(() => {
-    startAutoplay()
-})
-
-onBeforeUnmount(() => {
-    stopAutoplay()
-})
 </script>
 
 <template>
@@ -166,83 +55,24 @@ onBeforeUnmount(() => {
                     </div>
                 </div>
 
-                <a href="#preise" class="intro-button">
+                <a href="/Leistungen" class="intro-button">
                     Unsere Leistungen entdecken
                     <span aria-hidden="true">→</span>
                 </a>
             </div>
 
-            <!-- Bildbereich mit Karussell -->
+            <!-- Bildbereich -->
             <div class="intro-visual">
-                <div
-                    class="image-frame"
-                    role="region"
-                    aria-roledescription="Karussell"
-                    aria-label="Unsere Nageldesigns"
-                    @mouseenter="isPaused = true"
-                    @mouseleave="isPaused = false"
-                    @focusin="isPaused = true"
-                    @focusout="isPaused = false"
-                    @touchstart.passive="onTouchStart"
-                    @touchend.passive="onTouchEnd"
-                >
-                    <!-- Slides -->
-                    <div
-                        v-for="(slide, index) in slides"
-                        :key="slide.src"
-                        class="carousel-slide"
-                        :class="{ active: index === currentIndex }"
-                        role="group"
-                        aria-roledescription="Folie"
-                        :aria-label="`${index + 1} von ${slides.length}`"
-                        :aria-hidden="index !== currentIndex"
-                    >
-                        <img
-                            :src="slide.src"
-                            :alt="slide.alt"
-                            class="intro-image"
-                            :loading="index === 0 ? 'eager' : 'lazy'"
-                        />
-                    </div>
+                <div class="image-frame">
+                    <img
+                        src="/images/studio-nails.jpg"
+                        alt="Elegantes Nageldesign in zarten Rosé-Tönen"
+                        class="intro-image"
+                    />
 
-                    <!-- Pfeile -->
-                    <button
-                        type="button"
-                        class="carousel-arrow carousel-arrow--prev"
-                        aria-label="Vorheriges Design"
-                        @click="handlePrev"
-                    >
-                        ‹
-                    </button>
-
-                    <button
-                        type="button"
-                        class="carousel-arrow carousel-arrow--next"
-                        aria-label="Nächstes Design"
-                        @click="handleNext"
-                    >
-                        ›
-                    </button>
-
-                    <!-- Bildunterschrift + Punkte -->
                     <div class="image-caption">
-                        <div class="caption-text" aria-live="polite">
-                            <span>{{ slides[currentIndex].subtitle }}</span>
-                            <strong>{{ slides[currentIndex].title }}</strong>
-                        </div>
-
-                        <div class="carousel-dots">
-                            <button
-                                v-for="(slide, index) in slides"
-                                :key="`dot-${slide.src}`"
-                                type="button"
-                                class="carousel-dot"
-                                :class="{ active: index === currentIndex }"
-                                :aria-label="`Design ${index + 1} anzeigen`"
-                                :aria-current="index === currentIndex"
-                                @click="goToSlide(index)"
-                            ></button>
-                        </div>
+                        <span>Deine Schönheit.</span>
+                        <strong>Dein Stil.</strong>
                     </div>
                 </div>
 
@@ -400,7 +230,7 @@ onBeforeUnmount(() => {
     font-size: 1.15rem;
 }
 
-/* Bild / Karussell */
+/* Bild */
 
 .intro-visual {
     position: relative;
@@ -419,96 +249,21 @@ onBeforeUnmount(() => {
     box-shadow: 0 18px 50px rgba(80, 35, 48, 0.12);
 }
 
-.carousel-slide {
-    position: absolute;
-    inset: 0;
-
-    opacity: 0;
-    transform: scale(1.04);
-    transition:
-        opacity 0.9s ease,
-        transform 6s ease;
-}
-
-.carousel-slide.active {
-    opacity: 1;
-    transform: scale(1);
-}
-
 .intro-image {
-    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-
-/* Pfeile */
-
-.carousel-arrow {
-    position: absolute;
-    top: 50%;
-    z-index: 2;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    width: 42px;
-    height: 42px;
-    padding: 0 0 3px;
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 50%;
-
-    background: rgba(255, 250, 251, 0.85);
-    color: #754353;
-    font-size: 1.6rem;
-    line-height: 1;
-    cursor: pointer;
-    backdrop-filter: blur(8px);
-
-    opacity: 0;
-    transform: translateY(-50%);
-    transition:
-        opacity 0.25s ease,
-        background 0.2s ease;
-}
-
-.carousel-arrow--prev {
-    left: 1rem;
-}
-
-.carousel-arrow--next {
-    right: 1rem;
-}
-
-.image-frame:hover .carousel-arrow,
-.carousel-arrow:focus-visible {
-    opacity: 1;
-}
-
-.carousel-arrow:hover {
-    background: #ffffff;
-}
-
-.carousel-arrow:focus-visible,
-.carousel-dot:focus-visible {
-    outline: 2px solid #8f5364;
-    outline-offset: 2px;
-}
-
-/* Bildunterschrift */
 
 .image-caption {
     position: absolute;
     right: 1rem;
     bottom: 1rem;
     left: 1rem;
-    z-index: 2;
 
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
+    flex-direction: column;
+    gap: 0.2rem;
 
     padding: 1.2rem 1.4rem;
     border: 1px solid rgba(255, 255, 255, 0.4);
@@ -519,55 +274,15 @@ onBeforeUnmount(() => {
     backdrop-filter: blur(10px);
 }
 
-.caption-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    min-width: 0;
-}
-
-.caption-text span {
+.image-caption span {
     font-size: 0.85rem;
     color: #8b7b80;
 }
 
-.caption-text strong {
+.image-caption strong {
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 1.4rem;
     font-weight: 500;
-}
-
-/* Punkte */
-
-.carousel-dots {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    flex-shrink: 0;
-}
-
-.carousel-dot {
-    width: 8px;
-    height: 8px;
-    padding: 0;
-    border: none;
-    border-radius: 999px;
-
-    background: #e3c6cf;
-    cursor: pointer;
-
-    transition:
-        width 0.3s ease,
-        background 0.3s ease;
-}
-
-.carousel-dot:hover {
-    background: #b17b8c;
-}
-
-.carousel-dot.active {
-    width: 22px;
-    background: #8f5364;
 }
 
 .decorative-circle {
@@ -605,11 +320,6 @@ onBeforeUnmount(() => {
     .decorative-circle {
         right: -0.25rem;
     }
-
-    /* Auf Touch-Geräten Pfeile immer sichtbar */
-    .carousel-arrow {
-        opacity: 1;
-    }
 }
 
 @media (max-width: 480px) {
@@ -625,31 +335,6 @@ onBeforeUnmount(() => {
     .intro-button {
         width: 100%;
         padding: 0.9rem 1rem;
-    }
-
-    .image-caption {
-        padding: 1rem 1.1rem;
-    }
-
-    .caption-text strong {
-        font-size: 1.15rem;
-    }
-
-    .carousel-arrow {
-        width: 36px;
-        height: 36px;
-        font-size: 1.4rem;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .carousel-slide {
-        transform: none;
-        transition: opacity 0.3s ease;
-    }
-
-    .carousel-slide.active {
-        transform: none;
     }
 }
 </style>
