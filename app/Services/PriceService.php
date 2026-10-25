@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Appointment;
 use App\Models\Color;
+use App\Models\Design;
 use App\Models\DesignElement;
 use App\Models\NailStudio;
 use App\Models\PriceOption;
@@ -38,7 +40,7 @@ class PriceService
                 'category'      => $design->category,
                 'unit'          => 'nagel',
                 'image'         => $design->image_path,
-                                'tags'          => $design->tags->pluck('name')->all(),
+                'tags'          => $design->tags->pluck('name')->all(),
                 'default_price' => (float) $design->price_per_nail,
                 'price'         => $overrides[DesignElement::class][$design->id]
                                     ?? (float) $design->price_per_nail,
@@ -99,6 +101,44 @@ class PriceService
             'colors'   => $colors,
             'services' => $services,
         ];
+    }
+
+    /**
+     * NEU: Preis eines gespeicherten Designs in einem bestimmten Studio.
+     * Jedes Muster zählt pro Nagel, eigener Studio-Preis vor Standardpreis.
+     */
+    public function designPrice(NailStudio $studio, Design $design): float
+    {
+        $overrides = $this->overrides($studio)[DesignElement::class] ?? [];
+
+        $design->loadMissing('nails.designElements');
+
+        $total = 0.0;
+
+        foreach ($design->nails as $nail) {
+            foreach ($nail->designElements as $element) {
+                $total += $overrides[$element->id] ?? (float) $element->price_per_nail;
+            }
+        }
+
+        return round($total, 2);
+    }
+
+    /**
+     * NEU: Was die Kundin für einen Termin zahlt: Leistung + (falls vorhanden) Design.
+     * Wird beim Anlegen der Zahlung und für die Anzeige im Checkout benutzt.
+     */
+    public function appointmentPrice(Appointment $appointment): float
+    {
+        $appointment->loadMissing('service', 'nailStudio', 'design');
+
+        $price = (float) $appointment->service->price;
+
+        if ($appointment->design) {
+            $price += $this->designPrice($appointment->nailStudio, $appointment->design);
+        }
+
+        return round($price, 2);
     }
 
     /** $price = null → eigenen Preis entfernen, Standardpreis gilt wieder */

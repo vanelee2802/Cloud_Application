@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Notification;           // NEU (Schritt 60)
 use App\Models\Design;                                 // NEU (Warenkorb-Buchung)
 use App\Models\Service;                                // NEU (Warenkorb-Buchung)
 use Illuminate\Validation\ValidationException;         // NEU (Warenkorb-Buchung)
+use App\Services\PriceService;                          // NEU (Design-Preis)
 
 class AppointmentController extends Controller
 {
@@ -112,7 +113,7 @@ class AppointmentController extends Controller
     }
 
     // Kundin wählt eine Uhrzeit → Platz für 3 Minuten reservieren
-    public function hold(Request $request, SlotService $slots)
+    public function hold(Request $request, SlotService $slots, PriceService $prices)
     {
         $validated = $request->validate([
             'nail_studio_id' => 'required|integer|exists:nail_studios,id',
@@ -142,6 +143,8 @@ class AppointmentController extends Controller
             'id' => $appointment->id,
             'hold_token' => $appointment->hold_token,
             'expires_in' => config('booking.hold_minutes') * 60,
+            // NEU: Endbetrag vom Server (Leistung + Design mit Studio-Preisen) für die Anzeige
+            'total_price' => $prices->appointmentPrice($appointment),
         ], 201);
     }
 
@@ -163,7 +166,7 @@ class AppointmentController extends Controller
     }
 
     // Kundin schickt den reservierten Termin ab
-    public function submit(Request $request, Appointment $appointment, StripeCheckoutService $checkout)
+    public function submit(Request $request, Appointment $appointment, StripeCheckoutService $checkout, PriceService $prices)
     {
         $this->authorizeHold($request, $appointment);
 
@@ -220,7 +223,8 @@ class AppointmentController extends Controller
         // Späterer Tag: Payment-Eintrag anlegen und direkt zu Stripe
         $payment = Payment::create([
             'appointment_id' => $appointment->id,
-            'amount' => $appointment->service->price,
+            // GEÄNDERT: Leistung + Design (mit Studio-Preisen)
+            'amount' => $prices->appointmentPrice($appointment),
             'status' => 'pending',
         ]);
 
@@ -255,7 +259,8 @@ class AppointmentController extends Controller
         Appointment $appointment,
         AppointmentAlternative $alternative,
         SlotService $slots,
-        StripeCheckoutService $checkout
+        StripeCheckoutService $checkout,
+        PriceService $prices
     ) {
         $this->authorizeCustomer($request, $appointment);
 
@@ -302,7 +307,8 @@ class AppointmentController extends Controller
         // 3. Zahlung vorbereiten
         $payment = Payment::create([
             'appointment_id' => $appointment->id,
-            'amount' => $appointment->service->price,
+            // GEÄNDERT: Leistung + Design (mit Studio-Preisen)
+            'amount' => $prices->appointmentPrice($appointment),
             'status' => 'pending',
         ]);
 
@@ -341,7 +347,7 @@ class AppointmentController extends Controller
     }
 
     // Terminseite aus der E-Mail – Gast per signiertem Link oder eingeloggte Besitzerin
-    public function manage(Request $request, Appointment $appointment)
+    public function manage(Request $request, Appointment $appointment, PriceService $prices)
     {
         $this->authorizeCustomer($request, $appointment);
 
@@ -357,7 +363,8 @@ class AppointmentController extends Controller
                 'time' => substr($appointment->time, 0, 5),
                 'status' => $appointment->status,
                 'service' => $appointment->service->name,
-                'price' => $appointment->service->price,
+                // GEÄNDERT: Leistung + Design
+                'price' => $prices->appointmentPrice($appointment),
                 'admin_note' => $appointment->admin_note,
                 'payment_expires_at' => $appointment->payment_expires_at?->toIso8601String(),
             ],

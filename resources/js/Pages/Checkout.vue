@@ -130,6 +130,11 @@
                             Diese Uhrzeit ist für dich reserviert – noch {{ countdown }} Min.
                         </p>
 
+                        <!-- NEU: Endbetrag vom Server (mit den Preisen dieses Studios) -->
+                        <p v-if="hold && serverTotal !== null" class="server-total">
+                            Zu zahlen: {{ serverTotal.toFixed(2).replace('.', ',') }} €
+                        </p>
+
                         <p v-if="selectedDate && selectedTime">
                             Gewählter Termin:
                             {{ selectedDate }} um {{ selectedTime }}
@@ -257,8 +262,15 @@ watch(serviceId, () => {
 
 // ---------- Platz reservieren und freigeben ----------
 
-// Aktuelle Reservierung: { id, hold_token, expires_in } oder null
+// Aktuelle Reservierung: { id, hold_token, expires_in, total_price } oder null
 const hold = ref(null)
+
+// NEU: Betrag, den der Server für diesen Termin berechnet hat
+const serverTotal = computed(() =>
+    hold.value?.total_price !== undefined && hold.value?.total_price !== null
+        ? Number(hold.value.total_price)
+        : null
+)
 
 function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -648,6 +660,13 @@ onBeforeUnmount(() => {
     color: #8f5364;
 
     font-weight: 600;
+}
+
+
+.server-total {
+    margin: 0;
+
+    font-weight: 700;
 }
 
 
