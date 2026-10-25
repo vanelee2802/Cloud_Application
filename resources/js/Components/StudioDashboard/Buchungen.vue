@@ -8,13 +8,15 @@ const bookings = ref([])
 const loading = ref(true)
 const error = ref('')
 
-// NEU: Rückmeldung nach „Abgeschlossen“
+// Rückmeldung nach „Erledigt“
 const message = ref('')
 const busyId = ref(null)
 
-// NEU: Abschließen darf nur die Schichtleitung, alle anderen sehen nur die Liste
+// GEÄNDERT: „Erledigt“ dürfen Schichtleitung UND Inhaberin, alle anderen sehen nur die Liste
 const page = usePage()
-const canComplete = computed(() => page.props.auth?.user?.role === 'admin')
+const canComplete = computed(() =>
+    ['admin', 'owner'].includes(page.props.auth?.user?.role)
+)
 
 // Aktuelle Uhrzeit, wird beim Neuladen aktualisiert → Button erscheint, sobald ein Termin begonnen hat
 const now = ref(new Date())
@@ -38,7 +40,6 @@ async function load() {
     loading.value = false
 
     if (!response.ok) {
-        // GEÄNDERT: Mitarbeiterinnen dürfen die Liste jetzt auch sehen
         error.value = response.status === 401 || response.status === 403
             ? 'Du hast keinen Zugriff auf die Buchungen dieses Studios.'
             : 'Die Buchungen konnten nicht geladen werden.'
@@ -71,7 +72,7 @@ function customerName(booking) {
     return booking.customer_name || booking.user?.name || 'Unbekannt'
 }
 
-// NEU: Hat der Termin schon begonnen?
+// Hat der Termin schon begonnen?
 function hasStarted(booking) {
     const start = new Date(`${dateOnly(booking.date)}T${String(booking.time).slice(0, 5)}:00`)
 
@@ -82,10 +83,10 @@ function csrfToken() {
     return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
 }
 
-// NEU: Termin abschließen → Kundin bekommt die Danke-Mail mit Link zur Bewertung
+// Termin erledigt → Kundin bekommt die Danke-Mail mit Link zur Bewertung
 async function complete(booking) {
     const confirmed = window.confirm(
-        `Termin von ${customerName(booking)} um ${String(booking.time).slice(0, 5)} Uhr als abgeschlossen markieren?\n\n`
+        `Termin von ${customerName(booking)} um ${String(booking.time).slice(0, 5)} Uhr als erledigt markieren?\n\n`
         + 'Die Kundin bekommt dann eine Danke-Mail mit Link zur Bewertung.'
     )
 
@@ -109,10 +110,10 @@ async function complete(booking) {
         const data = await response.json().catch(() => ({}))
 
         message.value = data.message ?? (response.ok
-            ? 'Termin abgeschlossen.'
-            : 'Der Termin konnte nicht abgeschlossen werden.')
+            ? 'Termin erledigt. Die Kundin bekommt eine Mail mit Link zur Bewertung.'
+            : 'Der Termin konnte nicht als erledigt markiert werden.')
 
-        // Abgeschlossen (oder schon vorher) → aus der Liste nehmen
+        // Erledigt (oder schon vorher) → aus der Liste nehmen
         if (response.ok || response.status === 409) {
             bookings.value = bookings.value.filter(item => item.id !== booking.id)
         }
@@ -157,7 +158,7 @@ onBeforeUnmount(() => {
         </div>
 
 
-        <!-- NEU: Rückmeldung nach „Abgeschlossen“ -->
+        <!-- Rückmeldung nach „Erledigt“ -->
         <p v-if="message" class="message" role="status">{{ message }}</p>
 
 
@@ -189,7 +190,7 @@ onBeforeUnmount(() => {
                     </span>
                 </div>
 
-                <!-- NEU: Schichtleitung kann laufende/vergangene Termine abschließen -->
+                <!-- GEÄNDERT: „Erledigt“ für Inhaberin und Schichtleitung, ab Terminbeginn -->
                 <button
                     v-if="canComplete && hasStarted(booking)"
                     type="button"
@@ -197,7 +198,7 @@ onBeforeUnmount(() => {
                     :disabled="busyId === booking.id"
                     @click="complete(booking)"
                 >
-                    {{ busyId === booking.id ? 'Speichert …' : 'Abgeschlossen' }}
+                    {{ busyId === booking.id ? 'Speichert …' : 'Erledigt' }}
                 </button>
 
                 <span v-else class="status confirmed">

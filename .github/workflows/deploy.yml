@@ -59,3 +59,9 @@ jobs:
 
             chown -R www-data:www-data storage bootstrap/cache database
             chmod -R 775 storage bootstrap/cache database
+
+            # NEU: Prüfen, ob ein Queue-Worker läuft (Ergebnis steht im Actions-Log)
+            echo "=========== QUEUE-WORKER-CHECK ==========="
+            pgrep -af "queue:work" || echo "ACHTUNG: Es läuft KEIN Queue-Worker – Mails werden nicht verschickt!"
+            echo "Wartende Aufträge in der Queue: $(php artisan tinker --execute='echo DB::table(\"jobs\")->count();' 2>/dev/null || echo unbekannt)"
+            echo "=========================================="
