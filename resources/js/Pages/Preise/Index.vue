@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import ServiceManager from '@/Components/Admin/ServiceManager.vue'
 import { Head, router, useForm } from '@inertiajs/vue3'
 import { ref, computed, watch } from 'vue'
 
@@ -32,6 +33,7 @@ function changeStudio() {
 | REITER
 |--------------------------------------------------------------------------
 | type = was beim Speichern an den Server geht (service | design | option)
+| Dienstleistungen werden über den ServiceManager gepflegt (eigene Ansicht).
 */
 
 // catalog = Art beim Anlegen/Entfernen (null = nicht anlegbar)
@@ -68,6 +70,13 @@ function rowsFor(tabKey) {
 function countFor(tabKey) {
 
     return rowsFor(tabKey).length
+
+}
+
+// NEU: Nach Änderungen im ServiceManager die Zähler in den Reitern aktualisieren
+function reloadPrices() {
+
+    router.reload({ only: ['prices'], preserveScroll: true })
 
 }
 
@@ -368,7 +377,11 @@ const selectedStudioName = computed(() =>
 
                     <div>
                         <h3>Preise für {{ selectedStudioName }}</h3>
-                        <p>
+                        <p v-if="activeTab === 'service'">
+                            Diese Leistungen erscheinen auf der Leistungsseite und können dort gebucht werden.
+                            Zusatzleistungen werden angezeigt, sind aber nicht einzeln buchbar.
+                        </p>
+                        <p v-else>
                             Leere Felder bei Mustern und Optionen bedeuten: Es gilt der Standardpreis.
                             Änderungen werden automatisch gespeichert, sobald du das Feld verlässt.
                         </p>
@@ -414,303 +427,301 @@ const selectedStudioName = computed(() =>
                 </div>
 
 
-                <!-- Suche + Neu-Button -->
-                <div class="toolbar">
+                <!-- NEU: Dienstleistungen anlegen, bearbeiten, löschen -->
+                <ServiceManager
+                    v-if="activeTab === 'service' && selectedStudioId"
+                    :studio-id="selectedStudioId"
+                    embedded
+                    @changed="reloadPrices"
+                />
 
-                    <input
-                        v-if="rowsFor(activeTab).length > 8"
-                        v-model="suche"
-                        type="search"
-                        class="search"
-                        :placeholder="`${currentTab.label} durchsuchen`"
-                        aria-label="Suchen"
+                <template v-else>
+
+                    <!-- Suche + Neu-Button -->
+                    <div class="toolbar">
+
+                        <input
+                            v-if="rowsFor(activeTab).length > 8"
+                            v-model="suche"
+                            type="search"
+                            class="search"
+                            :placeholder="`${currentTab.label} durchsuchen`"
+                            aria-label="Suchen"
+                        >
+
+                        <button
+                            v-if="currentTab.catalog && !showForm"
+                            type="button"
+                            class="add-button"
+                            @click="openForm"
+                        >
+                            + {{ currentTab.label }} hinzufügen
+                        </button>
+
+                    </div>
+
+
+                    <!-- Neuer Eintrag -->
+                    <form
+                        v-if="showForm"
+                        class="new-form"
+                        @submit.prevent="submitNew"
                     >
 
-                    <button
-                        v-if="currentTab.catalog && !showForm"
-                        type="button"
-                        class="add-button"
-                        @click="openForm"
-                    >
-                        + {{ currentTab.label }} hinzufügen
-                    </button>
-
-                </div>
-
-
-                <!-- Neuer Eintrag -->
-                <form
-                    v-if="showForm"
-                    class="new-form"
-                    @submit.prevent="submitNew"
-                >
-
-                    <div class="form-grid">
-
-                        <label class="field">
-                            <span>Name</span>
-                            <input v-model="newItem.name" type="text" maxlength="100" required>
-                            <small v-if="newItem.errors.name" class="field-error">{{ newItem.errors.name }}</small>
-                        </label>
-
-                        <label
-                            v-if="currentTab.catalog !== 'farbe'"
-                            class="field"
-                        >
-                            <span>Preis (€){{ currentTab.catalog === 'verzierung' || currentTab.catalog === 'muster' ? ' pro Nagel' : '' }}</span>
-                            <input v-model="newItem.price" type="text" inputmode="decimal" placeholder="z. B. 2,50" required>
-                            <small v-if="newItem.errors.price" class="field-error">{{ newItem.errors.price }}</small>
-                        </label>
-
-                        <label
-                            v-if="currentTab.catalog === 'muster'"
-                            class="field"
-                        >
-                            <span>Kategorie</span>
-                            <select v-model="newItem.category">
-                                <option v-for="kategorie in MUSTER_KATEGORIEN" :key="kategorie" :value="kategorie">
-                                    {{ kategorie }}
-                                </option>
-                            </select>
-                        </label>
-
-                                                <label
-                            v-if="currentTab.catalog === 'muster'"
-                            class="field"
-                        >
-                            <span>
-                                Tags
-                                <em class="hint">mit Komma getrennt, z. B. herbst, gold, elegant</em>
-                            </span>
-                            <input v-model="newItem.tags" type="text" maxlength="255" placeholder="herbst, gold">
-                            <small v-if="newItem.errors.tags" class="field-error">{{ newItem.errors.tags }}</small>
-                        </label>
-
-                        <template v-if="currentTab.catalog === 'farbe'">
+                        <div class="form-grid">
 
                             <label class="field">
-                                <span>Farbgruppe (für den Filter)</span>
+                                <span>Name</span>
+                                <input v-model="newItem.name" type="text" maxlength="100" required>
+                                <small v-if="newItem.errors.name" class="field-error">{{ newItem.errors.name }}</small>
+                            </label>
+
+                            <label
+                                v-if="currentTab.catalog !== 'farbe'"
+                                class="field"
+                            >
+                                <span>Preis (€){{ currentTab.catalog === 'verzierung' || currentTab.catalog === 'muster' ? ' pro Nagel' : '' }}</span>
+                                <input v-model="newItem.price" type="text" inputmode="decimal" placeholder="z. B. 2,50" required>
+                                <small v-if="newItem.errors.price" class="field-error">{{ newItem.errors.price }}</small>
+                            </label>
+
+                            <label
+                                v-if="currentTab.catalog === 'muster'"
+                                class="field"
+                            >
+                                <span>Kategorie</span>
                                 <select v-model="newItem.category">
-                                    <option v-for="kategorie in FARB_KATEGORIEN" :key="kategorie" :value="kategorie">
+                                    <option v-for="kategorie in MUSTER_KATEGORIEN" :key="kategorie" :value="kategorie">
                                         {{ kategorie }}
                                     </option>
                                 </select>
                             </label>
 
-                            <label class="field">
-                                <span>Farbe</span>
-                                <span class="color-row">
-                                    <input v-model="newItem.hex_code" type="color" class="color-picker">
-                                    <input v-model="newItem.hex_code" type="text" maxlength="7" class="hex-input">
+                            <label
+                                v-if="currentTab.catalog === 'muster'"
+                                class="field"
+                            >
+                                <span>
+                                    Tags
+                                    <em class="hint">mit Komma getrennt, z. B. herbst, gold, elegant</em>
                                 </span>
-                                <small v-if="newItem.errors.hex_code" class="field-error">{{ newItem.errors.hex_code }}</small>
+                                <input v-model="newItem.tags" type="text" maxlength="255" placeholder="herbst, gold">
+                                <small v-if="newItem.errors.tags" class="field-error">{{ newItem.errors.tags }}</small>
                             </label>
 
-                        </template>
+                            <template v-if="currentTab.catalog === 'farbe'">
 
-                        <label
-                            v-if="currentTab.catalog !== 'farbe'"
-                            class="field field-wide"
-                        >
-                            <span>
-                                Bild {{ needsImage ? '' : '(optional)' }}
-                                <em class="hint">SVG, PNG oder WebP, max. 2 MB, transparenter Hintergrund, Hochformat 100 × 160</em>
-                            </span>
-                            <input
-                                ref="fileInput"
-                                type="file"
-                                accept=".svg,.png,.webp,image/svg+xml,image/png,image/webp"
-                                :required="needsImage"
-                                @change="onFile"
+                                <label class="field">
+                                    <span>Farbgruppe (für den Filter)</span>
+                                    <select v-model="newItem.category">
+                                        <option v-for="kategorie in FARB_KATEGORIEN" :key="kategorie" :value="kategorie">
+                                            {{ kategorie }}
+                                        </option>
+                                    </select>
+                                </label>
+
+                                <label class="field">
+                                    <span>Farbe</span>
+                                    <span class="color-row">
+                                        <input v-model="newItem.hex_code" type="color" class="color-picker">
+                                        <input v-model="newItem.hex_code" type="text" maxlength="7" class="hex-input">
+                                    </span>
+                                    <small v-if="newItem.errors.hex_code" class="field-error">{{ newItem.errors.hex_code }}</small>
+                                </label>
+
+                            </template>
+
+                            <label
+                                v-if="currentTab.catalog !== 'farbe'"
+                                class="field field-wide"
                             >
-                            <small v-if="newItem.errors.image" class="field-error">{{ newItem.errors.image }}</small>
-                        </label>
+                                <span>
+                                    Bild {{ needsImage ? '' : '(optional)' }}
+                                    <em class="hint">SVG, PNG oder WebP, max. 2 MB, transparenter Hintergrund, Hochformat 100 × 160</em>
+                                </span>
+                                <input
+                                    ref="fileInput"
+                                    type="file"
+                                    accept=".svg,.png,.webp,image/svg+xml,image/png,image/webp"
+                                    :required="needsImage"
+                                    @change="onFile"
+                                >
+                                <small v-if="newItem.errors.image" class="field-error">{{ newItem.errors.image }}</small>
+                            </label>
 
-                    </div>
+                        </div>
 
-                    <div class="form-actions">
-                        <button type="button" class="cancel-button" @click="showForm = false">Abbrechen</button>
-                        <button type="submit" class="save-button" :disabled="newItem.processing">
-                            {{ newItem.processing ? 'Speichert …' : 'Anlegen' }}
-                        </button>
-                    </div>
+                        <div class="form-actions">
+                            <button type="button" class="cancel-button" @click="showForm = false">Abbrechen</button>
+                            <button type="submit" class="save-button" :disabled="newItem.processing">
+                                {{ newItem.processing ? 'Speichert …' : 'Anlegen' }}
+                            </button>
+                        </div>
 
-                </form>
+                    </form>
 
 
-                <!-- Farben: Raster statt Preistabelle -->
-                <div
-                    v-if="activeTab === 'farbe' && visibleRows.length"
-                    class="color-grid"
-                >
+                    <!-- Farben: Raster statt Preistabelle -->
                     <div
-                        v-for="row in visibleRows"
-                        :key="row.id"
-                        class="color-card"
+                        v-if="activeTab === 'farbe' && visibleRows.length"
+                        class="color-grid"
                     >
-                        <span class="swatch" :style="{ backgroundColor: row.hex }"></span>
-                        <span class="color-text">
-                            <span class="name">{{ row.name }}</span>
-                            <span class="sub">{{ row.category }} · {{ row.hex }}</span>
-                        </span>
-                        <button
-                            v-if="row.is_own"
-                            type="button"
-                            class="remove-button"
-                            :aria-label="`${row.name} entfernen`"
-                            @click="removeItem(row)"
+                        <div
+                            v-for="row in visibleRows"
+                            :key="row.id"
+                            class="color-card"
                         >
-                            ×
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tabelle -->
-                <div
-                    v-else-if="visibleRows.length"
-                    class="table-wrap"
-                >
-                    <table class="table">
-
-                        <thead>
-                            <tr>
-                                <th>Bezeichnung</th>
-                                <th>Einheit</th>
-                                <th
-                                    v-if="activeTab !== 'service'"
-                                    class="right"
-                                >
-                                    Standard
-                                </th>
-                                <th class="right">Preis in diesem Studio</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            <tr
-                                v-for="row in visibleRows"
-                                :key="row.id"
+                            <span class="swatch" :style="{ backgroundColor: row.hex }"></span>
+                            <span class="color-text">
+                                <span class="name">{{ row.name }}</span>
+                                <span class="sub">{{ row.category }} · {{ row.hex }}</span>
+                            </span>
+                            <button
+                                v-if="row.is_own"
+                                type="button"
+                                class="remove-button"
+                                :aria-label="`${row.name} entfernen`"
+                                @click="removeItem(row)"
                             >
+                                ×
+                            </button>
+                        </div>
+                    </div>
 
-                                <td class="name-cell">
-                                    <img
-                                        v-if="row.image"
-                                        :src="row.image"
-                                        alt=""
-                                        class="thumb"
-                                    >
-                                    <span>
-                                    <span class="name">
-                                        {{ row.name }}
-                                        <span v-if="row.is_own" class="own-badge">eigener Eintrag</span>
-                                    </span>
-                                    <span
-                                        v-if="row.category && activeTab === 'design'"
-                                        class="sub"
-                                    >
-                                        {{ row.category }}<template v-if="row.tags?.length"> · {{ row.tags.join(', ') }}</template>
-                                    </span>
-                                    <span
-                                        v-if="row.duration_minutes"
-                                        class="sub"
-                                    >
-                                        {{ row.duration_minutes }} Min.
-                                    </span>
-                                    </span>
-                                </td>
+                    <!-- Tabelle -->
+                    <div
+                        v-else-if="visibleRows.length"
+                        class="table-wrap"
+                    >
+                        <table class="table">
 
-                                <td class="muted">{{ unitLabel(row.unit) }}</td>
+                            <thead>
+                                <tr>
+                                    <th>Bezeichnung</th>
+                                    <th>Einheit</th>
+                                    <th class="right">Standard</th>
+                                    <th class="right">Preis in diesem Studio</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
 
-                                <td
-                                    v-if="activeTab !== 'service'"
-                                    class="right muted"
+                            <tbody>
+                                <tr
+                                    v-for="row in visibleRows"
+                                    :key="row.id"
                                 >
-                                    {{ euro(row.default_price) }}
-                                </td>
 
-                                <td class="right">
-                                    <div class="price-field">
-                                        <input
-                                            v-model="inputs[rowKey(currentTab.type, row.id)]"
-                                            type="text"
-                                            inputmode="decimal"
-                                            class="price-input"
-                                            :class="{ custom: row.is_custom }"
-                                            :aria-label="`Preis für ${row.name}`"
-                                            @blur="commit(row)"
-                                            @keydown.enter.prevent="$event.target.blur()"
+                                    <td class="name-cell">
+                                        <img
+                                            v-if="row.image"
+                                            :src="row.image"
+                                            alt=""
+                                            class="thumb"
                                         >
-                                        <span class="euro">€</span>
-                                    </div>
-                                </td>
+                                        <span>
+                                            <span class="name">
+                                                {{ row.name }}
+                                                <span v-if="row.is_own" class="own-badge">eigener Eintrag</span>
+                                            </span>
+                                            <span
+                                                v-if="row.category && activeTab === 'design'"
+                                                class="sub"
+                                            >
+                                                {{ row.category }}<template v-if="row.tags?.length"> · {{ row.tags.join(', ') }}</template>
+                                            </span>
+                                        </span>
+                                    </td>
 
-                                <td class="status-cell">
+                                    <td class="muted">{{ unitLabel(row.unit) }}</td>
 
-                                    <span
-                                        v-if="status[rowKey(currentTab.type, row.id)] === 'saving'"
-                                        class="status muted"
-                                    >
-                                        Speichert …
-                                    </span>
+                                    <td class="right muted">
+                                        {{ euro(row.default_price) }}
+                                    </td>
 
-                                    <span
-                                        v-else-if="status[rowKey(currentTab.type, row.id)] === 'saved'"
-                                        class="status saved"
-                                    >
-                                        ✓ Gespeichert
-                                    </span>
+                                    <td class="right">
+                                        <div class="price-field">
+                                            <input
+                                                v-model="inputs[rowKey(currentTab.type, row.id)]"
+                                                type="text"
+                                                inputmode="decimal"
+                                                class="price-input"
+                                                :class="{ custom: row.is_custom }"
+                                                :aria-label="`Preis für ${row.name}`"
+                                                @blur="commit(row)"
+                                                @keydown.enter.prevent="$event.target.blur()"
+                                            >
+                                            <span class="euro">€</span>
+                                        </div>
+                                    </td>
 
-                                    <span
-                                        v-else-if="status[rowKey(currentTab.type, row.id)]"
-                                        class="status error"
-                                    >
-                                        {{ status[rowKey(currentTab.type, row.id)] }}
-                                    </span>
+                                    <td class="status-cell">
 
-                                    <button
-                                        v-else-if="row.is_custom"
-                                        type="button"
-                                        class="reset-button"
-                                        :title="`Zurück auf Standard (${euro(row.default_price)})`"
-                                        @click="resetToDefault(row)"
-                                    >
-                                        Standard
-                                    </button>
+                                        <span
+                                            v-if="status[rowKey(currentTab.type, row.id)] === 'saving'"
+                                            class="status muted"
+                                        >
+                                            Speichert …
+                                        </span>
 
-                                    <button
-                                        v-if="row.is_own && currentTab.catalog"
-                                        type="button"
-                                        class="remove-button"
-                                        :aria-label="`${row.name} entfernen`"
-                                        title="Entfernen"
-                                        @click="removeItem(row)"
-                                    >
-                                        ×
-                                    </button>
+                                        <span
+                                            v-else-if="status[rowKey(currentTab.type, row.id)] === 'saved'"
+                                            class="status saved"
+                                        >
+                                            ✓ Gespeichert
+                                        </span>
 
-                                </td>
+                                        <span
+                                            v-else-if="status[rowKey(currentTab.type, row.id)]"
+                                            class="status error"
+                                        >
+                                            {{ status[rowKey(currentTab.type, row.id)] }}
+                                        </span>
 
-                            </tr>
-                        </tbody>
+                                        <button
+                                            v-else-if="row.is_custom"
+                                            type="button"
+                                            class="reset-button"
+                                            :title="`Zurück auf Standard (${euro(row.default_price)})`"
+                                            @click="resetToDefault(row)"
+                                        >
+                                            Standard
+                                        </button>
 
-                    </table>
-                </div>
+                                        <button
+                                            v-if="row.is_own && currentTab.catalog"
+                                            type="button"
+                                            class="remove-button"
+                                            :aria-label="`${row.name} entfernen`"
+                                            title="Entfernen"
+                                            @click="removeItem(row)"
+                                        >
+                                            ×
+                                        </button>
 
-                <p
-                    v-else
-                    class="empty-row"
-                >
-                    {{ rowsFor(activeTab).length ? 'Keine Treffer.' : 'Hier gibt es noch keine Einträge.' }}
-                </p>
+                                    </td>
 
-                <p
-                    v-if="activeTab !== 'farbe'"
-                    class="legend"
-                >
-                    <span class="legend-dot"></span>
-                    Eigener Preis dieses Studios (weicht vom Standard ab)
-                </p>
+                                </tr>
+                            </tbody>
+
+                        </table>
+                    </div>
+
+                    <p
+                        v-else
+                        class="empty-row"
+                    >
+                        {{ rowsFor(activeTab).length ? 'Keine Treffer.' : 'Hier gibt es noch keine Einträge.' }}
+                    </p>
+
+                    <p
+                        v-if="activeTab !== 'farbe'"
+                        class="legend"
+                    >
+                        <span class="legend-dot"></span>
+                        Eigener Preis dieses Studios (weicht vom Standard ab)
+                    </p>
+
+                </template>
 
             </section>
 

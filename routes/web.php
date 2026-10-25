@@ -27,6 +27,13 @@ use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\ShiftController;
 use App\Models\EmployeeShift;
 
+use App\Http\Controllers\Admin\ServiceController as AdminServiceController;
+use App\Http\Controllers\ServiceCatalogController;
+
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\PublicReviewController;
+use App\Http\Controllers\Admin\ReviewController as AdminReviewController;
+
 Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
 Route::get('/colors', [ColorController::class, 'index']);
 
@@ -92,9 +99,41 @@ Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'p
 Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
     ->name('appointments.manage');
 
+    
+
 // Muster-Katalog: für alle lesbar (auch ohne Login), damit der Design-Editor funktioniert.
 // Anlegen/Ändern/Löschen bleibt unten im geschützten Bereich.
 Route::get('/design-elements', [DesignElementController::class, 'index']);
+// Öffentlich: Leistungen für die Leistungsseite
+Route::get('/services/catalog', [ServiceCatalogController::class, 'index'])
+    ->name('services.catalog');
+
+
+
+// Bewertungsformular aus der Danke-Mail – nur mit gültigem signiertem Link
+Route::get('/bewertung/{appointment}', [ReviewController::class, 'create'])
+    ->middleware('signed')
+    ->name('reviews.create');
+
+Route::post('/bewertung/{appointment}', [ReviewController::class, 'store'])
+    ->middleware(['signed', 'throttle:10,1'])
+    ->name('reviews.store');
+
+// Öffentlich: Bewertungen für die Startseite
+Route::get('/reviews/public', [PublicReviewController::class, 'index'])
+    ->name('reviews.public');
+
+// Inhaberin: Bewertungen verwalten
+Route::middleware(['auth', 'role:owner'])
+    ->prefix('admin/bewertungen')
+    ->name('admin.reviews.')
+    ->group(function () {
+        Route::get('/', [AdminReviewController::class, 'page'])->name('page');
+        Route::get('/liste', [AdminReviewController::class, 'index'])->name('index');
+        Route::patch('/{review}', [AdminReviewController::class, 'update'])->name('update');
+    });
+
+
 Route::middleware('auth')->group(function () {
 
     // Übersicht der gespeicherten Nageldesigns
@@ -160,13 +199,17 @@ Route::middleware('auth')->group(function () {
     });
 
         // Studioleitung: Anfragen für heute bearbeiten
-    Route::middleware('role:admin')->prefix('admin/appointments')->group(function () {
+    Route::middleware('role:owner,admin')->prefix('admin/appointments')->group(function () {
         Route::get('/requests', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'index']);
-        Route::get('/bookings', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'bookings']);
         Route::post('/{appointment}/confirm', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'confirm']);
         Route::post('/{appointment}/decline', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'decline']);
         Route::post('/{appointment}/alternatives', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'offerAlternatives']);
-    });
+        Route::post('/{appointment}/complete', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'complete']);
+        });
+
+        // Gebuchte Termine: Schichtleitung und Mitarbeiterinnen dürfen sie sehen
+    Route::get('/admin/appointments/bookings', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'bookings'])
+        ->middleware('role:owner,admin,employee');
 
     // Studioverwaltung + Mitarbeiter verwalten: Inhaberin und Schichtleitung
     Route::middleware('role:owner,admin')->group(function () {
@@ -273,6 +316,18 @@ Route::get('/StudioSearch', function () {
 Route::get('/settings', function () {
     return Inertia::render('Setting');
 })->name('settings');
+
+
+// Preisverwaltung: nur Inhaberin
+Route::middleware(['auth', 'role:owner'])
+    ->prefix('admin/services')
+    ->name('admin.services.')
+    ->group(function () {
+        Route::get('/', [AdminServiceController::class, 'index'])->name('index');
+        Route::post('/', [AdminServiceController::class, 'store'])->name('store');
+        Route::patch('/{service}', [AdminServiceController::class, 'update'])->name('update');
+        Route::delete('/{service}', [AdminServiceController::class, 'destroy'])->name('destroy');
+    });
 
 
 

@@ -1,21 +1,71 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 
 const page = usePage()
 
 const employees = computed(() => page.props.employees ?? [])
-const customerRequests = computed(() => page.props.customerRequests ?? [])
-const appointments = computed(() => page.props.appointments ?? [])
 const vacationRequests = computed(() => page.props.vacationRequests ?? [])
 
 const employeeCount = computed(() => employees.value.length)
 
-const requestCount = computed(() => customerRequests.value.length)
-
-const appointmentCount = computed(() => appointments.value.length)
-
 const vacationCount = computed(() => vacationRequests.value.length)
+
+/*
+|--------------------------------------------------------------------------
+| GEÄNDERT: Anfragen und Termine kommen jetzt vom Server
+|--------------------------------------------------------------------------
+| Vorher aus page.props – die Seiten geben diese Daten aber nicht mit,
+| deshalb stand dort immer 0. Jetzt dieselben Quellen wie die Listen.
+| null = (noch) nicht bekannt bzw. kein Zugriff → Anzeige „–“
+*/
+
+const requestCount = ref(null)
+const appointmentCount = ref(null)
+
+let timer = null
+
+async function fetchCount(url) {
+    try {
+        const response = await fetch(url, {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        })
+
+        if (!response.ok) {
+            return null
+        }
+
+        const data = await response.json()
+
+        return Array.isArray(data) ? data.length : null
+    } catch {
+        return null
+    }
+}
+
+async function load() {
+    const [requests, bookings] = await Promise.all([
+        fetchCount('/admin/appointments/requests'),
+        fetchCount('/admin/appointments/bookings'),
+    ])
+
+    requestCount.value = requests
+    appointmentCount.value = bookings
+}
+
+function display(value) {
+    return value === null ? '–' : value
+}
+
+onMounted(() => {
+    load()
+    timer = setInterval(load, 60000)   // jede Minute neu laden
+})
+
+onBeforeUnmount(() => {
+    clearInterval(timer)
+})
 </script>
 
 <template>
@@ -37,11 +87,11 @@ const vacationCount = computed(() => vacationRequests.value.length)
             </span>
 
             <strong class="stat-number">
-                {{ requestCount }}
+                {{ display(requestCount) }}
             </strong>
 
             <span class="stat-description">
-                offene Anfragen
+                {{ requestCount === null ? 'bearbeitet die Schichtleitung' : 'offene Anfragen' }}
             </span>
 
         </div>
@@ -66,11 +116,11 @@ const vacationCount = computed(() => vacationRequests.value.length)
             </span>
 
             <strong class="stat-number">
-                {{ appointmentCount }}
+                {{ display(appointmentCount) }}
             </strong>
 
             <span class="stat-description">
-                anstehende Termine
+                bezahlte Termine ab heute
             </span>
 
         </div>

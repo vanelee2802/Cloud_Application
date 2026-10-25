@@ -15,6 +15,10 @@ use Inertia\Inertia;
 use App\Models\User;                                   // NEU (Schritt 60)
 use App\Notifications\AppointmentRequested;            // NEU (Schritt 60)
 use Illuminate\Support\Facades\Notification;           // NEU (Schritt 60)
+use App\Models\Design;                                 // NEU (Warenkorb-Buchung)
+use App\Models\Service;                                // NEU (Warenkorb-Buchung)
+use Illuminate\Validation\ValidationException;         // NEU (Warenkorb-Buchung)
+use App\Services\PriceService;                          // NEU (Design-Preis)
 
 class AppointmentController extends Controller
 {
@@ -87,9 +91,17 @@ class AppointmentController extends Controller
             'service_id'     => 'nullable|integer|exists:services,id',
         ]);
 
-        $duration = isset($validated['service_id'])
-            ? \App\Models\Service::whereKey($validated['service_id'])->value('duration_minutes')
-            : null;
+        $duration = null;
+
+        // GEÄNDERT: Leistung muss zum Studio gehören und buchbar sein
+        if (isset($validated['service_id'])) {
+            $service = $this->bookableService(
+                (int) $validated['service_id'],
+                (int) $validated['nail_studio_id']
+            );
+
+            $duration = $service->duration_minutes;
+        }
 
         return response()->json([
             'times' => $slots->availability(
@@ -101,7 +113,7 @@ class AppointmentController extends Controller
     }
 
     // Kundin wählt eine Uhrzeit → Platz für 3 Minuten reservieren
-    public function hold(Request $request, SlotService $slots)
+    public function hold(Request $request, SlotService $slots, PriceService $prices)
     {
         $validated = $request->validate([
             'nail_studio_id' => 'required|integer|exists:nail_studios,id',
@@ -110,6 +122,14 @@ class AppointmentController extends Controller
             'date' => 'required|date_format:Y-m-d|after_or_equal:today',
             'time' => ['required', Rule::in(config('booking.times'))],
         ]);
+
+        // NEU: Nur buchbare Leistungen dieses Studios
+        $this->bookableService((int) $validated['service_id'], (int) $validated['nail_studio_id']);
+
+        // NEU: Ein Design darf nur von seiner Besitzerin mitgebucht werden
+        if (! empty($validated['design_id'])) {
+            $this->ensureOwnDesign($request, (int) $validated['design_id']);
+        }
 
         $appointment = $slots->hold($request->user()?->id, $validated);
 
@@ -123,6 +143,8 @@ class AppointmentController extends Controller
             'id' => $appointment->id,
             'hold_token' => $appointment->hold_token,
             'expires_in' => config('booking.hold_minutes') * 60,
+            // NEU: Endbetrag vom Server (Leistung + Design mit Studio-Preisen) für die Anzeige
+            'total_price' => $prices->appointmentPrice($appointment),
         ], 201);
     }
 
@@ -144,7 +166,7 @@ class AppointmentController extends Controller
     }
 
     // Kundin schickt den reservierten Termin ab
-    public function submit(Request $request, Appointment $appointment, StripeCheckoutService $checkout)
+    public function submit(Request $request, Appointment $appointment, StripeCheckoutService $checkout, PriceService $prices)
     {
         $this->authorizeHold($request, $appointment);
 
@@ -201,7 +223,8 @@ class AppointmentController extends Controller
         // Späterer Tag: Payment-Eintrag anlegen und direkt zu Stripe
         $payment = Payment::create([
             'appointment_id' => $appointment->id,
-            'amount' => $appointment->service->price,
+            // GEÄNDERT: Leistung + Design (mit Studio-Preisen)
+            'amount' => $prices->appointmentPrice($appointment),
             'status' => 'pending',
         ]);
 
@@ -236,7 +259,8 @@ class AppointmentController extends Controller
         Appointment $appointment,
         AppointmentAlternative $alternative,
         SlotService $slots,
-        StripeCheckoutService $checkout
+        StripeCheckoutService $checkout,
+        PriceService $prices
     ) {
         $this->authorizeCustomer($request, $appointment);
 
@@ -283,7 +307,8 @@ class AppointmentController extends Controller
         // 3. Zahlung vorbereiten
         $payment = Payment::create([
             'appointment_id' => $appointment->id,
-            'amount' => $appointment->service->price,
+            // GEÄNDERT: Leistung + Design (mit Studio-Preisen)
+            'amount' => $prices->appointmentPrice($appointment),
             'status' => 'pending',
         ]);
 
@@ -322,7 +347,7 @@ class AppointmentController extends Controller
     }
 
     // Terminseite aus der E-Mail – Gast per signiertem Link oder eingeloggte Besitzerin
-    public function manage(Request $request, Appointment $appointment)
+    public function manage(Request $request, Appointment $appointment, PriceService $prices)
     {
         $this->authorizeCustomer($request, $appointment);
 
@@ -338,7 +363,8 @@ class AppointmentController extends Controller
                 'time' => substr($appointment->time, 0, 5),
                 'status' => $appointment->status,
                 'service' => $appointment->service->name,
-                'price' => $appointment->service->price,
+                // GEÄNDERT: Leistung + Design
+                'price' => $prices->appointmentPrice($appointment),
                 'admin_note' => $appointment->admin_note,
                 'payment_expires_at' => $appointment->payment_expires_at?->toIso8601String(),
             ],
@@ -357,6 +383,36 @@ class AppointmentController extends Controller
                 ]),
             ]),
         ]);
+    }
+
+    // NEU: Leistung muss zum Studio gehören, sichtbar und keine Zusatzleistung sein
+    private function bookableService(int $serviceId, int $studioId): Service
+    {
+        $service = Service::find($serviceId);
+
+        if (! $service || (int) $service->nail_studio_id !== $studioId || ! $service->isBookable()) {
+            throw ValidationException::withMessages([
+                'service_id' => 'Diese Leistung kann in diesem Studio nicht gebucht werden.',
+            ]);
+        }
+
+        return $service;
+    }
+
+    // NEU: Gäste können kein Design mitbuchen, Kundinnen nur ihr eigenes
+    private function ensureOwnDesign(Request $request, int $designId): void
+    {
+        $user = $request->user();
+
+        $isOwn = $user && Design::whereKey($designId)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (! $isOwn) {
+            throw ValidationException::withMessages([
+                'design_id' => 'Dieses Design kann nicht mitgebucht werden. Bitte melde dich mit dem Konto an, in dem du es gespeichert hast.',
+            ]);
+        }
     }
 
     // Prüft: Darf diese Anfrage die Reservierung freigeben oder abschicken?

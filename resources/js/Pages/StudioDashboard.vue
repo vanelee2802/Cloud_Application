@@ -3,8 +3,7 @@ import pagesLayout from '@/Layouts/pagesLayout.vue'
 import AppointmentRequests from '@/Components/StudioDashboard/AppointmentRequests.vue'
 import Kennzahlen from '@/Components/StudioDashboard/Kennzahlen.vue'
 import Buchungen from '@/Components/StudioDashboard/Buchungen.vue'
-import Schnellzugriff from '@/Components/StudioDashboard/Schnellzugriff.vue'
-
+import ConfirmedBookings from '@/Components/StudioDashboard/ConfirmedBookings.vue'
 </script>
 
 <template>
@@ -23,15 +22,15 @@ import Schnellzugriff from '@/Components/StudioDashboard/Schnellzugriff.vue'
 
             <!-- Kennzahlen -->
             <section class="stats-grid">
-                <KPI />
+                <Kennzahlen />
             </section>
 
 
-            <!-- Buchungen + Schnellzugriff -->
+            <!-- Anfragen + Buchungen -->
             <section class="dashboard-grid">
                 <AppointmentRequests />
                 <Buchungen />
-                <Schnellzugriff />
+                <ConfirmedBookings />
             </section>
 
         </div>

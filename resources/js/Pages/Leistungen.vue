@@ -1,17 +1,12 @@
 <script setup>
 import pagesLayout from '@/Layouts/pagesLayout.vue'
-import PictureKarussell from '@/Components/Leistungen/pictureKarussell.vue';
-import Leistungsübersicht from '@/Components/Leistungen/Leistungsübersicht.vue';
-
-
+import Leistungen from '@/Components/Leistungen/Leistungen.vue'
+import ServiceOverview from '@/Components/Leistungen/ServiceOverview.vue'
 </script>
 
 <template>
-   <pagesLayout>
+    <pagesLayout>
+        <ServiceOverview />
 
-<PictureKarussell/>
-<Leistungsübersicht/>
-       
-   </pagesLayout>
+    </pagesLayout>
 </template>
-

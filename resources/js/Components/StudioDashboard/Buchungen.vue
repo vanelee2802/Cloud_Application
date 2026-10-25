@@ -1,11 +1,23 @@
 <script setup>
 
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { usePage } from '@inertiajs/vue3'
 
 // Bestätigte Buchungen vom Server
 const bookings = ref([])
 const loading = ref(true)
 const error = ref('')
+
+// NEU: Rückmeldung nach „Abgeschlossen“
+const message = ref('')
+const busyId = ref(null)
+
+// NEU: Abschließen darf nur die Schichtleitung, alle anderen sehen nur die Liste
+const page = usePage()
+const canComplete = computed(() => page.props.auth?.user?.role === 'admin')
+
+// Aktuelle Uhrzeit, wird beim Neuladen aktualisiert → Button erscheint, sobald ein Termin begonnen hat
+const now = ref(new Date())
 
 // Anfangs nur die nächsten 5 zeigen, per Button alle
 const showAll = ref(false)
@@ -16,15 +28,19 @@ const visibleBookings = computed(() =>
 let timer = null
 
 async function load() {
+    now.value = new Date()
+
     const response = await fetch('/admin/appointments/bookings', {
+        credentials: 'same-origin',
         headers: { Accept: 'application/json' },
     })
 
     loading.value = false
 
     if (!response.ok) {
+        // GEÄNDERT: Mitarbeiterinnen dürfen die Liste jetzt auch sehen
         error.value = response.status === 401 || response.status === 403
-            ? 'Nur die Studioleitung kann die Buchungen sehen.'
+            ? 'Du hast keinen Zugriff auf die Buchungen dieses Studios.'
             : 'Die Buchungen konnten nicht geladen werden.'
         return
     }
@@ -33,21 +49,78 @@ async function load() {
     bookings.value = await response.json()
 }
 
+// Nur den Datumsteil, egal ob "2026-10-20" oder "2026-10-20 00:00:00"
+function dateOnly(date) {
+    return String(date ?? '').slice(0, 10)
+}
+
 // "2026-10-20" → "20"
 function day(date) {
-    return date.split('-')[2]
+    return dateOnly(date).split('-')[2]
 }
 
 // "2026-10-20" → "OKT"
 const months = ['JAN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ']
 
 function month(date) {
-    return months[Number(date.split('-')[1]) - 1]
+    return months[Number(dateOnly(date).split('-')[1]) - 1]
 }
 
 // Name aus dem Termin, sonst aus dem Kundenkonto (alte Termine)
 function customerName(booking) {
     return booking.customer_name || booking.user?.name || 'Unbekannt'
+}
+
+// NEU: Hat der Termin schon begonnen?
+function hasStarted(booking) {
+    const start = new Date(`${dateOnly(booking.date)}T${String(booking.time).slice(0, 5)}:00`)
+
+    return start <= now.value
+}
+
+function csrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? ''
+}
+
+// NEU: Termin abschließen → Kundin bekommt die Danke-Mail mit Link zur Bewertung
+async function complete(booking) {
+    const confirmed = window.confirm(
+        `Termin von ${customerName(booking)} um ${String(booking.time).slice(0, 5)} Uhr als abgeschlossen markieren?\n\n`
+        + 'Die Kundin bekommt dann eine Danke-Mail mit Link zur Bewertung.'
+    )
+
+    if (!confirmed) {
+        return
+    }
+
+    busyId.value = booking.id
+    message.value = ''
+
+    try {
+        const response = await fetch(`/admin/appointments/${booking.id}/complete`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+            },
+        })
+
+        const data = await response.json().catch(() => ({}))
+
+        message.value = data.message ?? (response.ok
+            ? 'Termin abgeschlossen.'
+            : 'Der Termin konnte nicht abgeschlossen werden.')
+
+        // Abgeschlossen (oder schon vorher) → aus der Liste nehmen
+        if (response.ok || response.status === 409) {
+            bookings.value = bookings.value.filter(item => item.id !== booking.id)
+        }
+    } catch {
+        message.value = 'Server nicht erreichbar. Bitte versuche es erneut.'
+    } finally {
+        busyId.value = null
+    }
 }
 
 onMounted(() => {
@@ -84,6 +157,10 @@ onBeforeUnmount(() => {
         </div>
 
 
+        <!-- NEU: Rückmeldung nach „Abgeschlossen“ -->
+        <p v-if="message" class="message" role="status">{{ message }}</p>
+
+
         <!-- Hinweise -->
         <p v-if="error" class="hint error">{{ error }}</p>
         <p v-else-if="loading" class="hint">Buchungen werden geladen …</p>
@@ -108,11 +185,22 @@ onBeforeUnmount(() => {
                     <strong>{{ customerName(booking) }}</strong>
 
                     <span>
-                        {{ booking.service?.name }} · {{ booking.time.slice(0, 5) }} Uhr
+                        {{ booking.service?.name }} · {{ String(booking.time).slice(0, 5) }} Uhr
                     </span>
                 </div>
 
-                <span class="status confirmed">
+                <!-- NEU: Schichtleitung kann laufende/vergangene Termine abschließen -->
+                <button
+                    v-if="canComplete && hasStarted(booking)"
+                    type="button"
+                    class="complete-button"
+                    :disabled="busyId === booking.id"
+                    @click="complete(booking)"
+                >
+                    {{ busyId === booking.id ? 'Speichert …' : 'Abgeschlossen' }}
+                </button>
+
+                <span v-else class="status confirmed">
                     Bestätigt
                 </span>
 
@@ -193,9 +281,21 @@ onBeforeUnmount(() => {
     opacity: 1;
 }
 
+.message {
+    margin: 0 0 1rem;
+
+    padding: 0.55rem 0.75rem;
+
+    border-radius: 8px;
+
+    background: rgba(184, 115, 131, 0.08);
+
+    font-size: 0.85rem;
+}
+
 
 /* =========================================================
-   BUTTON
+   BUTTONS
    ========================================================= */
 
 .secondary-button {
@@ -215,6 +315,42 @@ onBeforeUnmount(() => {
 
 .secondary-button:hover {
     opacity: 0.8;
+}
+
+.complete-button {
+    flex-shrink: 0;
+
+    padding: 0.4rem 0.75rem;
+
+    border: none;
+    border-radius: 20px;
+
+    background: #7d1024;
+
+    color: white;
+
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.complete-button:hover:not(:disabled) {
+    background: #64101f;
+}
+
+.complete-button:disabled {
+    opacity: 0.6;
+
+    cursor: default;
+}
+
+.secondary-button:focus-visible,
+.complete-button:focus-visible {
+    outline: 2px solid #7d1024;
+
+    outline-offset: 2px;
 }
 
 
@@ -316,7 +452,8 @@ onBeforeUnmount(() => {
         align-items: flex-start;
     }
 
-    .appointment .status {
+    .appointment .status,
+    .appointment .complete-button {
         margin-left: auto;
     }
 
