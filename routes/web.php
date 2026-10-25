@@ -59,8 +59,6 @@ Route::get('/buchung/erfolg', function () {
 Route::get('/buchung/abgebrochen', function () {
     return Inertia::render('BookingResult', ['success' => false]);
 })->name('booking.cancelled');
-#Route::get('/design-editor', [DesignEditorController::class, 'index']);
-#})->name('welcome');
 
 Route::get('/dashboard', function () {
     $role = auth()->user()->role;
@@ -86,28 +84,27 @@ Route::post('/appointments/hold', [AppointmentController::class, 'hold'])->middl
 Route::delete('/appointments/{appointment}/hold', [AppointmentController::class, 'releaseHold']);
 Route::post('/appointments/{appointment}/submit', [AppointmentController::class, 'submit'])->middleware('throttle:10,1');
 
-// NEU: Kundin wählt einen Ersatztermin (eingeloggt oder per signiertem Link)
+// Kundin wählt einen Ersatztermin (eingeloggt oder per signiertem Link)
 Route::post('/appointments/{appointment}/alternatives/{alternative}/accept', [AppointmentController::class, 'acceptAlternative'])
     ->middleware('throttle:10,1')
     ->name('appointments.alternatives.accept');
+
 // Bestätigten Termin bezahlen (eingeloggt oder per signiertem Link)
 Route::post('/appointments/{appointment}/pay', [AppointmentController::class, 'pay'])
     ->middleware('throttle:10,1')
     ->name('appointments.pay');
-    // Terminseite aus der E-Mail (eingeloggt oder per signiertem Link)
+
+// Terminseite aus der E-Mail (eingeloggt oder per signiertem Link)
 Route::get('/termin/{appointment}', [AppointmentController::class, 'manage'])
     ->name('appointments.manage');
-
-    
 
 // Muster-Katalog: für alle lesbar (auch ohne Login), damit der Design-Editor funktioniert.
 // Anlegen/Ändern/Löschen bleibt unten im geschützten Bereich.
 Route::get('/design-elements', [DesignElementController::class, 'index']);
+
 // Öffentlich: Leistungen für die Leistungsseite
 Route::get('/services/catalog', [ServiceCatalogController::class, 'index'])
     ->name('services.catalog');
-
-
 
 // Bewertungsformular aus der Danke-Mail – nur mit gültigem signiertem Link
 Route::get('/bewertung/{appointment}', [ReviewController::class, 'create'])
@@ -139,6 +136,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/meine-designs', function () {
         return Inertia::render('Designs/Index');
     })->name('designs.page');
+
     // Benutzerverwaltung – nur für die Inhaberin
     Route::get('/admin/users', [UserManagementController::class, 'index'])
         ->middleware('role:owner')
@@ -149,9 +147,10 @@ Route::middleware('auth')->group(function () {
         ->name('admin.users.update');
 
     Route::delete('/admin/users/{user}', [UserManagementController::class, 'destroy'])
-    ->middleware('role:owner')
-    ->name('admin.users.destroy');
-        // Rechnungen: Kundin sieht eigene, Download mit Rechteprüfung
+        ->middleware('role:owner')
+        ->name('admin.users.destroy');
+
+    // Rechnungen: Kundin sieht eigene, Download mit Rechteprüfung
     Route::get('/rechnungen', [ReceiptController::class, 'index'])
         ->name('receipts.index');
     Route::get('/rechnungen/{receipt}/pdf', [ReceiptController::class, 'download'])
@@ -160,17 +159,21 @@ Route::middleware('auth')->group(function () {
     // Rechnungen des Studios: Inhaberin und Schichtleitung
     Route::get('/studio/rechnungen', [ReceiptController::class, 'studioIndex'])
         ->middleware('role:owner,admin')
-        ->name('receipts.studio');    
+        ->name('receipts.studio');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-   #studioDashboard für Admin und Employee
-   # Route::get('/studio-dashboard', function () {
-   # return Inertia::render('StudioDashboard');
-#})->middleware('role:employee,admin')->name('studio.dashboard');
+    // GEÄNDERT: Studio-Dashboard nur mit Login und passender Rolle (vorher für alle offen)
+    Route::get('/StudioDashboard', function () {
+        return Inertia::render('StudioDashboard');
+    })->middleware('role:owner,admin,employee')->name('StudioDashboard');
+
+    // GEÄNDERT: Einstellungen nur mit Login (vorher für alle offen)
+    Route::get('/settings', function () {
+        return Inertia::render('Setting');
+    })->name('settings');
 
     Route::get('/studio', [NailStudioController::class, 'show'])->name('studio.show');
     Route::get('/services', [ServiceController::class, 'index']);
@@ -181,14 +184,15 @@ Route::middleware('auth')->group(function () {
     Route::apiResource('appointments', AppointmentController::class)->only(['index', 'show']);
     Route::apiResource('notifications', NotificationController::class)->only(['index', 'update', 'destroy']);
     Route::apiResource('cart-items', CartItemController::class)->only(['index', 'store', 'destroy']);
-        Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
+    Route::post('/payments/{id}/checkout', [PaymentController::class, 'checkout']);
 
     Route::middleware('role:owner,admin,employee')->group(function () {
         Route::apiResource('colors', ColorController::class)->except(['index', 'show']);
         Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
     });
 
-    Route::middleware('role:employee,admin,owner')->group(function () {
+    // GEÄNDERT: owner ergänzt – vorher bekam die Inhaberin hier 403 (leeres Dashboard)
+    Route::middleware('role:owner,admin,employee')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
         Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
@@ -200,16 +204,16 @@ Route::middleware('auth')->group(function () {
         Route::apiResource('payments', PaymentController::class);
     });
 
-        // Studioleitung: Anfragen für heute bearbeiten
+    // Studioleitung: Anfragen für heute bearbeiten
     Route::middleware('role:owner,admin')->prefix('admin/appointments')->group(function () {
         Route::get('/requests', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'index']);
         Route::post('/{appointment}/confirm', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'confirm']);
         Route::post('/{appointment}/decline', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'decline']);
         Route::post('/{appointment}/alternatives', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'offerAlternatives']);
         Route::post('/{appointment}/complete', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'complete']);
-        });
+    });
 
-        // Gebuchte Termine: Schichtleitung und Mitarbeiterinnen dürfen sie sehen
+    // Gebuchte Termine: Schichtleitung und Mitarbeiterinnen dürfen sie sehen
     Route::get('/admin/appointments/bookings', [\App\Http\Controllers\Admin\AppointmentRequestController::class, 'bookings'])
         ->middleware('role:owner,admin,employee');
 
@@ -222,7 +226,7 @@ Route::middleware('auth')->group(function () {
             $studioIds = $user->manageableStudioIds();
 
             // Mitarbeiterinnen aller Studios, die diese Person verwalten darf
-                    $employees = User::query()
+            $employees = User::query()
                 ->where('role', User::ROLE_EMPLOYEE)
                 ->whereIn('nail_studio_id', $studioIds)
                 ->with(['nailStudio:id,name', 'shifts'])
@@ -251,12 +255,13 @@ Route::middleware('auth')->group(function () {
 
         Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])
             ->name('employees.destroy');
-    });
 
+        // GEÄNDERT: Schichten ändern nur für Inhaberin und Schichtleitung (vorher ohne Rollenprüfung)
         Route::put('/employees/{employee}/shifts', [ShiftController::class, 'update'])
             ->name('shifts.update');
+    });
 
-        // Preise pro Studio – nur für die Inhaberin
+    // Preise pro Studio – nur für die Inhaberin
     Route::get('/admin/preise', [StudioPriceController::class, 'index'])
         ->middleware('role:owner')
         ->name('admin.prices.index');
@@ -264,9 +269,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/admin/preise/{studio}', [StudioPriceController::class, 'update'])
         ->middleware('role:owner')
         ->name('admin.prices.update');
-});
 
-    // Eigener Katalog pro Studio – nur für die Inhaberin
+    // GEÄNDERT: Eigener Katalog pro Studio – jetzt innerhalb der Login-Gruppe
     Route::post('/admin/katalog/{studio}', [CatalogController::class, 'store'])
         ->middleware('role:owner')
         ->name('catalog.store');
@@ -274,22 +278,17 @@ Route::middleware('auth')->group(function () {
     Route::delete('/admin/katalog/{studio}/{type}/{id}', [CatalogController::class, 'destroy'])
         ->middleware('role:owner')
         ->name('catalog.destroy');
+});
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 
-
 Route::get('/DesignEditor', [DesignEditorController::class, 'index'])
     ->name('DesignEditor');
-#StudioDashboard zugang ohne Admin rechte
-Route::get('/StudioDashboard', function () {
-    return Inertia::render('StudioDashboard');
-})->name('StudioDashboard');
 
 Route::get('/Leistungen', function () {
     return Inertia::render('Leistungen');
 })->name('Leistungen');
-
 
 Route::get('/impressum', function () {
     return Inertia::render('AppFooter/impressum');
@@ -315,11 +314,6 @@ Route::get('/StudioSearch', function () {
     return Inertia::render('StudioSearch');
 })->name('StudioSearch');
 
-Route::get('/settings', function () {
-    return Inertia::render('Setting');
-})->name('settings');
-
-
 // Preisverwaltung: nur Inhaberin
 Route::middleware(['auth', 'role:owner'])
     ->prefix('admin/services')
@@ -330,9 +324,5 @@ Route::middleware(['auth', 'role:owner'])
         Route::patch('/{service}', [AdminServiceController::class, 'update'])->name('update');
         Route::delete('/{service}', [AdminServiceController::class, 'destroy'])->name('destroy');
     });
-
-
-
-
 
 require __DIR__.'/auth.php';
