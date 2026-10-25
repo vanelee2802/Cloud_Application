@@ -28,6 +28,8 @@ const DAYS = [
     { key: 'thursday',  label: 'Donnerstag' },
     { key: 'friday',    label: 'Freitag' },
     { key: 'saturday',  label: 'Samstag' },
+    { key: 'sunday',  label: 'Sonntag' },
+
 ]
 
 

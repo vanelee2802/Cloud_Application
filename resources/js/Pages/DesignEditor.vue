@@ -108,6 +108,15 @@ const fingerPositionMap = {
     pinky: 5,
 }
 
+// Deutsche Namen für Hinweise
+const fingerLabels = {
+    thumb: 'Daumen',
+    index: 'Zeigefinger',
+    middle: 'Mittelfinger',
+    ring: 'Ringfinger',
+    pinky: 'kleiner Finger',
+}
+
 // ID des Musters auf einem Nagel (für das Speichern)
 function getElementId(nailData) {
     return nailData?.design?.id ?? null
@@ -381,14 +390,27 @@ const designName = ref('Mein Nageldesign')
 const isSaving = ref(false)
 const saveMessage = ref('')
 
-// NEU: Zuletzt gespeichertes Design merken, damit beim Buchen nicht doppelt gespeichert wird
+// Zuletzt gespeichertes Design merken, damit beim Buchen nicht doppelt gespeichert wird
 const lastSaved = ref({ id: null, snapshot: null })
 
 /**
- * NEU: Nägel für den Server zusammenstellen.
+ * Nägel für den Server zusammenstellen.
  * Gibt { nails } zurück oder { error } mit einer Meldung für die Kundin.
  */
 function buildNailsPayload() {
+
+    // NEU: Nägel mit Muster, aber ohne Grundfarbe → klarer Hinweis statt stillem Weglassen
+    const patternWithoutColor = FINGERS.filter(finger =>
+        nailDesigns.value[finger]?.design?.id && !nailDesigns.value[finger]?.color?.id
+    )
+
+    if (patternWithoutColor.length > 0) {
+        const names = patternWithoutColor.map(finger => fingerLabels[finger]).join(', ')
+
+        return {
+            error: `Bitte wähle für jeden Nagel mit Muster auch eine Grundfarbe (Kategorie „Farbe“). Ohne Farbe: ${names}.`,
+        }
+    }
 
     // Alle gestalteten Nägel berücksichtigen, nicht nur ausgewählte.
     const designedFingers = Object.keys(nailDesigns.value).filter(
@@ -429,7 +451,7 @@ function buildNailsPayload() {
 }
 
 /**
- * NEU: Design auf dem Server speichern.
+ * Design auf dem Server speichern.
  * Gibt die ID zurück, bei Fehlern null (Meldung steht dann in saveMessage).
  * Ist das Design seit dem letzten Speichern unverändert, wird die alte ID genutzt.
  */
@@ -512,7 +534,7 @@ async function saveDesign() {
 
 
 // =========================================
-// NEU: ZUR KASSE – Leistung + Design zusammen buchen
+// ZUR KASSE – Leistung + Design zusammen buchen
 // =========================================
 
 const page = usePage()
@@ -520,9 +542,9 @@ const user = computed(() => page.props.auth?.user ?? null)
 
 const { services: cartServices, cartItems, addToCart, removeFromCart } = useCart()
 
-// Wurde überhaupt etwas gestaltet?
+// GEÄNDERT: Wurde überhaupt etwas gestaltet? Farbe ODER Muster zählt
 const hasDesign = computed(() =>
-    Object.values(nailDesigns.value).some(nail => nail.color?.id)
+    Object.values(nailDesigns.value).some(nail => nail.color?.id || nail.design?.id)
 )
 
 async function goToCheckout() {
@@ -553,7 +575,7 @@ async function goToCheckout() {
     const designId = await persistDesign()
 
     if (!designId) {
-        // Meldung im Speichern-Bereich anzeigen
+        // Meldung im Speichern-Bereich anzeigen (z. B. „Bitte wähle … eine Grundfarbe“)
         showSavePanel.value = true
         return
     }
@@ -566,7 +588,7 @@ async function goToCheckout() {
         )
         .forEach(item => removeFromCart(item.id))
 
-    // GEÄNDERT: Auch ohne Leistung ins Warenkorb – die Leistung wählt die Kundin dann im Checkout
+    // Auch ohne Leistung in den Warenkorb – die Leistung wählt die Kundin dann im Checkout
     addToCart({
         type: 'design',
         name: designName.value,
@@ -579,7 +601,6 @@ async function goToCheckout() {
 }
 
 </script>
-
 
 <template>
 
