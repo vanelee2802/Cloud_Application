@@ -106,6 +106,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/admin/users/{user}', [UserManagementController::class, 'update'])
         ->middleware('role:owner')
         ->name('admin.users.update');
+
+    Route::delete('/admin/users/{user}', [UserManagementController::class, 'destroy'])
+    ->middleware('role:owner')
+    ->name('admin.users.destroy');
         // Rechnungen: Kundin sieht eigene, Download mit Rechteprüfung
     Route::get('/rechnungen', [ReceiptController::class, 'index'])
         ->name('receipts.index');

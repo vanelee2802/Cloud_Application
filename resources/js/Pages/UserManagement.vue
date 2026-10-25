@@ -1,3 +1,4 @@
+
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head, useForm } from '@inertiajs/vue3'
@@ -8,18 +9,11 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
-    // Studios der Inhaberin (für die Auswahl beim Bearbeiten)
     studios: {
         type: Array,
         default: () => [],
     },
 })
-
-/*
-|--------------------------------------------------------------------------
-| Rollen
-|--------------------------------------------------------------------------
-*/
 
 const roleLabels = {
     owner: 'Inhaberin',
@@ -28,18 +22,11 @@ const roleLabels = {
     customer: 'Kunde',
 }
 
-// Rollen, die die Inhaberin vergeben darf (owner nur durch IT)
 const assignableRoles = ['customer', 'employee', 'admin']
 
 function roleLabel(role) {
     return roleLabels[role] ?? role
 }
-
-/*
-|--------------------------------------------------------------------------
-| Filter
-|--------------------------------------------------------------------------
-*/
 
 const selectedRole = ref('all')
 
@@ -53,12 +40,6 @@ const filteredUsers = computed(() => {
     )
 })
 
-/*
-|--------------------------------------------------------------------------
-| Bearbeiten
-|--------------------------------------------------------------------------
-*/
-
 const editingUserId = ref(null)
 const editingIsOwner = ref(false)
 const editSection = ref(null)
@@ -70,7 +51,8 @@ const editForm = useForm({
     nail_studio_id: '',
 })
 
-// Studio-Auswahl nur für Mitarbeiter und Schichtleitung
+const removeForm = useForm({})
+
 const needsStudio = computed(() => {
     return ['employee', 'admin'].includes(editForm.role)
 })
@@ -84,10 +66,13 @@ async function startEditing(user) {
     editForm.role = user.role
     editForm.nail_studio_id = user.nail_studio_id ?? ''
     editForm.clearErrors()
+    removeForm.clearErrors()
 
-    // Formular steht unter der Tabelle – dorthin scrollen
     await nextTick()
-    editSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    editSection.value?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+    })
 }
 
 function onRoleChange() {
@@ -96,7 +81,6 @@ function onRoleChange() {
         return
     }
 
-    // Nur ein Studio vorhanden: direkt vorauswählen
     if (!editForm.nail_studio_id && props.studios.length === 1) {
         editForm.nail_studio_id = props.studios[0].id
     }
@@ -107,19 +91,25 @@ function cancelEditing() {
     editingIsOwner.value = false
     editForm.reset()
     editForm.clearErrors()
+    removeForm.reset()
+    removeForm.clearErrors()
 }
 
 function saveUser() {
     editForm
         .transform((data) => {
-            // Bei der Inhaberin selbst nur Name und E-Mail ändern
             if (editingIsOwner.value) {
-                return { name: data.name, email: data.email }
+                return {
+                    name: data.name,
+                    email: data.email,
+                }
             }
 
             return {
                 ...data,
-                nail_studio_id: needsStudio.value ? data.nail_studio_id : null,
+                nail_studio_id: needsStudio.value
+                    ? data.nail_studio_id
+                    : null,
             }
         })
         .patch(`/admin/users/${editingUserId.value}`, {
@@ -130,11 +120,30 @@ function saveUser() {
         })
 }
 
-/*
-|--------------------------------------------------------------------------
-| Hilfsfunktionen
-|--------------------------------------------------------------------------
-*/
+function removeUser() {
+    const user = props.users.find(
+        (item) => item.id === editingUserId.value
+    )
+
+    if (!user || !['customer', 'employee'].includes(user.role)) {
+        return
+    }
+
+    const confirmed = window.confirm(
+        `Möchtest du ${roleLabel(user.role)} "${user.name}" wirklich entfernen?`
+    )
+
+    if (!confirmed) {
+        return
+    }
+
+    removeForm.delete(`/admin/users/${user.id}`, {
+        preserveScroll: true,
+        onSuccess: () => {
+            cancelEditing()
+        },
+    })
+}
 
 function formatDate(date) {
     if (!date) {
@@ -201,11 +210,16 @@ function formatDate(date) {
                                         v-for="user in filteredUsers"
                                         :key="user.id"
                                         class="border-b"
-                                        :class="{ 'bg-indigo-50': user.id === editingUserId }"
+                                        :class="{
+                                            'bg-indigo-50':
+                                                user.id === editingUserId,
+                                        }"
                                     >
                                         <td class="p-3">{{ user.name }}</td>
                                         <td class="p-3">{{ user.email }}</td>
-                                        <td class="p-3">{{ roleLabel(user.role) }}</td>
+                                        <td class="p-3">
+                                            {{ roleLabel(user.role) }}
+                                        </td>
                                         <td class="p-3">
                                             {{ user.nail_studio?.name ?? '—' }}
                                         </td>
@@ -241,7 +255,10 @@ function formatDate(date) {
 
                             <form @submit.prevent="saveUser" class="space-y-4">
                                 <div>
-                                    <label for="edit-name" class="mb-1 block font-medium">
+                                    <label
+                                        for="edit-name"
+                                        class="mb-1 block font-medium"
+                                    >
                                         Name
                                     </label>
                                     <input
@@ -251,13 +268,19 @@ function formatDate(date) {
                                         required
                                         class="w-full rounded border p-2"
                                     />
-                                    <p v-if="editForm.errors.name" class="mt-1 text-sm text-red-600">
+                                    <p
+                                        v-if="editForm.errors.name"
+                                        class="mt-1 text-sm text-red-600"
+                                    >
                                         {{ editForm.errors.name }}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <label for="edit-email" class="mb-1 block font-medium">
+                                    <label
+                                        for="edit-email"
+                                        class="mb-1 block font-medium"
+                                    >
                                         E-Mail
                                     </label>
                                     <input
@@ -267,14 +290,19 @@ function formatDate(date) {
                                         required
                                         class="w-full rounded border p-2"
                                     />
-                                    <p v-if="editForm.errors.email" class="mt-1 text-sm text-red-600">
+                                    <p
+                                        v-if="editForm.errors.email"
+                                        class="mt-1 text-sm text-red-600"
+                                    >
                                         {{ editForm.errors.email }}
                                     </p>
                                 </div>
 
-                                <!-- Rolle: bei der Inhaberin nicht änderbar -->
                                 <div v-if="!editingIsOwner">
-                                    <label for="edit-role" class="mb-1 block font-medium">
+                                    <label
+                                        for="edit-role"
+                                        class="mb-1 block font-medium"
+                                    >
                                         Rolle
                                     </label>
                                     <select
@@ -291,18 +319,26 @@ function formatDate(date) {
                                             {{ roleLabel(role) }}
                                         </option>
                                     </select>
-                                    <p v-if="editForm.errors.role" class="mt-1 text-sm text-red-600">
+                                    <p
+                                        v-if="editForm.errors.role"
+                                        class="mt-1 text-sm text-red-600"
+                                    >
                                         {{ editForm.errors.role }}
                                     </p>
                                 </div>
 
                                 <p v-else class="text-sm text-gray-600">
-                                    Die Rolle der Inhaberin kann nur von der IT geändert werden.
+                                    Die Rolle der Inhaberin kann nur von der IT
+                                    geändert werden.
                                 </p>
 
-                                <!-- Studio: nur bei Mitarbeiter und Schichtleitung -->
-                                <div v-if="!editingIsOwner && needsStudio">
-                                    <label for="edit-studio" class="mb-1 block font-medium">
+                                <div
+                                    v-if="!editingIsOwner && needsStudio"
+                                >
+                                    <label
+                                        for="edit-studio"
+                                        class="mb-1 block font-medium"
+                                    >
                                         Studio
                                     </label>
                                     <select
@@ -321,18 +357,38 @@ function formatDate(date) {
                                             {{ studio.name }}
                                         </option>
                                     </select>
-                                    <p v-if="editForm.errors.nail_studio_id" class="mt-1 text-sm text-red-600">
+                                    <p
+                                        v-if="editForm.errors.nail_studio_id"
+                                        class="mt-1 text-sm text-red-600"
+                                    >
                                         {{ editForm.errors.nail_studio_id }}
                                     </p>
                                 </div>
 
-                                <div class="flex gap-3">
+                                <div class="flex flex-wrap gap-3">
                                     <button
                                         type="submit"
-                                        :disabled="editForm.processing"
+                                        :disabled="editForm.processing || removeForm.processing"
                                         class="rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
                                     >
                                         Speichern
+                                    </button>
+
+                                    <button
+                                        v-if="
+                                            !editingIsOwner &&
+                                            ['customer', 'employee'].includes(editForm.role)
+                                        "
+                                        type="button"
+                                        :disabled="removeForm.processing || editForm.processing"
+                                        @click="removeUser"
+                                        class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 disabled:opacity-50"
+                                    >
+                                        {{
+                                            removeForm.processing
+                                                ? 'Wird entfernt …'
+                                                : 'Benutzer entfernen'
+                                        }}
                                     </button>
 
                                     <button
@@ -343,6 +399,13 @@ function formatDate(date) {
                                         Abbrechen
                                     </button>
                                 </div>
+
+                                <p
+                                    v-if="removeForm.errors.user"
+                                    class="text-sm text-red-600"
+                                >
+                                    {{ removeForm.errors.user }}
+                                </p>
                             </form>
                         </div>
                     </div>
