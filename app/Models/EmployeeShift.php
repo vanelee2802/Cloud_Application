@@ -46,8 +46,8 @@ class EmployeeShift extends Model
         return $user->shifts
             ->mapWithKeys(fn (self $shift) => [
                 self::WEEKDAYS[$shift->weekday] => [
-                    'start' => substr($shift->start_time, 0, 5),
-                    'end'   => substr($shift->end_time, 0, 5),
+                    'start' => substr($shift->start_time, 0, 7),
+                    'end'   => substr($shift->end_time, 0, 7),
                 ],
             ])
             ->all();
