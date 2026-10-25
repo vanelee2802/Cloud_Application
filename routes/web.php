@@ -188,7 +188,7 @@ Route::middleware('auth')->group(function () {
         Route::apiResource('design-elements', DesignElementController::class)->except(['index', 'show']);
     });
 
-    Route::middleware('role:employee,admin')->group(function () {
+    Route::middleware('role:employee,admin,owner')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
         Route::patch('/studio', [NailStudioController::class, 'update'])->name('studio.update');
 
